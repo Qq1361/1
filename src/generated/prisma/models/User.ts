@@ -176,6 +176,7 @@ export type UserWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   purchaseOrders?: Prisma.PurchaseOrderListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
+  logisticsEvents?: Prisma.LogisticsEventListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -185,6 +186,7 @@ export type UserOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   purchaseOrders?: Prisma.PurchaseOrderOrderByRelationAggregateInput
   attachments?: Prisma.AttachmentOrderByRelationAggregateInput
+  logisticsEvents?: Prisma.LogisticsEventOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -197,6 +199,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   purchaseOrders?: Prisma.PurchaseOrderListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
+  logisticsEvents?: Prisma.LogisticsEventListRelationFilter
 }, "id">
 
 export type UserOrderByWithAggregationInput = {
@@ -226,6 +229,7 @@ export type UserCreateInput = {
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -235,6 +239,7 @@ export type UserUncheckedCreateInput = {
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUpdateInput = {
@@ -244,6 +249,7 @@ export type UserUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -253,6 +259,7 @@ export type UserUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -338,12 +345,27 @@ export type UserUpdateOneRequiredWithoutAttachmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAttachmentsInput, Prisma.UserUpdateWithoutAttachmentsInput>, Prisma.UserUncheckedUpdateWithoutAttachmentsInput>
 }
 
+export type UserCreateNestedOneWithoutLogisticsEventsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLogisticsEventsInput, Prisma.UserUncheckedCreateWithoutLogisticsEventsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLogisticsEventsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutLogisticsEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLogisticsEventsInput, Prisma.UserUncheckedCreateWithoutLogisticsEventsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLogisticsEventsInput
+  upsert?: Prisma.UserUpsertWithoutLogisticsEventsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLogisticsEventsInput, Prisma.UserUpdateWithoutLogisticsEventsInput>, Prisma.UserUncheckedUpdateWithoutLogisticsEventsInput>
+}
+
 export type UserCreateWithoutPurchaseOrdersInput = {
   id?: string
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutPurchaseOrdersInput = {
@@ -352,6 +374,7 @@ export type UserUncheckedCreateWithoutPurchaseOrdersInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutPurchaseOrdersInput = {
@@ -376,6 +399,7 @@ export type UserUpdateWithoutPurchaseOrdersInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPurchaseOrdersInput = {
@@ -384,6 +408,7 @@ export type UserUncheckedUpdateWithoutPurchaseOrdersInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutAttachmentsInput = {
@@ -392,6 +417,7 @@ export type UserCreateWithoutAttachmentsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutAttachmentsInput = {
@@ -400,6 +426,7 @@ export type UserUncheckedCreateWithoutAttachmentsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutAttachmentsInput = {
@@ -424,6 +451,7 @@ export type UserUpdateWithoutAttachmentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAttachmentsInput = {
@@ -432,6 +460,59 @@ export type UserUncheckedUpdateWithoutAttachmentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutLogisticsEventsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutLogisticsEventsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutLogisticsEventsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutLogisticsEventsInput, Prisma.UserUncheckedCreateWithoutLogisticsEventsInput>
+}
+
+export type UserUpsertWithoutLogisticsEventsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutLogisticsEventsInput, Prisma.UserUncheckedUpdateWithoutLogisticsEventsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutLogisticsEventsInput, Prisma.UserUncheckedCreateWithoutLogisticsEventsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutLogisticsEventsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutLogisticsEventsInput, Prisma.UserUncheckedUpdateWithoutLogisticsEventsInput>
+}
+
+export type UserUpdateWithoutLogisticsEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutLogisticsEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 
@@ -442,11 +523,13 @@ export type UserUncheckedUpdateWithoutAttachmentsInput = {
 export type UserCountOutputType = {
   purchaseOrders: number
   attachments: number
+  logisticsEvents: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   purchaseOrders?: boolean | UserCountOutputTypeCountPurchaseOrdersArgs
   attachments?: boolean | UserCountOutputTypeCountAttachmentsArgs
+  logisticsEvents?: boolean | UserCountOutputTypeCountLogisticsEventsArgs
 }
 
 /**
@@ -473,6 +556,13 @@ export type UserCountOutputTypeCountAttachmentsArgs<ExtArgs extends runtime.Type
   where?: Prisma.AttachmentWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountLogisticsEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.LogisticsEventWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -481,6 +571,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   purchaseOrders?: boolean | Prisma.User$purchaseOrdersArgs<ExtArgs>
   attachments?: boolean | Prisma.User$attachmentsArgs<ExtArgs>
+  logisticsEvents?: boolean | Prisma.User$logisticsEventsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -509,6 +600,7 @@ export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   purchaseOrders?: boolean | Prisma.User$purchaseOrdersArgs<ExtArgs>
   attachments?: boolean | Prisma.User$attachmentsArgs<ExtArgs>
+  logisticsEvents?: boolean | Prisma.User$logisticsEventsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -519,6 +611,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     purchaseOrders: Prisma.$PurchaseOrderPayload<ExtArgs>[]
     attachments: Prisma.$AttachmentPayload<ExtArgs>[]
+    logisticsEvents: Prisma.$LogisticsEventPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -921,6 +1014,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   purchaseOrders<T extends Prisma.User$purchaseOrdersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$purchaseOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.User$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  logisticsEvents<T extends Prisma.User$logisticsEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$logisticsEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LogisticsEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1392,6 +1486,30 @@ export type User$attachmentsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.AttachmentScalarFieldEnum | Prisma.AttachmentScalarFieldEnum[]
+}
+
+/**
+ * User.logisticsEvents
+ */
+export type User$logisticsEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the LogisticsEvent
+   */
+  select?: Prisma.LogisticsEventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the LogisticsEvent
+   */
+  omit?: Prisma.LogisticsEventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.LogisticsEventInclude<ExtArgs> | null
+  where?: Prisma.LogisticsEventWhereInput
+  orderBy?: Prisma.LogisticsEventOrderByWithRelationInput | Prisma.LogisticsEventOrderByWithRelationInput[]
+  cursor?: Prisma.LogisticsEventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.LogisticsEventScalarFieldEnum | Prisma.LogisticsEventScalarFieldEnum[]
 }
 
 /**

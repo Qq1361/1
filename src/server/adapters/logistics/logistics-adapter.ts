@@ -1,17 +1,17 @@
-export type LogisticsState =
-  | "UNKNOWN"
-  | "IN_TRANSIT"
-  | "EXCEPTION"
-  | "DELIVERED";
+import type { LogisticsStatus } from "@/generated/prisma/enums";
 
 export type LogisticsSnapshot = {
-  state: LogisticsState;
-  message: string;
-  occurredAt: Date;
+  status: LogisticsStatus;
+  eventTime: Date;
+  eventText: string;
+  location?: string;
+  exceptionType?: string;
+  exceptionMessage?: string;
+  rawData?: Record<string, string>;
 };
 
 export interface LogisticsAdapter {
-  query(input: {
+  queryTracking(input: {
     carrierCode: string;
     trackingNo: string;
   }): Promise<LogisticsSnapshot>;

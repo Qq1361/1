@@ -44,3 +44,17 @@ export const AttachmentType = {
 } as const
 
 export type AttachmentType = (typeof AttachmentType)[keyof typeof AttachmentType]
+
+
+export const LogisticsStatus = {
+  NOT_SHIPPED: 'NOT_SHIPPED',
+  IN_TRANSIT: 'IN_TRANSIT',
+  OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  EXCEPTION: 'EXCEPTION',
+  STALLED: 'STALLED',
+  RETURNING: 'RETURNING',
+  UNKNOWN: 'UNKNOWN'
+} as const
+
+export type LogisticsStatus = (typeof LogisticsStatus)[keyof typeof LogisticsStatus]

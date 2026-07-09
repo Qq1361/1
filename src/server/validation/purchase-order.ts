@@ -55,5 +55,11 @@ export const allocationSchema = z.object({
     .default([]),
 });
 
+export const trackingSchema = z.object({
+  carrierCode: z.string().trim().min(1, "请选择或填写快递公司").max(50),
+  trackingNo: z.string().trim().min(1, "快递单号不能为空").max(100),
+  shippedAt: z.coerce.date().optional(),
+});
+
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderSchema>;
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;

@@ -80,7 +80,20 @@ export class PurchaseOrderService {
     if (!order) {
       throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
     }
-    return serializeOrder(order);
+    const logisticsEvents =
+      order.carrierCode && order.trackingNo
+        ? await db.logisticsEvent.findMany({
+            where: {
+              ownerId,
+              purchaseOrderId: orderId,
+              carrierCode: order.carrierCode,
+              trackingNo: order.trackingNo,
+            },
+            orderBy: { eventTime: "desc" },
+            take: 20,
+          })
+        : [];
+    return serializeOrder({ ...order, logisticsEvents });
   }
 
   async listOrders(ownerId: string, query: OrderListQuery) {

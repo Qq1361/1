@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, CircleDollarSign, ImageIcon } from "lucide-react";
 import { AttachmentUploader } from "./attachment-uploader";
 import { DeleteOrderButton } from "./delete-order-button";
+import { LogisticsCard } from "./logistics-card";
 import { AllocationBadge, PurchaseStatusBadge } from "./status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,16 @@ export function OrderDetail({ orderId }: { orderId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
+          <LogisticsCard
+            order={order}
+            onChange={(response) =>
+              setOrder({
+                ...order,
+                ...response.order,
+                logisticsEvents: response.events,
+              })
+            }
+          />
           <Card className="rounded-lg shadow-none">
             <CardHeader>
               <CardTitle className="text-base">商品明细</CardTitle>

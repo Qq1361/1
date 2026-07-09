@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  CircleDollarSign,
-  ClipboardList,
+  AlertTriangle,
+  ClipboardCheck,
   Plus,
   ReceiptText,
+  Truck,
 } from "lucide-react";
 import { AllocationBadge, PurchaseStatusBadge } from "@/components/purchases/status-badge";
 import { Button } from "@/components/ui/button";
@@ -28,24 +29,41 @@ type ListResponse = {
   total: number;
 };
 
+type TodosResponse = {
+  data: {
+    id: string;
+    type:
+      | "MISSING_TRACKING"
+      | "LOGISTICS_EXCEPTION"
+      | "LOGISTICS_STALLED"
+      | "PENDING_INSPECTION";
+    severity: "info" | "warning" | "critical";
+    orderId: string;
+    orderNo: string;
+    title: string;
+    description: string;
+    occurredAt: string;
+  }[];
+  counts: {
+    missingTracking: number;
+    logisticsIssues: number;
+    pendingInspection: number;
+  };
+};
+
 export default function Home() {
   const [all, setAll] = useState<ListResponse | null>(null);
-  const [unallocated, setUnallocated] = useState(0);
+  const [todos, setTodos] = useState<TodosResponse | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/purchase-orders?pageSize=5").then((response) =>
         response.json(),
       ),
-      fetch(
-        "/api/purchase-orders?allocationStatus=UNALLOCATED&pageSize=1",
-      ).then((response) => response.json()),
-      fetch("/api/purchase-orders?allocationStatus=DRAFT&pageSize=1").then(
-        (response) => response.json(),
-      ),
-    ]).then(([allOrders, pending, draft]) => {
+      fetch("/api/todos").then((response) => response.json()),
+    ]).then(([allOrders, todoData]) => {
       setAll(allOrders);
-      setUnallocated((pending.total ?? 0) + (draft.total ?? 0));
+      setTodos(todoData);
     });
   }, []);
 
@@ -62,7 +80,7 @@ export default function Home() {
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-lg shadow-none">
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -75,24 +93,68 @@ export default function Home() {
         <Card className="rounded-lg shadow-none">
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-xs text-muted-foreground">待完成分摊</p>
+              <p className="text-xs text-muted-foreground">待填快递单号</p>
               <p className="mt-1 text-2xl font-semibold">
-                {all ? unallocated : "—"}
+                {todos?.counts.missingTracking ?? "—"}
               </p>
             </div>
-            <CircleDollarSign className="size-5 text-amber-600" />
+            <Truck className="size-5 text-amber-600" />
           </CardContent>
         </Card>
         <Card className="rounded-lg shadow-none">
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-xs text-muted-foreground">当前阶段</p>
-              <p className="mt-1 text-base font-semibold">采购与成本</p>
+              <p className="text-xs text-muted-foreground">物流异常 / 停滞</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {todos?.counts.logisticsIssues ?? "—"}
+              </p>
             </div>
-            <ClipboardList className="size-5 text-muted-foreground" />
+            <AlertTriangle className="size-5 text-red-600" />
+          </CardContent>
+        </Card>
+        <Card className="rounded-lg shadow-none">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-xs text-muted-foreground">已签收待验货</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {todos?.counts.pendingInspection ?? "—"}
+              </p>
+            </div>
+            <ClipboardCheck className="size-5 text-emerald-700" />
           </CardContent>
         </Card>
       </div>
+
+      <Card className="rounded-lg shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base">物流待办</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {!todos ? (
+            <Skeleton className="h-16" />
+          ) : todos.data.length ? (
+            todos.data.map((todo) => (
+              <Link
+                key={todo.id}
+                href={`/purchases/${todo.orderId}`}
+                className="flex items-center justify-between gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/40"
+              >
+                <div>
+                  <p className="text-sm font-medium">{todo.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {todo.orderNo} · {todo.description}
+                  </p>
+                </div>
+                <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+              </Link>
+            ))
+          ) : (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              当前没有物流待办
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="rounded-lg shadow-none">
         <CardHeader className="flex-row items-center justify-between">

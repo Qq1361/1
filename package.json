@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:m1": "node scripts/verify-m1.mjs",
+    "verify:m2a": "tsx scripts/verify-m2a.mjs",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",

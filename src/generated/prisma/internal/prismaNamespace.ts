@@ -387,7 +387,8 @@ export const ModelName = {
   User: 'User',
   PurchaseOrder: 'PurchaseOrder',
   PurchaseOrderItem: 'PurchaseOrderItem',
-  Attachment: 'Attachment'
+  Attachment: 'Attachment',
+  LogisticsEvent: 'LogisticsEvent'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "purchaseOrder" | "purchaseOrderItem" | "attachment"
+    modelProps: "user" | "purchaseOrder" | "purchaseOrderItem" | "attachment" | "logisticsEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +704,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    LogisticsEvent: {
+      payload: Prisma.$LogisticsEventPayload<ExtArgs>
+      fields: Prisma.LogisticsEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.LogisticsEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.LogisticsEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>
+        }
+        findFirst: {
+          args: Prisma.LogisticsEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.LogisticsEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>
+        }
+        findMany: {
+          args: Prisma.LogisticsEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>[]
+        }
+        create: {
+          args: Prisma.LogisticsEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>
+        }
+        createMany: {
+          args: Prisma.LogisticsEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.LogisticsEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>[]
+        }
+        delete: {
+          args: Prisma.LogisticsEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>
+        }
+        update: {
+          args: Prisma.LogisticsEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.LogisticsEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.LogisticsEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.LogisticsEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.LogisticsEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LogisticsEventPayload>
+        }
+        aggregate: {
+          args: Prisma.LogisticsEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLogisticsEvent>
+        }
+        groupBy: {
+          args: Prisma.LogisticsEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LogisticsEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.LogisticsEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LogisticsEventCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -767,6 +842,12 @@ export const PurchaseOrderScalarFieldEnum = {
   trackingNo: 'trackingNo',
   shippedAt: 'shippedAt',
   deliveredAt: 'deliveredAt',
+  logisticsStatus: 'logisticsStatus',
+  logisticsLastCheckedAt: 'logisticsLastCheckedAt',
+  logisticsLastEventAt: 'logisticsLastEventAt',
+  logisticsLastEventText: 'logisticsLastEventText',
+  logisticsExceptionType: 'logisticsExceptionType',
+  logisticsExceptionMessage: 'logisticsExceptionMessage',
   notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -805,12 +886,37 @@ export const AttachmentScalarFieldEnum = {
 export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]
 
 
+export const LogisticsEventScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  purchaseOrderId: 'purchaseOrderId',
+  carrierCode: 'carrierCode',
+  trackingNo: 'trackingNo',
+  eventTime: 'eventTime',
+  eventText: 'eventText',
+  location: 'location',
+  status: 'status',
+  rawData: 'rawData',
+  createdAt: 'createdAt'
+} as const
+
+export type LogisticsEventScalarFieldEnum = (typeof LogisticsEventScalarFieldEnum)[keyof typeof LogisticsEventScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -827,6 +933,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -920,6 +1035,20 @@ export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMo
 
 
 /**
+ * Reference to a field of type 'LogisticsStatus'
+ */
+export type EnumLogisticsStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LogisticsStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'LogisticsStatus[]'
+ */
+export type ListEnumLogisticsStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LogisticsStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -944,6 +1073,20 @@ export type EnumAttachmentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$P
  * Reference to a field of type 'AttachmentType[]'
  */
 export type ListEnumAttachmentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttachmentType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -1074,6 +1217,7 @@ export type GlobalOmitConfig = {
   purchaseOrder?: Prisma.PurchaseOrderOmit
   purchaseOrderItem?: Prisma.PurchaseOrderItemOmit
   attachment?: Prisma.AttachmentOmit
+  logisticsEvent?: Prisma.LogisticsEventOmit
 }
 
 /* Types for Logging */

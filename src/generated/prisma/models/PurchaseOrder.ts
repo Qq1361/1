@@ -51,6 +51,12 @@ export type PurchaseOrderMinAggregateOutputType = {
   trackingNo: string | null
   shippedAt: Date | null
   deliveredAt: Date | null
+  logisticsStatus: $Enums.LogisticsStatus | null
+  logisticsLastCheckedAt: Date | null
+  logisticsLastEventAt: Date | null
+  logisticsLastEventText: string | null
+  logisticsExceptionType: string | null
+  logisticsExceptionMessage: string | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -71,6 +77,12 @@ export type PurchaseOrderMaxAggregateOutputType = {
   trackingNo: string | null
   shippedAt: Date | null
   deliveredAt: Date | null
+  logisticsStatus: $Enums.LogisticsStatus | null
+  logisticsLastCheckedAt: Date | null
+  logisticsLastEventAt: Date | null
+  logisticsLastEventText: string | null
+  logisticsExceptionType: string | null
+  logisticsExceptionMessage: string | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -91,6 +103,12 @@ export type PurchaseOrderCountAggregateOutputType = {
   trackingNo: number
   shippedAt: number
   deliveredAt: number
+  logisticsStatus: number
+  logisticsLastCheckedAt: number
+  logisticsLastEventAt: number
+  logisticsLastEventText: number
+  logisticsExceptionType: number
+  logisticsExceptionMessage: number
   notes: number
   createdAt: number
   updatedAt: number
@@ -123,6 +141,12 @@ export type PurchaseOrderMinAggregateInputType = {
   trackingNo?: true
   shippedAt?: true
   deliveredAt?: true
+  logisticsStatus?: true
+  logisticsLastCheckedAt?: true
+  logisticsLastEventAt?: true
+  logisticsLastEventText?: true
+  logisticsExceptionType?: true
+  logisticsExceptionMessage?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -143,6 +167,12 @@ export type PurchaseOrderMaxAggregateInputType = {
   trackingNo?: true
   shippedAt?: true
   deliveredAt?: true
+  logisticsStatus?: true
+  logisticsLastCheckedAt?: true
+  logisticsLastEventAt?: true
+  logisticsLastEventText?: true
+  logisticsExceptionType?: true
+  logisticsExceptionMessage?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -163,6 +193,12 @@ export type PurchaseOrderCountAggregateInputType = {
   trackingNo?: true
   shippedAt?: true
   deliveredAt?: true
+  logisticsStatus?: true
+  logisticsLastCheckedAt?: true
+  logisticsLastEventAt?: true
+  logisticsLastEventText?: true
+  logisticsExceptionType?: true
+  logisticsExceptionMessage?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -270,6 +306,12 @@ export type PurchaseOrderGroupByOutputType = {
   trackingNo: string | null
   shippedAt: Date | null
   deliveredAt: Date | null
+  logisticsStatus: $Enums.LogisticsStatus
+  logisticsLastCheckedAt: Date | null
+  logisticsLastEventAt: Date | null
+  logisticsLastEventText: string | null
+  logisticsExceptionType: string | null
+  logisticsExceptionMessage: string | null
   notes: string | null
   createdAt: Date
   updatedAt: Date
@@ -313,11 +355,18 @@ export type PurchaseOrderWhereInput = {
   trackingNo?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   shippedAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
   deliveredAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFilter<"PurchaseOrder"> | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventText?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionType?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionMessage?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   items?: Prisma.PurchaseOrderItemListRelationFilter
+  logisticsEvents?: Prisma.LogisticsEventListRelationFilter
 }
 
 export type PurchaseOrderOrderByWithRelationInput = {
@@ -335,11 +384,18 @@ export type PurchaseOrderOrderByWithRelationInput = {
   trackingNo?: Prisma.SortOrderInput | Prisma.SortOrder
   shippedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deliveredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsStatus?: Prisma.SortOrder
+  logisticsLastCheckedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsLastEventAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsLastEventText?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsExceptionType?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsExceptionMessage?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   owner?: Prisma.UserOrderByWithRelationInput
   items?: Prisma.PurchaseOrderItemOrderByRelationAggregateInput
+  logisticsEvents?: Prisma.LogisticsEventOrderByRelationAggregateInput
 }
 
 export type PurchaseOrderWhereUniqueInput = Prisma.AtLeast<{
@@ -361,11 +417,18 @@ export type PurchaseOrderWhereUniqueInput = Prisma.AtLeast<{
   trackingNo?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   shippedAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
   deliveredAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFilter<"PurchaseOrder"> | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventText?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionType?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionMessage?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   items?: Prisma.PurchaseOrderItemListRelationFilter
+  logisticsEvents?: Prisma.LogisticsEventListRelationFilter
 }, "id" | "ownerId_orderNo">
 
 export type PurchaseOrderOrderByWithAggregationInput = {
@@ -383,6 +446,12 @@ export type PurchaseOrderOrderByWithAggregationInput = {
   trackingNo?: Prisma.SortOrderInput | Prisma.SortOrder
   shippedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deliveredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsStatus?: Prisma.SortOrder
+  logisticsLastCheckedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsLastEventAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsLastEventText?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsExceptionType?: Prisma.SortOrderInput | Prisma.SortOrder
+  logisticsExceptionMessage?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -411,6 +480,12 @@ export type PurchaseOrderScalarWhereWithAggregatesInput = {
   trackingNo?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
   shippedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PurchaseOrder"> | Date | string | null
   deliveredAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PurchaseOrder"> | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusWithAggregatesFilter<"PurchaseOrder"> | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventText?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionType?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionMessage?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseOrder"> | Date | string
@@ -430,11 +505,18 @@ export type PurchaseOrderCreateInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutPurchaseOrdersInput
   items?: Prisma.PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutPurchaseOrderInput
 }
 
 export type PurchaseOrderUncheckedCreateInput = {
@@ -452,10 +534,17 @@ export type PurchaseOrderUncheckedCreateInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutPurchaseOrderInput
 }
 
 export type PurchaseOrderUpdateInput = {
@@ -472,11 +561,18 @@ export type PurchaseOrderUpdateInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutPurchaseOrdersNestedInput
   items?: Prisma.PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutPurchaseOrderNestedInput
 }
 
 export type PurchaseOrderUncheckedUpdateInput = {
@@ -494,10 +590,17 @@ export type PurchaseOrderUncheckedUpdateInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutPurchaseOrderNestedInput
 }
 
 export type PurchaseOrderCreateManyInput = {
@@ -515,6 +618,12 @@ export type PurchaseOrderCreateManyInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -534,6 +643,12 @@ export type PurchaseOrderUpdateManyMutationInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -554,6 +669,12 @@ export type PurchaseOrderUncheckedUpdateManyInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -589,6 +710,12 @@ export type PurchaseOrderCountOrderByAggregateInput = {
   trackingNo?: Prisma.SortOrder
   shippedAt?: Prisma.SortOrder
   deliveredAt?: Prisma.SortOrder
+  logisticsStatus?: Prisma.SortOrder
+  logisticsLastCheckedAt?: Prisma.SortOrder
+  logisticsLastEventAt?: Prisma.SortOrder
+  logisticsLastEventText?: Prisma.SortOrder
+  logisticsExceptionType?: Prisma.SortOrder
+  logisticsExceptionMessage?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -614,6 +741,12 @@ export type PurchaseOrderMaxOrderByAggregateInput = {
   trackingNo?: Prisma.SortOrder
   shippedAt?: Prisma.SortOrder
   deliveredAt?: Prisma.SortOrder
+  logisticsStatus?: Prisma.SortOrder
+  logisticsLastCheckedAt?: Prisma.SortOrder
+  logisticsLastEventAt?: Prisma.SortOrder
+  logisticsLastEventText?: Prisma.SortOrder
+  logisticsExceptionType?: Prisma.SortOrder
+  logisticsExceptionMessage?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -634,6 +767,12 @@ export type PurchaseOrderMinOrderByAggregateInput = {
   trackingNo?: Prisma.SortOrder
   shippedAt?: Prisma.SortOrder
   deliveredAt?: Prisma.SortOrder
+  logisticsStatus?: Prisma.SortOrder
+  logisticsLastCheckedAt?: Prisma.SortOrder
+  logisticsLastEventAt?: Prisma.SortOrder
+  logisticsLastEventText?: Prisma.SortOrder
+  logisticsExceptionType?: Prisma.SortOrder
+  logisticsExceptionMessage?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -719,6 +858,10 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type EnumLogisticsStatusFieldUpdateOperationsInput = {
+  set?: $Enums.LogisticsStatus
+}
+
 export type PurchaseOrderCreateNestedOneWithoutItemsInput = {
   create?: Prisma.XOR<Prisma.PurchaseOrderCreateWithoutItemsInput, Prisma.PurchaseOrderUncheckedCreateWithoutItemsInput>
   connectOrCreate?: Prisma.PurchaseOrderCreateOrConnectWithoutItemsInput
@@ -731,6 +874,20 @@ export type PurchaseOrderUpdateOneRequiredWithoutItemsNestedInput = {
   upsert?: Prisma.PurchaseOrderUpsertWithoutItemsInput
   connect?: Prisma.PurchaseOrderWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.PurchaseOrderUpdateToOneWithWhereWithoutItemsInput, Prisma.PurchaseOrderUpdateWithoutItemsInput>, Prisma.PurchaseOrderUncheckedUpdateWithoutItemsInput>
+}
+
+export type PurchaseOrderCreateNestedOneWithoutLogisticsEventsInput = {
+  create?: Prisma.XOR<Prisma.PurchaseOrderCreateWithoutLogisticsEventsInput, Prisma.PurchaseOrderUncheckedCreateWithoutLogisticsEventsInput>
+  connectOrCreate?: Prisma.PurchaseOrderCreateOrConnectWithoutLogisticsEventsInput
+  connect?: Prisma.PurchaseOrderWhereUniqueInput
+}
+
+export type PurchaseOrderUpdateOneRequiredWithoutLogisticsEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.PurchaseOrderCreateWithoutLogisticsEventsInput, Prisma.PurchaseOrderUncheckedCreateWithoutLogisticsEventsInput>
+  connectOrCreate?: Prisma.PurchaseOrderCreateOrConnectWithoutLogisticsEventsInput
+  upsert?: Prisma.PurchaseOrderUpsertWithoutLogisticsEventsInput
+  connect?: Prisma.PurchaseOrderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PurchaseOrderUpdateToOneWithWhereWithoutLogisticsEventsInput, Prisma.PurchaseOrderUpdateWithoutLogisticsEventsInput>, Prisma.PurchaseOrderUncheckedUpdateWithoutLogisticsEventsInput>
 }
 
 export type PurchaseOrderCreateWithoutOwnerInput = {
@@ -747,10 +904,17 @@ export type PurchaseOrderCreateWithoutOwnerInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutPurchaseOrderInput
 }
 
 export type PurchaseOrderUncheckedCreateWithoutOwnerInput = {
@@ -767,10 +931,17 @@ export type PurchaseOrderUncheckedCreateWithoutOwnerInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutPurchaseOrderInput
 }
 
 export type PurchaseOrderCreateOrConnectWithoutOwnerInput = {
@@ -817,6 +988,12 @@ export type PurchaseOrderScalarWhereInput = {
   trackingNo?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   shippedAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
   deliveredAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFilter<"PurchaseOrder"> | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventAt?: Prisma.DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  logisticsLastEventText?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionType?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  logisticsExceptionMessage?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
@@ -836,10 +1013,17 @@ export type PurchaseOrderCreateWithoutItemsInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutPurchaseOrdersInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutPurchaseOrderInput
 }
 
 export type PurchaseOrderUncheckedCreateWithoutItemsInput = {
@@ -857,9 +1041,16 @@ export type PurchaseOrderUncheckedCreateWithoutItemsInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutPurchaseOrderInput
 }
 
 export type PurchaseOrderCreateOrConnectWithoutItemsInput = {
@@ -892,10 +1083,17 @@ export type PurchaseOrderUpdateWithoutItemsInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutPurchaseOrderNestedInput
 }
 
 export type PurchaseOrderUncheckedUpdateWithoutItemsInput = {
@@ -913,9 +1111,140 @@ export type PurchaseOrderUncheckedUpdateWithoutItemsInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutPurchaseOrderNestedInput
+}
+
+export type PurchaseOrderCreateWithoutLogisticsEventsInput = {
+  id?: string
+  orderNo: string
+  platform?: $Enums.PurchasePlatform
+  status?: $Enums.PurchaseOrderStatus
+  allocationStatus?: $Enums.AllocationStatus
+  allocationConfirmedAt?: Date | string | null
+  paidAt: Date | string
+  totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  shippingAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  carrierCode?: string | null
+  trackingNo?: string | null
+  shippedAt?: Date | string | null
+  deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutPurchaseOrdersInput
+  items?: Prisma.PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
+}
+
+export type PurchaseOrderUncheckedCreateWithoutLogisticsEventsInput = {
+  id?: string
+  ownerId: string
+  orderNo: string
+  platform?: $Enums.PurchasePlatform
+  status?: $Enums.PurchaseOrderStatus
+  allocationStatus?: $Enums.AllocationStatus
+  allocationConfirmedAt?: Date | string | null
+  paidAt: Date | string
+  totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  shippingAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  carrierCode?: string | null
+  trackingNo?: string | null
+  shippedAt?: Date | string | null
+  deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  items?: Prisma.PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
+}
+
+export type PurchaseOrderCreateOrConnectWithoutLogisticsEventsInput = {
+  where: Prisma.PurchaseOrderWhereUniqueInput
+  create: Prisma.XOR<Prisma.PurchaseOrderCreateWithoutLogisticsEventsInput, Prisma.PurchaseOrderUncheckedCreateWithoutLogisticsEventsInput>
+}
+
+export type PurchaseOrderUpsertWithoutLogisticsEventsInput = {
+  update: Prisma.XOR<Prisma.PurchaseOrderUpdateWithoutLogisticsEventsInput, Prisma.PurchaseOrderUncheckedUpdateWithoutLogisticsEventsInput>
+  create: Prisma.XOR<Prisma.PurchaseOrderCreateWithoutLogisticsEventsInput, Prisma.PurchaseOrderUncheckedCreateWithoutLogisticsEventsInput>
+  where?: Prisma.PurchaseOrderWhereInput
+}
+
+export type PurchaseOrderUpdateToOneWithWhereWithoutLogisticsEventsInput = {
+  where?: Prisma.PurchaseOrderWhereInput
+  data: Prisma.XOR<Prisma.PurchaseOrderUpdateWithoutLogisticsEventsInput, Prisma.PurchaseOrderUncheckedUpdateWithoutLogisticsEventsInput>
+}
+
+export type PurchaseOrderUpdateWithoutLogisticsEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  orderNo?: Prisma.StringFieldUpdateOperationsInput | string
+  platform?: Prisma.EnumPurchasePlatformFieldUpdateOperationsInput | $Enums.PurchasePlatform
+  status?: Prisma.EnumPurchaseOrderStatusFieldUpdateOperationsInput | $Enums.PurchaseOrderStatus
+  allocationStatus?: Prisma.EnumAllocationStatusFieldUpdateOperationsInput | $Enums.AllocationStatus
+  allocationConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paidAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  shippingAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  carrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+  items?: Prisma.PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
+}
+
+export type PurchaseOrderUncheckedUpdateWithoutLogisticsEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  orderNo?: Prisma.StringFieldUpdateOperationsInput | string
+  platform?: Prisma.EnumPurchasePlatformFieldUpdateOperationsInput | $Enums.PurchasePlatform
+  status?: Prisma.EnumPurchaseOrderStatusFieldUpdateOperationsInput | $Enums.PurchaseOrderStatus
+  allocationStatus?: Prisma.EnumAllocationStatusFieldUpdateOperationsInput | $Enums.AllocationStatus
+  allocationConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paidAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  shippingAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  carrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  items?: Prisma.PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
 }
 
 export type PurchaseOrderCreateManyOwnerInput = {
@@ -932,6 +1261,12 @@ export type PurchaseOrderCreateManyOwnerInput = {
   trackingNo?: string | null
   shippedAt?: Date | string | null
   deliveredAt?: Date | string | null
+  logisticsStatus?: $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Date | string | null
+  logisticsLastEventAt?: Date | string | null
+  logisticsLastEventText?: string | null
+  logisticsExceptionType?: string | null
+  logisticsExceptionMessage?: string | null
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -951,10 +1286,17 @@ export type PurchaseOrderUpdateWithoutOwnerInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutPurchaseOrderNestedInput
 }
 
 export type PurchaseOrderUncheckedUpdateWithoutOwnerInput = {
@@ -971,10 +1313,17 @@ export type PurchaseOrderUncheckedUpdateWithoutOwnerInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutPurchaseOrderNestedInput
 }
 
 export type PurchaseOrderUncheckedUpdateManyWithoutOwnerInput = {
@@ -991,6 +1340,12 @@ export type PurchaseOrderUncheckedUpdateManyWithoutOwnerInput = {
   trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deliveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsStatus?: Prisma.EnumLogisticsStatusFieldUpdateOperationsInput | $Enums.LogisticsStatus
+  logisticsLastCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  logisticsLastEventText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1003,10 +1358,12 @@ export type PurchaseOrderUncheckedUpdateManyWithoutOwnerInput = {
 
 export type PurchaseOrderCountOutputType = {
   items: number
+  logisticsEvents: number
 }
 
 export type PurchaseOrderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   items?: boolean | PurchaseOrderCountOutputTypeCountItemsArgs
+  logisticsEvents?: boolean | PurchaseOrderCountOutputTypeCountLogisticsEventsArgs
 }
 
 /**
@@ -1026,6 +1383,13 @@ export type PurchaseOrderCountOutputTypeCountItemsArgs<ExtArgs extends runtime.T
   where?: Prisma.PurchaseOrderItemWhereInput
 }
 
+/**
+ * PurchaseOrderCountOutputType without action
+ */
+export type PurchaseOrderCountOutputTypeCountLogisticsEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.LogisticsEventWhereInput
+}
+
 
 export type PurchaseOrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1042,11 +1406,18 @@ export type PurchaseOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   trackingNo?: boolean
   shippedAt?: boolean
   deliveredAt?: boolean
+  logisticsStatus?: boolean
+  logisticsLastCheckedAt?: boolean
+  logisticsLastEventAt?: boolean
+  logisticsLastEventText?: boolean
+  logisticsExceptionType?: boolean
+  logisticsExceptionMessage?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   items?: boolean | Prisma.PurchaseOrder$itemsArgs<ExtArgs>
+  logisticsEvents?: boolean | Prisma.PurchaseOrder$logisticsEventsArgs<ExtArgs>
   _count?: boolean | Prisma.PurchaseOrderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["purchaseOrder"]>
 
@@ -1065,6 +1436,12 @@ export type PurchaseOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   trackingNo?: boolean
   shippedAt?: boolean
   deliveredAt?: boolean
+  logisticsStatus?: boolean
+  logisticsLastCheckedAt?: boolean
+  logisticsLastEventAt?: boolean
+  logisticsLastEventText?: boolean
+  logisticsExceptionType?: boolean
+  logisticsExceptionMessage?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1086,6 +1463,12 @@ export type PurchaseOrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   trackingNo?: boolean
   shippedAt?: boolean
   deliveredAt?: boolean
+  logisticsStatus?: boolean
+  logisticsLastCheckedAt?: boolean
+  logisticsLastEventAt?: boolean
+  logisticsLastEventText?: boolean
+  logisticsExceptionType?: boolean
+  logisticsExceptionMessage?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1107,15 +1490,22 @@ export type PurchaseOrderSelectScalar = {
   trackingNo?: boolean
   shippedAt?: boolean
   deliveredAt?: boolean
+  logisticsStatus?: boolean
+  logisticsLastCheckedAt?: boolean
+  logisticsLastEventAt?: boolean
+  logisticsLastEventText?: boolean
+  logisticsExceptionType?: boolean
+  logisticsExceptionMessage?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PurchaseOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "orderNo" | "platform" | "status" | "allocationStatus" | "allocationConfirmedAt" | "paidAt" | "totalAmount" | "shippingAmount" | "carrierCode" | "trackingNo" | "shippedAt" | "deliveredAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseOrder"]>
+export type PurchaseOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "orderNo" | "platform" | "status" | "allocationStatus" | "allocationConfirmedAt" | "paidAt" | "totalAmount" | "shippingAmount" | "carrierCode" | "trackingNo" | "shippedAt" | "deliveredAt" | "logisticsStatus" | "logisticsLastCheckedAt" | "logisticsLastEventAt" | "logisticsLastEventText" | "logisticsExceptionType" | "logisticsExceptionMessage" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseOrder"]>
 export type PurchaseOrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   items?: boolean | Prisma.PurchaseOrder$itemsArgs<ExtArgs>
+  logisticsEvents?: boolean | Prisma.PurchaseOrder$logisticsEventsArgs<ExtArgs>
   _count?: boolean | Prisma.PurchaseOrderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PurchaseOrderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1130,6 +1520,7 @@ export type $PurchaseOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
   objects: {
     owner: Prisma.$UserPayload<ExtArgs>
     items: Prisma.$PurchaseOrderItemPayload<ExtArgs>[]
+    logisticsEvents: Prisma.$LogisticsEventPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1146,6 +1537,12 @@ export type $PurchaseOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
     trackingNo: string | null
     shippedAt: Date | null
     deliveredAt: Date | null
+    logisticsStatus: $Enums.LogisticsStatus
+    logisticsLastCheckedAt: Date | null
+    logisticsLastEventAt: Date | null
+    logisticsLastEventText: string | null
+    logisticsExceptionType: string | null
+    logisticsExceptionMessage: string | null
     notes: string | null
     createdAt: Date
     updatedAt: Date
@@ -1545,6 +1942,7 @@ export interface Prisma__PurchaseOrderClient<T, Null = never, ExtArgs extends ru
   readonly [Symbol.toStringTag]: "PrismaPromise"
   owner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   items<T extends Prisma.PurchaseOrder$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseOrder$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  logisticsEvents<T extends Prisma.PurchaseOrder$logisticsEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PurchaseOrder$logisticsEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LogisticsEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1588,6 +1986,12 @@ export interface PurchaseOrderFieldRefs {
   readonly trackingNo: Prisma.FieldRef<"PurchaseOrder", 'String'>
   readonly shippedAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
   readonly deliveredAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
+  readonly logisticsStatus: Prisma.FieldRef<"PurchaseOrder", 'LogisticsStatus'>
+  readonly logisticsLastCheckedAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
+  readonly logisticsLastEventAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
+  readonly logisticsLastEventText: Prisma.FieldRef<"PurchaseOrder", 'String'>
+  readonly logisticsExceptionType: Prisma.FieldRef<"PurchaseOrder", 'String'>
+  readonly logisticsExceptionMessage: Prisma.FieldRef<"PurchaseOrder", 'String'>
   readonly notes: Prisma.FieldRef<"PurchaseOrder", 'String'>
   readonly createdAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
@@ -2013,6 +2417,30 @@ export type PurchaseOrder$itemsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.PurchaseOrderItemScalarFieldEnum | Prisma.PurchaseOrderItemScalarFieldEnum[]
+}
+
+/**
+ * PurchaseOrder.logisticsEvents
+ */
+export type PurchaseOrder$logisticsEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the LogisticsEvent
+   */
+  select?: Prisma.LogisticsEventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the LogisticsEvent
+   */
+  omit?: Prisma.LogisticsEventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.LogisticsEventInclude<ExtArgs> | null
+  where?: Prisma.LogisticsEventWhereInput
+  orderBy?: Prisma.LogisticsEventOrderByWithRelationInput | Prisma.LogisticsEventOrderByWithRelationInput[]
+  cursor?: Prisma.LogisticsEventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.LogisticsEventScalarFieldEnum | Prisma.LogisticsEventScalarFieldEnum[]
 }
 
 /**

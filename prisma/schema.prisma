@@ -32,6 +32,17 @@ enum AttachmentType {
   PURCHASE_ORDER_ITEM
 }
 
+enum LogisticsStatus {
+  NOT_SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  EXCEPTION
+  STALLED
+  RETURNING
+  UNKNOWN
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -40,6 +51,7 @@ model User {
 
   purchaseOrders PurchaseOrder[]
   attachments    Attachment[]
+  logisticsEvents LogisticsEvent[]
 
   @@map("users")
 }
@@ -59,12 +71,19 @@ model PurchaseOrder {
   trackingNo              String?
   shippedAt               DateTime?
   deliveredAt             DateTime?
+  logisticsStatus           LogisticsStatus @default(NOT_SHIPPED)
+  logisticsLastCheckedAt    DateTime?
+  logisticsLastEventAt      DateTime?
+  logisticsLastEventText    String?
+  logisticsExceptionType    String?
+  logisticsExceptionMessage String?
   notes                   String?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
 
   owner User                @relation(fields: [ownerId], references: [id])
   items PurchaseOrderItem[]
+  logisticsEvents LogisticsEvent[]
 
   @@unique([ownerId, orderNo])
   @@index([ownerId, status])
@@ -104,4 +123,25 @@ model Attachment {
 
   @@index([entityType, entityId])
   @@map("attachments")
+}
+
+model LogisticsEvent {
+  id              String          @id @default(cuid())
+  ownerId         String
+  purchaseOrderId String
+  carrierCode     String
+  trackingNo      String
+  eventTime       DateTime
+  eventText       String
+  location        String?
+  status          LogisticsStatus
+  rawData         Json?
+  createdAt       DateTime        @default(now())
+
+  owner         User          @relation(fields: [ownerId], references: [id])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, status])
+  @@index([purchaseOrderId, eventTime])
+  @@map("logistics_events")
 }

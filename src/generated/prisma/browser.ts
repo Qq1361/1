@@ -37,3 +37,8 @@ export type PurchaseOrderItem = Prisma.PurchaseOrderItemModel
  * 
  */
 export type Attachment = Prisma.AttachmentModel
+/**
+ * Model LogisticsEvent
+ * 
+ */
+export type LogisticsEvent = Prisma.LogisticsEventModel
