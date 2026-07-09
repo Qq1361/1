@@ -40,7 +40,8 @@ export type AllocationStatus = (typeof AllocationStatus)[keyof typeof Allocation
 
 export const AttachmentType = {
   PURCHASE_ORDER: 'PURCHASE_ORDER',
-  PURCHASE_ORDER_ITEM: 'PURCHASE_ORDER_ITEM'
+  PURCHASE_ORDER_ITEM: 'PURCHASE_ORDER_ITEM',
+  INSPECTION: 'INSPECTION'
 } as const
 
 export type AttachmentType = (typeof AttachmentType)[keyof typeof AttachmentType]
@@ -58,3 +59,60 @@ export const LogisticsStatus = {
 } as const
 
 export type LogisticsStatus = (typeof LogisticsStatus)[keyof typeof LogisticsStatus]
+
+
+export const InspectionStatus = {
+  PENDING: 'PENDING',
+  IN_PROGRESS: 'IN_PROGRESS',
+  PASSED: 'PASSED',
+  PROBLEM: 'PROBLEM'
+} as const
+
+export type InspectionStatus = (typeof InspectionStatus)[keyof typeof InspectionStatus]
+
+
+export const InspectionResult = {
+  PASS: 'PASS',
+  PROBLEM: 'PROBLEM'
+} as const
+
+export type InspectionResult = (typeof InspectionResult)[keyof typeof InspectionResult]
+
+
+export const LocationStatus = {
+  LOCAL: 'LOCAL',
+  DEWU_WAREHOUSE: 'DEWU_WAREHOUSE',
+  RETURNING: 'RETURNING',
+  SOLD: 'SOLD'
+} as const
+
+export type LocationStatus = (typeof LocationStatus)[keyof typeof LocationStatus]
+
+
+export const SaleMode = {
+  NONE: 'NONE',
+  DEWU_LIGHTNING: 'DEWU_LIGHTNING',
+  DEWU_STANDARD: 'DEWU_STANDARD',
+  NINETY_FIVE: 'NINETY_FIVE',
+  XIANYU: 'XIANYU',
+  OTHER: 'OTHER'
+} as const
+
+export type SaleMode = (typeof SaleMode)[keyof typeof SaleMode]
+
+
+export const ItemStatus = {
+  PENDING_INSPECTION: 'PENDING_INSPECTION',
+  STOCKED: 'STOCKED',
+  LISTED: 'LISTED',
+  IN_BATCH: 'IN_BATCH',
+  SHIPPED_TO_WAREHOUSE: 'SHIPPED_TO_WAREHOUSE',
+  WAREHOUSE_RECEIVED: 'WAREHOUSE_RECEIVED',
+  INBOUND_SUCCESS: 'INBOUND_SUCCESS',
+  INBOUND_FAILED: 'INBOUND_FAILED',
+  PENDING_SETTLEMENT: 'PENDING_SETTLEMENT',
+  SETTLED: 'SETTLED',
+  PROBLEM: 'PROBLEM'
+} as const
+
+export type ItemStatus = (typeof ItemStatus)[keyof typeof ItemStatus]

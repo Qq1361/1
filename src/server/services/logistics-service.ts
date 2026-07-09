@@ -1,6 +1,7 @@
 import { db } from "@/server/db";
 import { ServiceError } from "@/server/errors";
 import { MockLogisticsAdapter } from "@/server/adapters/logistics/mock-logistics-adapter";
+import { ensurePendingInspectionsTx } from "@/server/services/inspection-service";
 
 const adapter = new MockLogisticsAdapter();
 
@@ -130,6 +131,9 @@ export class LogisticsService {
               : order.deliveredAt,
         },
       });
+      if (nextOrderStatus === "PENDING_INSPECTION") {
+        await ensurePendingInspectionsTx(tx, ownerId, orderId);
+      }
     });
     return this.getSummary(ownerId, orderId);
   }

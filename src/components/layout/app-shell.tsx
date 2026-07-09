@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Menu, ReceiptText } from "lucide-react";
+import { Boxes, ClipboardCheck, LayoutDashboard, Menu, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -15,6 +15,8 @@ import {
 const navItems = [
   { label: "工作台", href: "/", icon: LayoutDashboard },
   { label: "采购订单", href: "/purchases", icon: ReceiptText },
+  { label: "待验货", href: "/inspections", icon: ClipboardCheck },
+  { label: "库存", href: "/inventory", icon: Boxes },
 ];
 
 function Brand() {

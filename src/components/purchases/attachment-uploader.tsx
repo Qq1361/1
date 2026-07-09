@@ -13,7 +13,7 @@ export function AttachmentUploader({
   initialAttachments,
   compact = false,
 }: {
-  entityType: "PURCHASE_ORDER" | "PURCHASE_ORDER_ITEM";
+  entityType: "PURCHASE_ORDER" | "PURCHASE_ORDER_ITEM" | "INSPECTION";
   entityId: string;
   initialAttachments: AttachmentDto[];
   compact?: boolean;

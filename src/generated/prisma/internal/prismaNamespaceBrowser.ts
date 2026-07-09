@@ -55,7 +55,9 @@ export const ModelName = {
   PurchaseOrder: 'PurchaseOrder',
   PurchaseOrderItem: 'PurchaseOrderItem',
   Attachment: 'Attachment',
-  LogisticsEvent: 'LogisticsEvent'
+  LogisticsEvent: 'LogisticsEvent',
+  Inspection: 'Inspection',
+  InventoryItem: 'InventoryItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -158,6 +160,56 @@ export const LogisticsEventScalarFieldEnum = {
 } as const
 
 export type LogisticsEventScalarFieldEnum = (typeof LogisticsEventScalarFieldEnum)[keyof typeof LogisticsEventScalarFieldEnum]
+
+
+export const InspectionScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  purchaseOrderItemId: 'purchaseOrderItemId',
+  sequence: 'sequence',
+  status: 'status',
+  currentStep: 'currentStep',
+  hasBox: 'hasBox',
+  capCondition: 'capCondition',
+  paintCondition: 'paintCondition',
+  leakageCondition: 'leakageCondition',
+  isNew: 'isNew',
+  hasUsageTrace: 'hasUsageTrace',
+  batchCode: 'batchCode',
+  expiryDate: 'expiryDate',
+  appearanceNotes: 'appearanceNotes',
+  result: 'result',
+  notes: 'notes',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type InspectionScalarFieldEnum = (typeof InspectionScalarFieldEnum)[keyof typeof InspectionScalarFieldEnum]
+
+
+export const InventoryItemScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  purchaseOrderItemId: 'purchaseOrderItemId',
+  inspectionId: 'inspectionId',
+  inventoryCode: 'inventoryCode',
+  name: 'name',
+  skuText: 'skuText',
+  unitCost: 'unitCost',
+  expiryDate: 'expiryDate',
+  locationStatus: 'locationStatus',
+  saleMode: 'saleMode',
+  itemStatus: 'itemStatus',
+  stockedAt: 'stockedAt',
+  outboundAt: 'outboundAt',
+  problemReason: 'problemReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type InventoryItemScalarFieldEnum = (typeof InventoryItemScalarFieldEnum)[keyof typeof InventoryItemScalarFieldEnum]
 
 
 export const SortOrder = {

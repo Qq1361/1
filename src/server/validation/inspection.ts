@@ -1,0 +1,57 @@
+import { z } from "zod";
+
+export const inspectionPatchSchema = z.object({
+  currentStep: z.number().int().min(1).max(6).optional(),
+  hasBox: z.boolean().nullable().optional(),
+  capCondition: z.string().trim().max(200).nullable().optional(),
+  paintCondition: z.string().trim().max(200).nullable().optional(),
+  leakageCondition: z.string().trim().max(200).nullable().optional(),
+  isNew: z.boolean().nullable().optional(),
+  hasUsageTrace: z.boolean().nullable().optional(),
+  batchCode: z.string().trim().max(100).nullable().optional(),
+  expiryDate: z.coerce.date().nullable().optional(),
+  appearanceNotes: z.string().trim().max(2000).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+});
+
+export const inspectionCompleteSchema = inspectionPatchSchema.extend({
+  result: z.enum(["PASS", "PROBLEM"]),
+});
+
+export const inspectionListSchema = z.object({
+  query: z.string().trim().max(100).optional(),
+});
+
+export const inventoryListSchema = z.object({
+  query: z.string().trim().max(100).optional(),
+  itemStatus: z
+    .enum([
+      "PENDING_INSPECTION",
+      "STOCKED",
+      "LISTED",
+      "IN_BATCH",
+      "SHIPPED_TO_WAREHOUSE",
+      "WAREHOUSE_RECEIVED",
+      "INBOUND_SUCCESS",
+      "INBOUND_FAILED",
+      "PENDING_SETTLEMENT",
+      "SETTLED",
+      "PROBLEM",
+    ])
+    .optional(),
+  saleMode: z
+    .enum([
+      "NONE",
+      "DEWU_LIGHTNING",
+      "DEWU_STANDARD",
+      "NINETY_FIVE",
+      "XIANYU",
+      "OTHER",
+    ])
+    .optional(),
+  locationStatus: z
+    .enum(["LOCAL", "DEWU_WAREHOUSE", "RETURNING", "SOLD"])
+    .optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});

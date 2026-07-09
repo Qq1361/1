@@ -17,6 +17,13 @@ export async function GET() {
         pendingInspection: data.filter(
           (item) => item.type === "PENDING_INSPECTION",
         ).length,
+        expiryBelow395: data.filter(
+          (item) => item.type === "EXPIRY_BELOW_395",
+        ).length,
+        expiryBelow365: data.filter(
+          (item) => item.type === "EXPIRY_BELOW_365",
+        ).length,
+        overstocked: data.filter((item) => item.type === "OVERSTOCKED").length,
       },
     });
   } catch (error) {

@@ -42,3 +42,13 @@ export type Attachment = Prisma.AttachmentModel
  * 
  */
 export type LogisticsEvent = Prisma.LogisticsEventModel
+/**
+ * Model Inspection
+ * 
+ */
+export type Inspection = Prisma.InspectionModel
+/**
+ * Model InventoryItem
+ * 
+ */
+export type InventoryItem = Prisma.InventoryItemModel

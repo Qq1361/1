@@ -5,7 +5,7 @@ import { LocalStorageAdapter } from "@/server/adapters/storage/local-storage-ada
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const storage = new LocalStorageAdapter();
 
-type EntityType = "PURCHASE_ORDER" | "PURCHASE_ORDER_ITEM";
+type EntityType = "PURCHASE_ORDER" | "PURCHASE_ORDER_ITEM" | "INSPECTION";
 
 function detectImageMime(data: Uint8Array): string | null {
   if (
@@ -70,6 +70,16 @@ export class AttachmentService {
       });
       if (!order) {
         throw new ServiceError("ENTITY_NOT_FOUND", "采购订单不存在。", 404);
+      }
+      return;
+    }
+    if (entityType === "INSPECTION") {
+      const inspection = await db.inspection.findFirst({
+        where: { id: entityId, ownerId },
+        select: { id: true },
+      });
+      if (!inspection) {
+        throw new ServiceError("ENTITY_NOT_FOUND", "验货记录不存在。", 404);
       }
       return;
     }

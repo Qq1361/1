@@ -54,7 +54,7 @@ export type LogisticsEventDto = {
 
 export type AttachmentDto = {
   id: string;
-  entityType: "PURCHASE_ORDER" | "PURCHASE_ORDER_ITEM";
+  entityType: "PURCHASE_ORDER" | "PURCHASE_ORDER_ITEM" | "INSPECTION";
   entityId: string;
   fileName: string;
   mimeType: string;

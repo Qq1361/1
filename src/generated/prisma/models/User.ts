@@ -177,6 +177,8 @@ export type UserWhereInput = {
   purchaseOrders?: Prisma.PurchaseOrderListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   logisticsEvents?: Prisma.LogisticsEventListRelationFilter
+  inspections?: Prisma.InspectionListRelationFilter
+  inventoryItems?: Prisma.InventoryItemListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -187,6 +189,8 @@ export type UserOrderByWithRelationInput = {
   purchaseOrders?: Prisma.PurchaseOrderOrderByRelationAggregateInput
   attachments?: Prisma.AttachmentOrderByRelationAggregateInput
   logisticsEvents?: Prisma.LogisticsEventOrderByRelationAggregateInput
+  inspections?: Prisma.InspectionOrderByRelationAggregateInput
+  inventoryItems?: Prisma.InventoryItemOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -200,6 +204,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   purchaseOrders?: Prisma.PurchaseOrderListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   logisticsEvents?: Prisma.LogisticsEventListRelationFilter
+  inspections?: Prisma.InspectionListRelationFilter
+  inventoryItems?: Prisma.InventoryItemListRelationFilter
 }, "id">
 
 export type UserOrderByWithAggregationInput = {
@@ -230,6 +236,8 @@ export type UserCreateInput = {
   purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
   logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -240,6 +248,8 @@ export type UserUncheckedCreateInput = {
   purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
   logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUpdateInput = {
@@ -250,6 +260,8 @@ export type UserUpdateInput = {
   purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
   logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -260,6 +272,8 @@ export type UserUncheckedUpdateInput = {
   purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -359,6 +373,34 @@ export type UserUpdateOneRequiredWithoutLogisticsEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLogisticsEventsInput, Prisma.UserUpdateWithoutLogisticsEventsInput>, Prisma.UserUncheckedUpdateWithoutLogisticsEventsInput>
 }
 
+export type UserCreateNestedOneWithoutInspectionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInspectionsInput, Prisma.UserUncheckedCreateWithoutInspectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInspectionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutInspectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInspectionsInput, Prisma.UserUncheckedCreateWithoutInspectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInspectionsInput
+  upsert?: Prisma.UserUpsertWithoutInspectionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutInspectionsInput, Prisma.UserUpdateWithoutInspectionsInput>, Prisma.UserUncheckedUpdateWithoutInspectionsInput>
+}
+
+export type UserCreateNestedOneWithoutInventoryItemsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInventoryItemsInput, Prisma.UserUncheckedCreateWithoutInventoryItemsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInventoryItemsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutInventoryItemsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutInventoryItemsInput, Prisma.UserUncheckedCreateWithoutInventoryItemsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInventoryItemsInput
+  upsert?: Prisma.UserUpsertWithoutInventoryItemsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutInventoryItemsInput, Prisma.UserUpdateWithoutInventoryItemsInput>, Prisma.UserUncheckedUpdateWithoutInventoryItemsInput>
+}
+
 export type UserCreateWithoutPurchaseOrdersInput = {
   id?: string
   name: string
@@ -366,6 +408,8 @@ export type UserCreateWithoutPurchaseOrdersInput = {
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
   logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutPurchaseOrdersInput = {
@@ -375,6 +419,8 @@ export type UserUncheckedCreateWithoutPurchaseOrdersInput = {
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
   logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutPurchaseOrdersInput = {
@@ -400,6 +446,8 @@ export type UserUpdateWithoutPurchaseOrdersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
   logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPurchaseOrdersInput = {
@@ -409,6 +457,8 @@ export type UserUncheckedUpdateWithoutPurchaseOrdersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutAttachmentsInput = {
@@ -418,6 +468,8 @@ export type UserCreateWithoutAttachmentsInput = {
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
   logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutAttachmentsInput = {
@@ -427,6 +479,8 @@ export type UserUncheckedCreateWithoutAttachmentsInput = {
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
   logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutAttachmentsInput = {
@@ -452,6 +506,8 @@ export type UserUpdateWithoutAttachmentsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
   logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAttachmentsInput = {
@@ -461,6 +517,8 @@ export type UserUncheckedUpdateWithoutAttachmentsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
   logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutLogisticsEventsInput = {
@@ -470,6 +528,8 @@ export type UserCreateWithoutLogisticsEventsInput = {
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutLogisticsEventsInput = {
@@ -479,6 +539,8 @@ export type UserUncheckedCreateWithoutLogisticsEventsInput = {
   updatedAt?: Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutLogisticsEventsInput = {
@@ -504,6 +566,8 @@ export type UserUpdateWithoutLogisticsEventsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLogisticsEventsInput = {
@@ -513,6 +577,128 @@ export type UserUncheckedUpdateWithoutLogisticsEventsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutInspectionsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutInspectionsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutInspectionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutInspectionsInput, Prisma.UserUncheckedCreateWithoutInspectionsInput>
+}
+
+export type UserUpsertWithoutInspectionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutInspectionsInput, Prisma.UserUncheckedUpdateWithoutInspectionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutInspectionsInput, Prisma.UserUncheckedCreateWithoutInspectionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutInspectionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutInspectionsInput, Prisma.UserUncheckedUpdateWithoutInspectionsInput>
+}
+
+export type UserUpdateWithoutInspectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutInspectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutInventoryItemsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutInventoryItemsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutInventoryItemsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutInventoryItemsInput, Prisma.UserUncheckedCreateWithoutInventoryItemsInput>
+}
+
+export type UserUpsertWithoutInventoryItemsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutInventoryItemsInput, Prisma.UserUncheckedUpdateWithoutInventoryItemsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutInventoryItemsInput, Prisma.UserUncheckedCreateWithoutInventoryItemsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutInventoryItemsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutInventoryItemsInput, Prisma.UserUncheckedUpdateWithoutInventoryItemsInput>
+}
+
+export type UserUpdateWithoutInventoryItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutInventoryItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 
@@ -524,12 +710,16 @@ export type UserCountOutputType = {
   purchaseOrders: number
   attachments: number
   logisticsEvents: number
+  inspections: number
+  inventoryItems: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   purchaseOrders?: boolean | UserCountOutputTypeCountPurchaseOrdersArgs
   attachments?: boolean | UserCountOutputTypeCountAttachmentsArgs
   logisticsEvents?: boolean | UserCountOutputTypeCountLogisticsEventsArgs
+  inspections?: boolean | UserCountOutputTypeCountInspectionsArgs
+  inventoryItems?: boolean | UserCountOutputTypeCountInventoryItemsArgs
 }
 
 /**
@@ -563,6 +753,20 @@ export type UserCountOutputTypeCountLogisticsEventsArgs<ExtArgs extends runtime.
   where?: Prisma.LogisticsEventWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountInspectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InspectionWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountInventoryItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InventoryItemWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -572,6 +776,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   purchaseOrders?: boolean | Prisma.User$purchaseOrdersArgs<ExtArgs>
   attachments?: boolean | Prisma.User$attachmentsArgs<ExtArgs>
   logisticsEvents?: boolean | Prisma.User$logisticsEventsArgs<ExtArgs>
+  inspections?: boolean | Prisma.User$inspectionsArgs<ExtArgs>
+  inventoryItems?: boolean | Prisma.User$inventoryItemsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -601,6 +807,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   purchaseOrders?: boolean | Prisma.User$purchaseOrdersArgs<ExtArgs>
   attachments?: boolean | Prisma.User$attachmentsArgs<ExtArgs>
   logisticsEvents?: boolean | Prisma.User$logisticsEventsArgs<ExtArgs>
+  inspections?: boolean | Prisma.User$inspectionsArgs<ExtArgs>
+  inventoryItems?: boolean | Prisma.User$inventoryItemsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -612,6 +820,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     purchaseOrders: Prisma.$PurchaseOrderPayload<ExtArgs>[]
     attachments: Prisma.$AttachmentPayload<ExtArgs>[]
     logisticsEvents: Prisma.$LogisticsEventPayload<ExtArgs>[]
+    inspections: Prisma.$InspectionPayload<ExtArgs>[]
+    inventoryItems: Prisma.$InventoryItemPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1015,6 +1225,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   purchaseOrders<T extends Prisma.User$purchaseOrdersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$purchaseOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.User$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   logisticsEvents<T extends Prisma.User$logisticsEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$logisticsEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LogisticsEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inspections<T extends Prisma.User$inspectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$inspectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InspectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inventoryItems<T extends Prisma.User$inventoryItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$inventoryItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InventoryItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1510,6 +1722,54 @@ export type User$logisticsEventsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.LogisticsEventScalarFieldEnum | Prisma.LogisticsEventScalarFieldEnum[]
+}
+
+/**
+ * User.inspections
+ */
+export type User$inspectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Inspection
+   */
+  select?: Prisma.InspectionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Inspection
+   */
+  omit?: Prisma.InspectionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InspectionInclude<ExtArgs> | null
+  where?: Prisma.InspectionWhereInput
+  orderBy?: Prisma.InspectionOrderByWithRelationInput | Prisma.InspectionOrderByWithRelationInput[]
+  cursor?: Prisma.InspectionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InspectionScalarFieldEnum | Prisma.InspectionScalarFieldEnum[]
+}
+
+/**
+ * User.inventoryItems
+ */
+export type User$inventoryItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the InventoryItem
+   */
+  select?: Prisma.InventoryItemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the InventoryItem
+   */
+  omit?: Prisma.InventoryItemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InventoryItemInclude<ExtArgs> | null
+  where?: Prisma.InventoryItemWhereInput
+  orderBy?: Prisma.InventoryItemOrderByWithRelationInput | Prisma.InventoryItemOrderByWithRelationInput[]
+  cursor?: Prisma.InventoryItemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InventoryItemScalarFieldEnum | Prisma.InventoryItemScalarFieldEnum[]
 }
 
 /**

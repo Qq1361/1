@@ -4,7 +4,7 @@ import { toErrorResponse } from "@/server/errors";
 import { attachmentService } from "@/server/services/attachment-service";
 
 const entitySchema = z.object({
-  entityType: z.enum(["PURCHASE_ORDER", "PURCHASE_ORDER_ITEM"]),
+  entityType: z.enum(["PURCHASE_ORDER", "PURCHASE_ORDER_ITEM", "INSPECTION"]),
   entityId: z.string().cuid(),
 });
 

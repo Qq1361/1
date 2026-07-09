@@ -30,6 +30,7 @@ enum AllocationStatus {
 enum AttachmentType {
   PURCHASE_ORDER
   PURCHASE_ORDER_ITEM
+  INSPECTION
 }
 
 enum LogisticsStatus {
@@ -43,6 +44,48 @@ enum LogisticsStatus {
   UNKNOWN
 }
 
+enum InspectionStatus {
+  PENDING
+  IN_PROGRESS
+  PASSED
+  PROBLEM
+}
+
+enum InspectionResult {
+  PASS
+  PROBLEM
+}
+
+enum LocationStatus {
+  LOCAL
+  DEWU_WAREHOUSE
+  RETURNING
+  SOLD
+}
+
+enum SaleMode {
+  NONE
+  DEWU_LIGHTNING
+  DEWU_STANDARD
+  NINETY_FIVE
+  XIANYU
+  OTHER
+}
+
+enum ItemStatus {
+  PENDING_INSPECTION
+  STOCKED
+  LISTED
+  IN_BATCH
+  SHIPPED_TO_WAREHOUSE
+  WAREHOUSE_RECEIVED
+  INBOUND_SUCCESS
+  INBOUND_FAILED
+  PENDING_SETTLEMENT
+  SETTLED
+  PROBLEM
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -52,6 +95,8 @@ model User {
   purchaseOrders PurchaseOrder[]
   attachments    Attachment[]
   logisticsEvents LogisticsEvent[]
+  inspections      Inspection[]
+  inventoryItems   InventoryItem[]
 
   @@map("users")
 }
@@ -103,6 +148,8 @@ model PurchaseOrderItem {
   updatedAt          DateTime @updatedAt
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inspections   Inspection[]
+  inventoryItems InventoryItem[]
 
   @@index([purchaseOrderId])
   @@map("purchase_order_items")
@@ -144,4 +191,65 @@ model LogisticsEvent {
   @@index([ownerId, status])
   @@index([purchaseOrderId, eventTime])
   @@map("logistics_events")
+}
+
+model Inspection {
+  id                  String           @id @default(cuid())
+  ownerId             String
+  purchaseOrderItemId String
+  sequence            Int
+  status              InspectionStatus @default(PENDING)
+  currentStep         Int              @default(1)
+  hasBox              Boolean?
+  capCondition        String?
+  paintCondition      String?
+  leakageCondition    String?
+  isNew               Boolean?
+  hasUsageTrace       Boolean?
+  batchCode           String?
+  expiryDate          DateTime?
+  appearanceNotes     String?
+  result              InspectionResult?
+  notes               String?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  owner             User              @relation(fields: [ownerId], references: [id])
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  inventoryItem     InventoryItem?
+
+  @@unique([purchaseOrderItemId, sequence])
+  @@index([ownerId, status])
+  @@map("inspections")
+}
+
+model InventoryItem {
+  id                  String         @id @default(cuid())
+  ownerId             String
+  purchaseOrderItemId String
+  inspectionId        String         @unique
+  inventoryCode       String
+  name                String
+  skuText             String?
+  unitCost            Decimal        @db.Decimal(12, 2)
+  expiryDate          DateTime?
+  locationStatus      LocationStatus @default(LOCAL)
+  saleMode            SaleMode       @default(NONE)
+  itemStatus          ItemStatus
+  stockedAt           DateTime
+  outboundAt          DateTime?
+  problemReason       String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  owner             User              @relation(fields: [ownerId], references: [id])
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  inspection       Inspection        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, inventoryCode])
+  @@index([ownerId, itemStatus])
+  @@index([ownerId, locationStatus, saleMode])
+  @@map("inventory_items")
 }
