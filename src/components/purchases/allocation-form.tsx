@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Check, Loader2, PencilLine, Save } from "lucide-react";
 import { toast } from "sonner";
 import { AllocationBadge } from "./status-badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,10 +126,10 @@ export function AllocationForm({ orderId }: { orderId: string }) {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <Button variant="ghost" size="sm" render={<Link href={`/purchases/${orderId}`} />}>
+          <Link href={`/purchases/${orderId}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
             <ArrowLeft />
             返回订单
-          </Button>
+          </Link>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold">成本分摊</h1>
             <AllocationBadge status={summary.allocationStatus} />

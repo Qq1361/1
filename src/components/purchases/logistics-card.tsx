@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, PackageCheck, RefreshCw, Truck } from "lucide-react";
+import { AlertTriangle, CheckCheck, Info, Loader2, PackageCheck, RefreshCw, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { LogisticsStatusBadge } from "./status-badge";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,9 @@ export function LogisticsCard({
   const [carrierCode, setCarrierCode] = useState(order.carrierCode ?? "");
   const [trackingNo, setTrackingNo] = useState(order.trackingNo ?? "");
   const [shippedAt, setShippedAt] = useState(toLocalDateTime(order.shippedAt));
-  const [pending, setPending] = useState<"save" | "refresh" | null>(null);
+  const [pending, setPending] = useState<"save" | "refresh" | "manual" | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ carrierCode?: string; trackingNo?: string }>({});
+  const [showManualConfirm, setShowManualConfirm] = useState(false);
 
   async function handleResponse(response: Response) {
     const data = (await response.json()) as LogisticsResponse | ApiError;
@@ -50,6 +52,13 @@ export function LogisticsCard({
   }
 
   async function saveTracking() {
+    setFieldErrors({});
+    if (!carrierCode.trim() || !trackingNo.trim()) {
+      if (!carrierCode.trim()) setFieldErrors((prev) => ({ ...prev, carrierCode: "请填写快递公司代码" }));
+      if (!trackingNo.trim()) setFieldErrors((prev) => ({ ...prev, trackingNo: "请填写快递单号" }));
+      toast.error("请填写快递公司代码和快递单号。");
+      return;
+    }
     setPending("save");
     const response = await fetch(`/api/purchase-orders/${order.id}/tracking`, {
       method: "PATCH",
@@ -67,6 +76,10 @@ export function LogisticsCard({
   }
 
   async function refresh() {
+    if (!order.carrierCode || !order.trackingNo) {
+      toast.error("请先保存物流信息。");
+      return;
+    }
     setPending("refresh");
     const response = await fetch(
       `/api/purchase-orders/${order.id}/refresh-logistics`,
@@ -78,6 +91,25 @@ export function LogisticsCard({
     setPending(null);
   }
 
+  async function manualDeliver() {
+    if (!order.carrierCode || !order.trackingNo) {
+      toast.error("请先保存物流信息。");
+      return;
+    }
+    setShowManualConfirm(false);
+    setPending("manual");
+    const response = await fetch(
+      `/api/purchase-orders/${order.id}/manual-delivery`,
+      { method: "POST" },
+    );
+    if (await handleResponse(response)) {
+      toast.success("已手动标记为已签收，待验货记录已生成。");
+    }
+    setPending(null);
+  }
+
+  const hasSavedTracking = !!(order.carrierCode && order.trackingNo);
+
   return (
     <Card className="rounded-lg shadow-none">
       <CardHeader className="flex-row items-center justify-between">
@@ -88,24 +120,57 @@ export function LogisticsCard({
         <LogisticsStatusBadge status={order.logisticsStatus} />
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Mock notification banner */}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+          <div className="mb-2 flex items-center gap-2 font-medium text-amber-800">
+            <Info className="size-4" />
+            当前为 Mock 物流测试，不会查询真实快递接口。
+          </div>
+          <div className="space-y-1 text-amber-700">
+            <p className="text-xs font-medium">测试规则：</p>
+            <ul className="list-inside list-disc space-y-0.5 text-xs">
+              <li>单号以 <code className="rounded bg-amber-100 px-1 text-xs">1</code> 结尾或包含 <code className="rounded bg-amber-100 px-1 text-xs">DELIVERED</code> = 已签收</li>
+              <li>单号以 <code className="rounded bg-amber-100 px-1 text-xs">2</code> 结尾或包含 <code className="rounded bg-amber-100 px-1 text-xs">EXCEPTION</code> = 物流异常</li>
+              <li>单号以 <code className="rounded bg-amber-100 px-1 text-xs">3</code> 结尾或包含 <code className="rounded bg-amber-100 px-1 text-xs">STALLED</code> = 物流停滞</li>
+              <li>其他单号 = 运输中</li>
+            </ul>
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="carrierCode">快递公司代码</Label>
+            <Label htmlFor="carrierCode">
+              快递公司代码 <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="carrierCode"
               value={carrierCode}
-              onChange={(event) => setCarrierCode(event.target.value)}
+              onChange={(event) => {
+                setCarrierCode(event.target.value);
+                if (fieldErrors.carrierCode) setFieldErrors((prev) => ({ ...prev, carrierCode: undefined }));
+              }}
               placeholder="例如 SF、YTO"
             />
+            {fieldErrors.carrierCode ? (
+              <p className="text-xs text-destructive">{fieldErrors.carrierCode}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="trackingNo">快递单号</Label>
+            <Label htmlFor="trackingNo">
+              快递单号 <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="trackingNo"
               value={trackingNo}
-              onChange={(event) => setTrackingNo(event.target.value)}
-              placeholder="Mock：末尾 1 签收"
+              onChange={(event) => {
+                setTrackingNo(event.target.value);
+                if (fieldErrors.trackingNo) setFieldErrors((prev) => ({ ...prev, trackingNo: undefined }));
+              }}
+              placeholder="Mock 测试：DELIVERED1"
             />
+            {fieldErrors.trackingNo ? (
+              <p className="text-xs text-destructive">{fieldErrors.trackingNo}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="shippedAt">发货时间</Label>
@@ -121,7 +186,7 @@ export function LogisticsCard({
           <Button
             variant="outline"
             onClick={saveTracking}
-            disabled={pending !== null || !carrierCode || !trackingNo}
+            disabled={pending !== null}
           >
             {pending === "save" ? (
               <Loader2 className="animate-spin" />
@@ -132,7 +197,8 @@ export function LogisticsCard({
           </Button>
           <Button
             onClick={refresh}
-            disabled={pending !== null || !order.trackingNo}
+            disabled={pending !== null || !hasSavedTracking}
+            title={!hasSavedTracking ? "请先保存物流信息" : undefined}
           >
             {pending === "refresh" ? (
               <Loader2 className="animate-spin" />
@@ -142,6 +208,52 @@ export function LogisticsCard({
             刷新物流
           </Button>
         </div>
+
+        {hasSavedTracking && order.logisticsStatus !== "DELIVERED" ? (
+          <div className="border-t pt-4">
+            {showManualConfirm ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="mb-3 text-sm font-medium text-amber-800">
+                  确认手动标记已签收？
+                </p>
+                <p className="mb-3 text-xs text-amber-700">
+                  此操作将把当前订单标记为已签收并生成待验货记录，仅用于 Mock 测试或物流接口延迟时的兜底处理。
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pending !== null}
+                    onClick={() => setShowManualConfirm(false)}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={pending !== null}
+                    onClick={manualDeliver}
+                  >
+                    {pending === "manual" ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <CheckCheck />
+                    )}
+                    确认标记已签收
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowManualConfirm(true)}
+                disabled={pending !== null}
+              >
+                <CheckCheck />
+                手动标记已签收
+              </Button>
+            )}
+          </div>
+        ) : null}
 
         {order.trackingNo ? (
           <>
@@ -165,7 +277,8 @@ export function LogisticsCard({
               </div>
             </div>
             {order.logisticsExceptionMessage ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                 {order.logisticsExceptionMessage}
               </div>
             ) : null}

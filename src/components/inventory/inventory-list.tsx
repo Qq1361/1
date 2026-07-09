@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,11 +35,22 @@ type InventoryRow = {
   stockedAt: string;
   itemStatus: string;
   locationStatus: string;
+  storageLocation: string | null;
+  saleMode: string;
 };
 
 const statusLabels: Record<string, string> = {
   STOCKED: "已入库",
   PROBLEM: "问题件",
+};
+
+const saleModeLabels: Record<string, string> = {
+  NONE: "未选择",
+  DEWU_LIGHTNING: "得物闪电",
+  DEWU_STANDARD: "得物普通",
+  NINETY_FIVE: "95分",
+  XIANYU: "闲鱼",
+  OTHER: "其他",
 };
 
 function daysUntil(date: string | null) {
@@ -50,7 +62,16 @@ function daysInStock(date: string) {
   return `${Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000))} 天`;
 }
 
+const reminderLabels: Record<string, string> = {
+  EXPIRY_UNDER_395: "效期低于 395 天",
+  EXPIRY_UNDER_365: "效期低于 365 天",
+  STOCKED_OVER_3_DAYS: "入库满 3 天",
+};
+
 export function InventoryList() {
+  const searchParams = useSearchParams();
+  const reminderParam = searchParams.get("reminder") ?? "";
+
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const [result, setResult] = useState<{ data: InventoryRow[]; total: number } | null>(
@@ -61,27 +82,39 @@ export function InventoryList() {
     const params = new URLSearchParams();
     if (query) params.set("query", query);
     if (status !== "ALL") params.set("itemStatus", status);
+    if (reminderParam) params.set("reminder", reminderParam);
     const response = await fetch(`/api/inventory?${params}`);
     setResult(await response.json());
-  }, [query, status]);
+  }, [query, status, reminderParam]);
 
   useEffect(() => {
     const timer = setTimeout(load, 200);
     return () => clearTimeout(timer);
   }, [load]);
 
+  const title = reminderLabels[reminderParam] ? `库存 · ${reminderLabels[reminderParam]}` : "库存";
+
   return (
     <div className="space-y-5">
       <div>
         <p className="text-sm text-muted-foreground">单件库存</p>
-        <h1 className="text-2xl font-semibold">库存</h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
+        {reminderParam ? (
+          <Link
+            href="/inventory"
+            className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3" />
+            清除筛选
+          </Link>
+        ) : null}
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="搜索库存编号、商品名或 SKU"
+            placeholder="搜索库存编号、商品名、SKU 或库位"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -115,12 +148,12 @@ export function InventoryList() {
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <span>成本 ¥{item.unitCost}</span>
-                    <span>效期 {daysUntil(item.expiryDate)}</span>
-                    <span>入库 {daysInStock(item.stockedAt)}</span>
+                    <span>库位 {item.storageLocation || "未填写"}</span>
+                    <span>{saleModeLabels[item.saleMode] ?? item.saleMode}</span>
                   </div>
-                  <Button className="w-full" variant="outline" render={<Link href={`/inventory/${item.id}`} />}>
+                  <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "outline", className: "w-full" })}>
                     查看详情
-                  </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}
@@ -131,6 +164,8 @@ export function InventoryList() {
                 <TableRow>
                   <TableHead>库存编号</TableHead>
                   <TableHead>商品</TableHead>
+                  <TableHead>库位</TableHead>
+                  <TableHead>出售方式</TableHead>
                   <TableHead>成本</TableHead>
                   <TableHead>剩余效期</TableHead>
                   <TableHead>入库天数</TableHead>
@@ -146,6 +181,8 @@ export function InventoryList() {
                       <p>{item.name}</p>
                       <p className="text-xs text-muted-foreground">{item.skuText || "无 SKU"}</p>
                     </TableCell>
+                    <TableCell className="text-xs">{item.storageLocation || "未填写"}</TableCell>
+                    <TableCell className="text-xs">{saleModeLabels[item.saleMode] ?? item.saleMode}</TableCell>
                     <TableCell>¥{item.unitCost}</TableCell>
                     <TableCell>{daysUntil(item.expiryDate)}</TableCell>
                     <TableCell>{daysInStock(item.stockedAt)}</TableCell>
@@ -155,7 +192,7 @@ export function InventoryList() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" render={<Link href={`/inventory/${item.id}`} />}>查看</Button>
+                      <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>查看</Link>
                     </TableCell>
                   </TableRow>
                 ))}

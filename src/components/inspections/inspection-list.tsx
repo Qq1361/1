@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Search, Wrench } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -99,12 +99,12 @@ export function InspectionList() {
                     {inspection.currentStep}/6
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  render={<Link href={`/inspections/${inspection.id}`} />}
+                <Link
+                  href={`/inspections/${inspection.id}`}
+                  className={buttonVariants({ size: "sm" })}
                 >
                   开始验货
-                </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}

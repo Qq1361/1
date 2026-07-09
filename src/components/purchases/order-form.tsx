@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +19,16 @@ type FormItem = {
   files: File[];
 };
 
-function newItem(): FormItem {
+let itemSequence = 0;
+
+export function createItemClientId() {
+  itemSequence += 1;
+  return `item-${Date.now()}-${itemSequence}`;
+}
+
+function newItem(clientId = createItemClientId()): FormItem {
   return {
-    clientId: crypto.randomUUID(),
+    clientId,
     name: "",
     skuText: "",
     quantity: 1,
@@ -34,10 +40,12 @@ function newItem(): FormItem {
 export function OrderForm() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [orderFiles, setOrderFiles] = useState<File[]>([]);
-  const [items, setItems] = useState<FormItem[]>([newItem()]);
+  const [items, setItems] = useState<FormItem[]>([newItem("initial-item")]);
   const [form, setForm] = useState({
     orderNo: "",
+    sellerNickname: "",
     paidAt: new Date().toISOString().slice(0, 10),
     totalAmount: "",
     shippingAmount: "0",
@@ -73,59 +81,109 @@ export function OrderForm() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
-    const response = await fetch("/api/purchase-orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        paidAt: new Date(`${form.paidAt}T00:00:00+08:00`).toISOString(),
-        items: items.map((item) => ({
-          clientId: item.clientId,
-          name: item.name,
-          skuText: item.skuText,
-          quantity: item.quantity,
-          notes: item.notes,
-        })),
-      }),
-    });
-    if (!response.ok) {
-      const error = (await response.json()) as ApiError;
-      toast.error(error.message);
-      setSubmitting(false);
+    setFormError(null);
+
+    const moneyPattern = /^\d{1,10}(\.\d{1,2})?$/;
+    if (!form.orderNo.trim()) {
+      setFormError("请填写闲鱼订单号。");
+      return;
+    }
+    if (!form.paidAt) {
+      setFormError("请选择付款日期。");
+      return;
+    }
+    if (
+      !moneyPattern.test(form.totalAmount.trim()) ||
+      !moneyPattern.test(form.shippingAmount.trim())
+    ) {
+      setFormError("请输入有效金额，金额最多保留两位小数。");
+      return;
+    }
+    if (
+      items.some(
+        (item) =>
+          !item.name.trim() ||
+          !Number.isInteger(item.quantity) ||
+          item.quantity < 1 ||
+          item.quantity > 999,
+      )
+    ) {
+      setFormError("请填写每条商品明细的名称和有效数量。");
       return;
     }
 
-    const order = (await response.json()) as OrderDto;
-    const failures: string[] = [];
-    for (const file of orderFiles) {
-      try {
-        await uploadFile("PURCHASE_ORDER", order.id, file);
-      } catch (error) {
-        failures.push(error instanceof Error ? error.message : file.name);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/purchase-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          paidAt: new Date(`${form.paidAt}T00:00:00+08:00`).toISOString(),
+          items: items.map((item) => ({
+            clientId: item.clientId,
+            name: item.name,
+            skuText: item.skuText,
+            quantity: item.quantity,
+            notes: item.notes,
+          })),
+        }),
+      });
+      if (!response.ok) {
+        const error = (await response.json()) as ApiError;
+        setFormError(error.message);
+        return;
       }
-    }
-    for (const [index, item] of items.entries()) {
-      for (const file of item.files) {
+
+      const order = (await response.json()) as OrderDto;
+      const failures: string[] = [];
+      for (const file of orderFiles) {
         try {
-          await uploadFile("PURCHASE_ORDER_ITEM", order.items[index].id, file);
+          await uploadFile("PURCHASE_ORDER", order.id, file);
         } catch (error) {
           failures.push(error instanceof Error ? error.message : file.name);
         }
       }
+      for (const [index, item] of items.entries()) {
+        for (const file of item.files) {
+          try {
+            await uploadFile(
+              "PURCHASE_ORDER_ITEM",
+              order.items[index].id,
+              file,
+            );
+          } catch (error) {
+            failures.push(error instanceof Error ? error.message : file.name);
+          }
+        }
+      }
+      if (failures.length) {
+        sessionStorage.setItem(
+          `upload-failures:${order.id}`,
+          JSON.stringify(failures),
+        );
+      }
+      router.push(`/purchases/${order.id}`);
+      router.refresh();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "创建订单失败，请重试。";
+      setFormError(message);
+    } finally {
+      setSubmitting(false);
     }
-    if (failures.length) {
-      sessionStorage.setItem(
-        `upload-failures:${order.id}`,
-        JSON.stringify(failures),
-      );
-    }
-    router.push(`/purchases/${order.id}`);
-    router.refresh();
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form onSubmit={submit} noValidate className="space-y-5">
+      {formError ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          {formError}
+        </div>
+      ) : null}
       <Card className="rounded-lg shadow-none">
         <CardHeader>
           <CardTitle className="text-base">订单信息</CardTitle>
@@ -140,6 +198,17 @@ export function OrderForm() {
                 setForm({ ...form, orderNo: event.target.value })
               }
               required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="sellerNickname">卖家昵称</Label>
+            <Input
+              id="sellerNickname"
+              value={form.sellerNickname}
+              onChange={(event) =>
+                setForm({ ...form, sellerNickname: event.target.value })
+              }
+              placeholder="选填，用于追溯订单"
             />
           </div>
           <div className="space-y-2">
@@ -196,15 +265,18 @@ export function OrderForm() {
       <Card className="rounded-lg shadow-none">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">商品明细</CardTitle>
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setItems((current) => [...current, newItem()])}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            disabled={submitting}
+            onClick={() => {
+              setFormError(null);
+              setItems((current) => [...current, newItem()]);
+            }}
           >
             <Plus />
             添加商品
-          </Button>
+          </button>
         </CardHeader>
         <CardContent className="space-y-4">
           {items.map((item, index) => (
@@ -214,11 +286,13 @@ export function OrderForm() {
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium">商品 {index + 1}</h3>
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={items.length === 1}
+                  className={buttonVariants({
+                    variant: "ghost",
+                    size: "icon-sm",
+                  })}
+                  disabled={items.length === 1 || submitting}
                   onClick={() =>
                     setItems((current) =>
                       current.filter(
@@ -230,7 +304,7 @@ export function OrderForm() {
                   aria-label={`删除商品 ${index + 1}`}
                 >
                   <Trash2 />
-                </Button>
+                </button>
               </div>
               <div className="grid gap-4 sm:grid-cols-[1fr_1fr_120px]">
                 <div className="space-y-2">
@@ -327,10 +401,14 @@ export function OrderForm() {
       </Card>
 
       <div className="sticky bottom-0 flex justify-end border-t bg-background/95 py-4 backdrop-blur">
-        <Button type="submit" size="lg" disabled={submitting}>
+        <button
+          type="submit"
+          className={buttonVariants({ size: "lg" })}
+          disabled={submitting}
+        >
           {submitting ? <Loader2 className="animate-spin" /> : null}
           {submitting ? "正在创建" : "创建订单"}
-        </Button>
+        </button>
       </div>
     </form>
   );

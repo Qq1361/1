@@ -58,6 +58,7 @@ export type PurchaseOrderMinAggregateOutputType = {
   logisticsExceptionType: string | null
   logisticsExceptionMessage: string | null
   notes: string | null
+  sellerNickname: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -84,6 +85,7 @@ export type PurchaseOrderMaxAggregateOutputType = {
   logisticsExceptionType: string | null
   logisticsExceptionMessage: string | null
   notes: string | null
+  sellerNickname: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -110,6 +112,7 @@ export type PurchaseOrderCountAggregateOutputType = {
   logisticsExceptionType: number
   logisticsExceptionMessage: number
   notes: number
+  sellerNickname: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -148,6 +151,7 @@ export type PurchaseOrderMinAggregateInputType = {
   logisticsExceptionType?: true
   logisticsExceptionMessage?: true
   notes?: true
+  sellerNickname?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -174,6 +178,7 @@ export type PurchaseOrderMaxAggregateInputType = {
   logisticsExceptionType?: true
   logisticsExceptionMessage?: true
   notes?: true
+  sellerNickname?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -200,6 +205,7 @@ export type PurchaseOrderCountAggregateInputType = {
   logisticsExceptionType?: true
   logisticsExceptionMessage?: true
   notes?: true
+  sellerNickname?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -313,6 +319,7 @@ export type PurchaseOrderGroupByOutputType = {
   logisticsExceptionType: string | null
   logisticsExceptionMessage: string | null
   notes: string | null
+  sellerNickname: string | null
   createdAt: Date
   updatedAt: Date
   _count: PurchaseOrderCountAggregateOutputType | null
@@ -362,6 +369,7 @@ export type PurchaseOrderWhereInput = {
   logisticsExceptionType?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   logisticsExceptionMessage?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  sellerNickname?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -391,6 +399,7 @@ export type PurchaseOrderOrderByWithRelationInput = {
   logisticsExceptionType?: Prisma.SortOrderInput | Prisma.SortOrder
   logisticsExceptionMessage?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  sellerNickname?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   owner?: Prisma.UserOrderByWithRelationInput
@@ -424,6 +433,7 @@ export type PurchaseOrderWhereUniqueInput = Prisma.AtLeast<{
   logisticsExceptionType?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   logisticsExceptionMessage?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  sellerNickname?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -453,6 +463,7 @@ export type PurchaseOrderOrderByWithAggregationInput = {
   logisticsExceptionType?: Prisma.SortOrderInput | Prisma.SortOrder
   logisticsExceptionMessage?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  sellerNickname?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.PurchaseOrderCountOrderByAggregateInput
@@ -487,6 +498,7 @@ export type PurchaseOrderScalarWhereWithAggregatesInput = {
   logisticsExceptionType?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
   logisticsExceptionMessage?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
+  sellerNickname?: Prisma.StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseOrder"> | Date | string
 }
@@ -512,6 +524,7 @@ export type PurchaseOrderCreateInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutPurchaseOrdersInput
@@ -541,6 +554,7 @@ export type PurchaseOrderUncheckedCreateInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
@@ -568,6 +582,7 @@ export type PurchaseOrderUpdateInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutPurchaseOrdersNestedInput
@@ -597,6 +612,7 @@ export type PurchaseOrderUncheckedUpdateInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
@@ -625,6 +641,7 @@ export type PurchaseOrderCreateManyInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -650,6 +667,7 @@ export type PurchaseOrderUpdateManyMutationInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -676,6 +694,7 @@ export type PurchaseOrderUncheckedUpdateManyInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -717,6 +736,7 @@ export type PurchaseOrderCountOrderByAggregateInput = {
   logisticsExceptionType?: Prisma.SortOrder
   logisticsExceptionMessage?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  sellerNickname?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -748,6 +768,7 @@ export type PurchaseOrderMaxOrderByAggregateInput = {
   logisticsExceptionType?: Prisma.SortOrder
   logisticsExceptionMessage?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  sellerNickname?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -774,6 +795,7 @@ export type PurchaseOrderMinOrderByAggregateInput = {
   logisticsExceptionType?: Prisma.SortOrder
   logisticsExceptionMessage?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  sellerNickname?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -911,6 +933,7 @@ export type PurchaseOrderCreateWithoutOwnerInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
@@ -938,6 +961,7 @@ export type PurchaseOrderUncheckedCreateWithoutOwnerInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
@@ -995,6 +1019,7 @@ export type PurchaseOrderScalarWhereInput = {
   logisticsExceptionType?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   logisticsExceptionMessage?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   notes?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
+  sellerNickname?: Prisma.StringNullableFilter<"PurchaseOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseOrder"> | Date | string
 }
@@ -1020,6 +1045,7 @@ export type PurchaseOrderCreateWithoutItemsInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutPurchaseOrdersInput
@@ -1048,6 +1074,7 @@ export type PurchaseOrderUncheckedCreateWithoutItemsInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutPurchaseOrderInput
@@ -1090,6 +1117,7 @@ export type PurchaseOrderUpdateWithoutItemsInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutPurchaseOrdersNestedInput
@@ -1118,6 +1146,7 @@ export type PurchaseOrderUncheckedUpdateWithoutItemsInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutPurchaseOrderNestedInput
@@ -1144,6 +1173,7 @@ export type PurchaseOrderCreateWithoutLogisticsEventsInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutPurchaseOrdersInput
@@ -1172,6 +1202,7 @@ export type PurchaseOrderUncheckedCreateWithoutLogisticsEventsInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   items?: Prisma.PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
@@ -1214,6 +1245,7 @@ export type PurchaseOrderUpdateWithoutLogisticsEventsInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutPurchaseOrdersNestedInput
@@ -1242,6 +1274,7 @@ export type PurchaseOrderUncheckedUpdateWithoutLogisticsEventsInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
@@ -1268,6 +1301,7 @@ export type PurchaseOrderCreateManyOwnerInput = {
   logisticsExceptionType?: string | null
   logisticsExceptionMessage?: string | null
   notes?: string | null
+  sellerNickname?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1293,6 +1327,7 @@ export type PurchaseOrderUpdateWithoutOwnerInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
@@ -1320,6 +1355,7 @@ export type PurchaseOrderUncheckedUpdateWithoutOwnerInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   items?: Prisma.PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
@@ -1347,6 +1383,7 @@ export type PurchaseOrderUncheckedUpdateManyWithoutOwnerInput = {
   logisticsExceptionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logisticsExceptionMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sellerNickname?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1413,6 +1450,7 @@ export type PurchaseOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   logisticsExceptionType?: boolean
   logisticsExceptionMessage?: boolean
   notes?: boolean
+  sellerNickname?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1443,6 +1481,7 @@ export type PurchaseOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   logisticsExceptionType?: boolean
   logisticsExceptionMessage?: boolean
   notes?: boolean
+  sellerNickname?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1470,6 +1509,7 @@ export type PurchaseOrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   logisticsExceptionType?: boolean
   logisticsExceptionMessage?: boolean
   notes?: boolean
+  sellerNickname?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1497,11 +1537,12 @@ export type PurchaseOrderSelectScalar = {
   logisticsExceptionType?: boolean
   logisticsExceptionMessage?: boolean
   notes?: boolean
+  sellerNickname?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PurchaseOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "orderNo" | "platform" | "status" | "allocationStatus" | "allocationConfirmedAt" | "paidAt" | "totalAmount" | "shippingAmount" | "carrierCode" | "trackingNo" | "shippedAt" | "deliveredAt" | "logisticsStatus" | "logisticsLastCheckedAt" | "logisticsLastEventAt" | "logisticsLastEventText" | "logisticsExceptionType" | "logisticsExceptionMessage" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseOrder"]>
+export type PurchaseOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "orderNo" | "platform" | "status" | "allocationStatus" | "allocationConfirmedAt" | "paidAt" | "totalAmount" | "shippingAmount" | "carrierCode" | "trackingNo" | "shippedAt" | "deliveredAt" | "logisticsStatus" | "logisticsLastCheckedAt" | "logisticsLastEventAt" | "logisticsLastEventText" | "logisticsExceptionType" | "logisticsExceptionMessage" | "notes" | "sellerNickname" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseOrder"]>
 export type PurchaseOrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   items?: boolean | Prisma.PurchaseOrder$itemsArgs<ExtArgs>
@@ -1544,6 +1585,7 @@ export type $PurchaseOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
     logisticsExceptionType: string | null
     logisticsExceptionMessage: string | null
     notes: string | null
+    sellerNickname: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["purchaseOrder"]>
@@ -1993,6 +2035,7 @@ export interface PurchaseOrderFieldRefs {
   readonly logisticsExceptionType: Prisma.FieldRef<"PurchaseOrder", 'String'>
   readonly logisticsExceptionMessage: Prisma.FieldRef<"PurchaseOrder", 'String'>
   readonly notes: Prisma.FieldRef<"PurchaseOrder", 'String'>
+  readonly sellerNickname: Prisma.FieldRef<"PurchaseOrder", 'String'>
   readonly createdAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PurchaseOrder", 'DateTime'>
 }

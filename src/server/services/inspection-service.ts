@@ -110,12 +110,59 @@ export class InspectionService {
   }
 
   async update(ownerId: string, id: string, data: Record<string, unknown>) {
-    const inspection = await this.get(ownerId, id);
-    if (inspection.completedAt)
-      throw new ServiceError("INSPECTION_ALREADY_COMPLETED", "验货已经完成。", 409);
+    const inspection = await db.inspection.findFirst({
+      where: { id, ownerId },
+      include: {
+        inventoryItem: true,
+        purchaseOrderItem: { include: { purchaseOrder: { include: { items: true } } } },
+      },
+    });
+    if (!inspection)
+      throw new ServiceError("INSPECTION_NOT_FOUND", "验货记录不存在。", 404);
+
+    const isCompleted = !!inspection.completedAt;
+    // Strip storageLocation — it belongs to InventoryItem, not Inspection
+    const inspectionData = { ...data } as Record<string, unknown>;
+    const storageLoc = inspectionData.storageLocation as string | undefined;
+    const resultChange = inspectionData.result as "PASS" | "PROBLEM" | undefined;
+    delete inspectionData.storageLocation;
+    // Don't pass result to inspection update during simple save (only during completed edit)
+    if (!isCompleted) {
+      delete inspectionData.result;
+    }
+
+    if (isCompleted && inspection.inventoryItem && (storageLoc !== undefined || inspectionData.expiryDate !== undefined || resultChange)) {
+      // Sync changes to InventoryItem in a transaction
+      return db.$transaction(async (tx) => {
+        const invUpdate: Record<string, unknown> = {};
+        if (storageLoc !== undefined) invUpdate.storageLocation = storageLoc.trim() || null;
+        if (inspectionData.expiryDate !== undefined) invUpdate.expiryDate = inspectionData.expiryDate;
+        if (resultChange) {
+          if (resultChange === "PROBLEM") {
+            invUpdate.itemStatus = "PROBLEM";
+            invUpdate.problemReason = (inspectionData.notes as string) || (inspectionData.appearanceNotes as string) || "验货问题";
+          } else {
+            invUpdate.itemStatus = "STOCKED";
+            invUpdate.problemReason = null;
+          }
+        }
+        if (Object.keys(invUpdate).length > 0) {
+          await tx.inventoryItem.update({
+            where: { id: inspection.inventoryItem!.id },
+            data: invUpdate,
+          });
+        }
+        const inspUpdate: Record<string, unknown> = { ...inspectionData };
+        if (resultChange) inspUpdate.result = resultChange;
+        return tx.inspection.update({ where: { id }, data: inspUpdate });
+      });
+    }
+
     return db.inspection.update({
       where: { id },
-      data: { ...data, status: "IN_PROGRESS", startedAt: inspection.startedAt ?? new Date() },
+      data: isCompleted
+        ? inspectionData
+        : { ...inspectionData, status: "IN_PROGRESS", startedAt: inspection.startedAt ?? new Date() },
     });
   }
 
@@ -153,7 +200,8 @@ export class InspectionService {
             inspection.purchaseOrderItem.quantity,
           );
           const now = new Date();
-          const { result, ...fields } = input;
+          // Extract storageLocation for InventoryItem; it is not an Inspection field
+          const { result, storageLocation: loc, ...fields } = input;
           const updatedInspection = await tx.inspection.update({
             where: { id },
             data: {
@@ -175,6 +223,7 @@ export class InspectionService {
               skuText: inspection.purchaseOrderItem.skuText,
               unitCost: new Prisma.Decimal(costs[inspection.sequence - 1]),
               expiryDate: updatedInspection.expiryDate,
+              storageLocation: (loc as string)?.trim() || null,
               itemStatus: result === "PASS" ? "STOCKED" : "PROBLEM",
               stockedAt: now,
               problemReason:
@@ -222,3 +271,4 @@ export class InspectionService {
 }
 
 export const inspectionService = new InspectionService();
+

@@ -83,6 +83,53 @@ export class LogisticsService {
     };
   }
 
+  async manualDeliver(ownerId: string, orderId: string) {
+    const { order } = await this.getSummary(ownerId, orderId);
+    if (!order.carrierCode || !order.trackingNo) {
+      throw new ServiceError(
+        "TRACKING_REQUIRED",
+        "请先填写快递公司和快递单号。",
+        422,
+      );
+    }
+    if (order.logisticsStatus === "DELIVERED") {
+      throw new ServiceError(
+        "ALREADY_DELIVERED",
+        "物流状态已经是已签收。",
+        409,
+      );
+    }
+    const now = new Date();
+    await db.$transaction(async (tx) => {
+      await tx.logisticsEvent.create({
+        data: {
+          ownerId,
+          purchaseOrderId: orderId,
+          carrierCode: order.carrierCode!,
+          trackingNo: order.trackingNo!,
+          eventTime: now,
+          eventText: "用户手动标记已签收",
+          status: "DELIVERED",
+        },
+      });
+      await tx.purchaseOrder.update({
+        where: { id: orderId },
+        data: {
+          status: "PENDING_INSPECTION",
+          logisticsStatus: "DELIVERED",
+          deliveredAt: now,
+          logisticsLastCheckedAt: now,
+          logisticsLastEventAt: now,
+          logisticsLastEventText: "用户手动标记已签收",
+          logisticsExceptionType: null,
+          logisticsExceptionMessage: null,
+        },
+      });
+      await ensurePendingInspectionsTx(tx, ownerId, orderId);
+    });
+    return this.getSummary(ownerId, orderId);
+  }
+
   async refresh(ownerId: string, orderId: string) {
     const { order } = await this.getSummary(ownerId, orderId);
     if (!order.carrierCode || !order.trackingNo) {

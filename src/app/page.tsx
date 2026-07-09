@@ -13,7 +13,7 @@ import {
   Truck,
 } from "lucide-react";
 import { AllocationBadge, PurchaseStatusBadge } from "@/components/purchases/status-badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -21,6 +21,7 @@ type ListResponse = {
   data: {
     id: string;
     orderNo: string;
+    sellerNickname: string | null;
     status: string;
     allocationStatus: "UNALLOCATED" | "DRAFT" | "CONFIRMED";
     paidAt: string;
@@ -34,9 +35,12 @@ type TodoType =
   | "LOGISTICS_EXCEPTION"
   | "LOGISTICS_STALLED"
   | "PENDING_INSPECTION"
-  | "EXPIRY_BELOW_395"
-  | "EXPIRY_BELOW_365"
-  | "OVERSTOCKED";
+  | "DISTANCE_TO_395_WITHIN_7_DAYS"
+  | "EXPIRY_UNDER_395"
+  | "EXPIRY_UNDER_365"
+  | "OVERSTOCKED"
+  | "NINETY_FIVE_EXPIRY_UNDER_90"
+  | "NINETY_FIVE_EXPIRY_UNDER_60";
 
 type TodosResponse = {
   data: {
@@ -52,9 +56,12 @@ type TodosResponse = {
     missingTracking: number;
     logisticsIssues: number;
     pendingInspection: number;
-    expiryBelow395: number;
-    expiryBelow365: number;
+    distanceTo395Within7Days: number;
+    expiryUnder395: number;
+    expiryUnder365: number;
     overstocked: number;
+    ninetyFiveUnder90: number;
+    ninetyFiveUnder60: number;
   };
 };
 
@@ -73,17 +80,16 @@ export default function Home() {
   }, []);
 
   const cards = [
-    { label: "采购订单", value: orders?.total, icon: ReceiptText },
-    { label: "待填快递单号", value: todos?.counts.missingTracking, icon: Truck },
-    { label: "物流异常 / 停滞", value: todos?.counts.logisticsIssues, icon: AlertTriangle },
-    { label: "待验货", value: todos?.counts.pendingInspection, icon: ClipboardCheck },
-    {
-      label: "效期低于 395 天",
-      value: (todos?.counts.expiryBelow395 ?? 0) + (todos?.counts.expiryBelow365 ?? 0),
-      icon: Timer,
-    },
-    { label: "效期低于 365 天", value: todos?.counts.expiryBelow365, icon: AlertTriangle },
-    { label: "入库满 3 天", value: todos?.counts.overstocked, icon: Clock3 },
+    { label: "采购订单", value: orders?.total, icon: ReceiptText, href: "/purchases" },
+    { label: "超48小时未填单号", value: todos?.counts.missingTracking, icon: Truck, href: "/purchases?todo=missingTracking" },
+    { label: "物流异常 / 停滞", value: todos?.counts.logisticsIssues, icon: AlertTriangle, href: "/purchases?todo=logisticsIssues" },
+    { label: "待验货", value: todos?.counts.pendingInspection, icon: ClipboardCheck, href: "/inspections" },
+    { label: "距395天不足7天", value: todos?.counts.distanceTo395Within7Days, icon: Timer, href: "/inventory?reminder=EXPIRY_UNDER_395" },
+    { label: "效期低于395天", value: todos?.counts.expiryUnder395, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_395" },
+    { label: "效期低于365天", value: todos?.counts.expiryUnder365, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_365" },
+    { label: "95分效期接近限制", value: todos?.counts.ninetyFiveUnder90, icon: Timer, href: "/inventory?reminder=EXPIRY_UNDER_395" },
+    { label: "95分效期低于60天", value: todos?.counts.ninetyFiveUnder60, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_365" },
+    { label: "入库满 3 天", value: todos?.counts.overstocked, icon: Clock3, href: "/inventory?reminder=STOCKED_OVER_3_DAYS" },
   ];
 
   return (
@@ -93,22 +99,24 @@ export default function Home() {
           <p className="text-sm text-muted-foreground">日常处理</p>
           <h1 className="text-2xl font-semibold">工作台</h1>
         </div>
-        <Button render={<Link href="/purchases/new" />}>
+        <Link href="/purchases/new" className={buttonVariants()}>
           <Plus /> 新建采购订单
-        </Button>
+        </Link>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="rounded-lg shadow-none">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="mt-1 text-2xl font-semibold">{value ?? "—"}</p>
-              </div>
-              <Icon className="size-5 text-muted-foreground" />
-            </CardContent>
-          </Card>
+        {cards.map(({ label, value, icon: Icon, href }) => (
+          <Link key={label} href={href}>
+            <Card className="rounded-lg shadow-none transition-colors hover:bg-muted/30">
+              <CardContent className="flex items-center justify-between p-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-2xl font-semibold">{value ?? "—"}</p>
+                </div>
+                <Icon className="size-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -144,9 +152,9 @@ export default function Home() {
       <Card className="rounded-lg shadow-none">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">最近采购订单</CardTitle>
-          <Button variant="ghost" size="sm" render={<Link href="/purchases" />}>
+          <Link href="/purchases" className={buttonVariants({ variant: "ghost", size: "sm" })}>
             查看全部 <ArrowRight />
-          </Button>
+          </Link>
         </CardHeader>
         <CardContent className="space-y-2">
           {!orders ? (
@@ -161,6 +169,7 @@ export default function Home() {
                 <div>
                   <p className="text-sm font-medium">{order.orderNo}</p>
                   <p className="text-xs text-muted-foreground">
+                    {order.sellerNickname ? `卖家：${order.sellerNickname} · ` : ""}
                     {order._count.items} 个商品明细 ·{" "}
                     {new Date(order.paidAt).toLocaleDateString("zh-CN")}
                   </p>

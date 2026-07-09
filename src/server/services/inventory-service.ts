@@ -10,10 +10,12 @@ export class InventoryService {
       itemStatus?: Prisma.EnumItemStatusFilter["equals"];
       saleMode?: Prisma.EnumSaleModeFilter["equals"];
       locationStatus?: Prisma.EnumLocationStatusFilter["equals"];
+      reminder?: "EXPIRY_UNDER_395" | "EXPIRY_UNDER_365" | "STOCKED_OVER_3_DAYS";
       page: number;
       pageSize: number;
     },
   ) {
+    const now = new Date();
     const where: Prisma.InventoryItemWhereInput = {
       ownerId,
       itemStatus: query.itemStatus,
@@ -25,10 +27,28 @@ export class InventoryService {
               { name: { contains: query.query, mode: "insensitive" } },
               { skuText: { contains: query.query, mode: "insensitive" } },
               { inventoryCode: { contains: query.query, mode: "insensitive" } },
+              { storageLocation: { contains: query.query, mode: "insensitive" } },
             ],
           }
         : {}),
     };
+    // Apply reminder filters on top
+    if (query.reminder) {
+      where.itemStatus = "STOCKED";
+      if (query.reminder === "STOCKED_OVER_3_DAYS") {
+        where.stockedAt = { lte: new Date(now.getTime() - 72 * 60 * 60 * 1000) };
+      } else if (query.reminder === "EXPIRY_UNDER_365") {
+        where.expiryDate = {
+          not: null,
+          lte: new Date(now.getTime() + 365 * 86_400_000),
+        };
+      } else if (query.reminder === "EXPIRY_UNDER_395") {
+        where.expiryDate = {
+          not: null,
+          lte: new Date(now.getTime() + 395 * 86_400_000),
+        };
+      }
+    }
     const [data, total] = await db.$transaction([
       db.inventoryItem.findMany({
         where,
@@ -39,6 +59,18 @@ export class InventoryService {
       db.inventoryItem.count({ where }),
     ]);
     return { data, total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+  }
+
+  async update(ownerId: string, id: string, data: { saleMode?: string }) {
+    const item = await db.inventoryItem.findFirst({
+      where: { id, ownerId },
+    });
+    if (!item)
+      throw new ServiceError("INVENTORY_NOT_FOUND", "库存商品不存在。", 404);
+    return db.inventoryItem.update({
+      where: { id },
+      data: { saleMode: data.saleMode as Prisma.EnumSaleModeFieldUpdateOperationsInput["set"] },
+    });
   }
 
   async get(ownerId: string, id: string) {

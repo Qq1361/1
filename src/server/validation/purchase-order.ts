@@ -16,6 +16,7 @@ export const orderItemSchema = z.object({
 
 export const purchaseOrderSchema = z.object({
   orderNo: z.string().trim().min(1, "订单号不能为空").max(100),
+  sellerNickname: z.string().trim().max(100).optional().or(z.literal("")),
   paidAt: z.coerce.date(),
   totalAmount: money,
   shippingAmount: money.default("0"),
@@ -38,6 +39,12 @@ export const orderListQuerySchema = z.object({
     .optional(),
   allocationStatus: z
     .enum(["UNALLOCATED", "DRAFT", "CONFIRMED"])
+    .optional(),
+  todo: z
+    .enum(["missingTracking", "logisticsIssues"])
+    .optional(),
+  tracking: z
+    .enum(["missing"])
     .optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

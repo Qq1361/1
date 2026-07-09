@@ -108,6 +108,7 @@ export const PurchaseOrderScalarFieldEnum = {
   logisticsExceptionType: 'logisticsExceptionType',
   logisticsExceptionMessage: 'logisticsExceptionMessage',
   notes: 'notes',
+  sellerNickname: 'sellerNickname',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -200,6 +201,7 @@ export const InventoryItemScalarFieldEnum = {
   unitCost: 'unitCost',
   expiryDate: 'expiryDate',
   locationStatus: 'locationStatus',
+  storageLocation: 'storageLocation',
   saleMode: 'saleMode',
   itemStatus: 'itemStatus',
   stockedAt: 'stockedAt',

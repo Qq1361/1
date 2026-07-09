@@ -10,6 +10,7 @@ export const inspectionPatchSchema = z.object({
   hasUsageTrace: z.boolean().nullable().optional(),
   batchCode: z.string().trim().max(100).nullable().optional(),
   expiryDate: z.coerce.date().nullable().optional(),
+  storageLocation: z.string().trim().max(100).nullable().optional(),
   appearanceNotes: z.string().trim().max(2000).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
@@ -51,6 +52,9 @@ export const inventoryListSchema = z.object({
     .optional(),
   locationStatus: z
     .enum(["LOCAL", "DEWU_WAREHOUSE", "RETURNING", "SOLD"])
+    .optional(),
+  reminder: z
+    .enum(["EXPIRY_UNDER_395", "EXPIRY_UNDER_365", "STOCKED_OVER_3_DAYS"])
     .optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

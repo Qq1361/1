@@ -123,6 +123,7 @@ model PurchaseOrder {
   logisticsExceptionType    String?
   logisticsExceptionMessage String?
   notes                   String?
+  sellerNickname          String?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
 
@@ -236,6 +237,7 @@ model InventoryItem {
   unitCost            Decimal        @db.Decimal(12, 2)
   expiryDate          DateTime?
   locationStatus      LocationStatus @default(LOCAL)
+  storageLocation     String?
   saleMode            SaleMode       @default(NONE)
   itemStatus          ItemStatus
   stockedAt           DateTime

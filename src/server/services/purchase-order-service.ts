@@ -37,6 +37,7 @@ export class PurchaseOrderService {
           data: {
             ownerId,
             orderNo: input.orderNo,
+            sellerNickname: input.sellerNickname?.trim() || null,
             paidAt: input.paidAt,
             totalAmount: new Prisma.Decimal(input.totalAmount),
             shippingAmount: new Prisma.Decimal(input.shippingAmount),
@@ -97,14 +98,42 @@ export class PurchaseOrderService {
   }
 
   async listOrders(ownerId: string, query: OrderListQuery) {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
     const where: Prisma.PurchaseOrderWhereInput = {
       ownerId,
       status: query.status,
       allocationStatus: query.allocationStatus,
-      orderNo: query.query
-        ? { contains: query.query, mode: "insensitive" }
-        : undefined,
+      ...(query.query
+        ? {
+            OR: [
+              { orderNo: { contains: query.query, mode: "insensitive" } },
+              { sellerNickname: { contains: query.query, mode: "insensitive" } },
+              {
+                items: {
+                  some: {
+                    OR: [
+                      { name: { contains: query.query, mode: "insensitive" } },
+                      { skuText: { contains: query.query, mode: "insensitive" } },
+                    ],
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
     };
+    if (query.todo === "missingTracking") {
+      where.status = { in: ["PAID", "WAITING_SHIPMENT"] };
+      where.trackingNo = null;
+      where.paidAt = { lte: cutoff };
+    } else if (query.todo === "logisticsIssues") {
+      where.logisticsStatus = { in: ["EXCEPTION", "STALLED"] };
+    }
+    if (query.tracking === "missing") {
+      where.trackingNo = null;
+      where.status = { not: "CANCELLED" };
+    }
     const [orders, total] = await db.$transaction([
       db.purchaseOrder.findMany({
         where,
@@ -169,6 +198,7 @@ export class PurchaseOrderService {
         where: { id: orderId },
         data: {
           orderNo: input.orderNo,
+          sellerNickname: input.sellerNickname?.trim() || null,
           paidAt: input.paidAt,
           totalAmount: new Prisma.Decimal(input.totalAmount),
           shippingAmount: new Prisma.Decimal(input.shippingAmount),

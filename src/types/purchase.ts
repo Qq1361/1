@@ -36,6 +36,7 @@ export type OrderDto = {
   logisticsExceptionType: string | null;
   logisticsExceptionMessage: string | null;
   notes: string | null;
+  sellerNickname: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItemDto[];

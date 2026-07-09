@@ -164,7 +164,7 @@ try {
   const todos = await request("/api/todos");
   assert(
     todos.data.some(
-      (todo) => todo.inventoryId === stocked.inventory.id && todo.type === "EXPIRY_BELOW_395",
+      (todo) => todo.inventoryId === stocked.inventory.id && todo.type === "EXPIRY_UNDER_395",
     ),
     "expiry reminder was not created",
   );
@@ -178,7 +178,7 @@ try {
     !todos.data.some(
       (todo) =>
         todo.inventoryId === completed[1].inventory.id &&
-        ["EXPIRY_BELOW_395", "EXPIRY_BELOW_365", "OVERSTOCKED"].includes(todo.type),
+        ["EXPIRY_UNDER_395", "EXPIRY_UNDER_365", "OVERSTOCKED"].includes(todo.type),
     ),
     "problem inventory produced a stock reminder",
   );

@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, CircleDollarSign, ImageIcon } from "lucide-react";
 import { AttachmentUploader } from "./attachment-uploader";
 import { DeleteOrderButton } from "./delete-order-button";
 import { LogisticsCard } from "./logistics-card";
 import { AllocationBadge, PurchaseStatusBadge } from "./status-badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { OrderDto } from "@/types/purchase";
 
 export function OrderDetail({ orderId }: { orderId: string }) {
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") ?? "";
   const [order, setOrder] = useState<OrderDto | null>(null);
 
   useEffect(() => {
@@ -34,10 +37,13 @@ export function OrderDetail({ orderId }: { orderId: string }) {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <Button variant="ghost" size="sm" render={<Link href="/purchases" />}>
+          <Link
+            href={returnTo || "/purchases"}
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
             <ArrowLeft />
-            返回采购订单
-          </Button>
+            {returnTo ? "返回库存详情" : "返回采购订单"}
+          </Link>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">{order.orderNo}</h1>
             <PurchaseStatusBadge status={order.status} />
@@ -45,14 +51,15 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           </div>
           <p className="text-sm text-muted-foreground">
             付款于 {new Date(order.paidAt).toLocaleDateString("zh-CN")}
+            {order.sellerNickname ? ` · 卖家：${order.sellerNickname}` : " · 卖家：未填写"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button render={<Link href={`/purchases/${order.id}/allocate`} />}>
+          <Link href={`/purchases/${order.id}/allocate`} className={buttonVariants()}>
             <CircleDollarSign />
             成本分摊
-          </Button>
-          <DeleteOrderButton orderId={order.id} />
+          </Link>
+          <DeleteOrderButton order={order} />
         </div>
       </div>
 

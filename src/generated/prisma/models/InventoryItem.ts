@@ -45,6 +45,7 @@ export type InventoryItemMinAggregateOutputType = {
   unitCost: runtime.Decimal | null
   expiryDate: Date | null
   locationStatus: $Enums.LocationStatus | null
+  storageLocation: string | null
   saleMode: $Enums.SaleMode | null
   itemStatus: $Enums.ItemStatus | null
   stockedAt: Date | null
@@ -65,6 +66,7 @@ export type InventoryItemMaxAggregateOutputType = {
   unitCost: runtime.Decimal | null
   expiryDate: Date | null
   locationStatus: $Enums.LocationStatus | null
+  storageLocation: string | null
   saleMode: $Enums.SaleMode | null
   itemStatus: $Enums.ItemStatus | null
   stockedAt: Date | null
@@ -85,6 +87,7 @@ export type InventoryItemCountAggregateOutputType = {
   unitCost: number
   expiryDate: number
   locationStatus: number
+  storageLocation: number
   saleMode: number
   itemStatus: number
   stockedAt: number
@@ -115,6 +118,7 @@ export type InventoryItemMinAggregateInputType = {
   unitCost?: true
   expiryDate?: true
   locationStatus?: true
+  storageLocation?: true
   saleMode?: true
   itemStatus?: true
   stockedAt?: true
@@ -135,6 +139,7 @@ export type InventoryItemMaxAggregateInputType = {
   unitCost?: true
   expiryDate?: true
   locationStatus?: true
+  storageLocation?: true
   saleMode?: true
   itemStatus?: true
   stockedAt?: true
@@ -155,6 +160,7 @@ export type InventoryItemCountAggregateInputType = {
   unitCost?: true
   expiryDate?: true
   locationStatus?: true
+  storageLocation?: true
   saleMode?: true
   itemStatus?: true
   stockedAt?: true
@@ -262,6 +268,7 @@ export type InventoryItemGroupByOutputType = {
   unitCost: runtime.Decimal
   expiryDate: Date | null
   locationStatus: $Enums.LocationStatus
+  storageLocation: string | null
   saleMode: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date
@@ -305,6 +312,7 @@ export type InventoryItemWhereInput = {
   unitCost?: Prisma.DecimalFilter<"InventoryItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.DateTimeNullableFilter<"InventoryItem"> | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFilter<"InventoryItem"> | $Enums.LocationStatus
+  storageLocation?: Prisma.StringNullableFilter<"InventoryItem"> | string | null
   saleMode?: Prisma.EnumSaleModeFilter<"InventoryItem"> | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFilter<"InventoryItem"> | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFilter<"InventoryItem"> | Date | string
@@ -328,6 +336,7 @@ export type InventoryItemOrderByWithRelationInput = {
   unitCost?: Prisma.SortOrder
   expiryDate?: Prisma.SortOrderInput | Prisma.SortOrder
   locationStatus?: Prisma.SortOrder
+  storageLocation?: Prisma.SortOrderInput | Prisma.SortOrder
   saleMode?: Prisma.SortOrder
   itemStatus?: Prisma.SortOrder
   stockedAt?: Prisma.SortOrder
@@ -355,6 +364,7 @@ export type InventoryItemWhereUniqueInput = Prisma.AtLeast<{
   unitCost?: Prisma.DecimalFilter<"InventoryItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.DateTimeNullableFilter<"InventoryItem"> | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFilter<"InventoryItem"> | $Enums.LocationStatus
+  storageLocation?: Prisma.StringNullableFilter<"InventoryItem"> | string | null
   saleMode?: Prisma.EnumSaleModeFilter<"InventoryItem"> | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFilter<"InventoryItem"> | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFilter<"InventoryItem"> | Date | string
@@ -378,6 +388,7 @@ export type InventoryItemOrderByWithAggregationInput = {
   unitCost?: Prisma.SortOrder
   expiryDate?: Prisma.SortOrderInput | Prisma.SortOrder
   locationStatus?: Prisma.SortOrder
+  storageLocation?: Prisma.SortOrderInput | Prisma.SortOrder
   saleMode?: Prisma.SortOrder
   itemStatus?: Prisma.SortOrder
   stockedAt?: Prisma.SortOrder
@@ -406,6 +417,7 @@ export type InventoryItemScalarWhereWithAggregatesInput = {
   unitCost?: Prisma.DecimalWithAggregatesFilter<"InventoryItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.DateTimeNullableWithAggregatesFilter<"InventoryItem"> | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusWithAggregatesFilter<"InventoryItem"> | $Enums.LocationStatus
+  storageLocation?: Prisma.StringNullableWithAggregatesFilter<"InventoryItem"> | string | null
   saleMode?: Prisma.EnumSaleModeWithAggregatesFilter<"InventoryItem"> | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusWithAggregatesFilter<"InventoryItem"> | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeWithAggregatesFilter<"InventoryItem"> | Date | string
@@ -423,6 +435,7 @@ export type InventoryItemCreateInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -446,6 +459,7 @@ export type InventoryItemUncheckedCreateInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -463,6 +477,7 @@ export type InventoryItemUpdateInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -486,6 +501,7 @@ export type InventoryItemUncheckedUpdateInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -506,6 +522,7 @@ export type InventoryItemCreateManyInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -523,6 +540,7 @@ export type InventoryItemUpdateManyMutationInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -543,6 +561,7 @@ export type InventoryItemUncheckedUpdateManyInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -583,6 +602,7 @@ export type InventoryItemCountOrderByAggregateInput = {
   unitCost?: Prisma.SortOrder
   expiryDate?: Prisma.SortOrder
   locationStatus?: Prisma.SortOrder
+  storageLocation?: Prisma.SortOrder
   saleMode?: Prisma.SortOrder
   itemStatus?: Prisma.SortOrder
   stockedAt?: Prisma.SortOrder
@@ -607,6 +627,7 @@ export type InventoryItemMaxOrderByAggregateInput = {
   unitCost?: Prisma.SortOrder
   expiryDate?: Prisma.SortOrder
   locationStatus?: Prisma.SortOrder
+  storageLocation?: Prisma.SortOrder
   saleMode?: Prisma.SortOrder
   itemStatus?: Prisma.SortOrder
   stockedAt?: Prisma.SortOrder
@@ -627,6 +648,7 @@ export type InventoryItemMinOrderByAggregateInput = {
   unitCost?: Prisma.SortOrder
   expiryDate?: Prisma.SortOrder
   locationStatus?: Prisma.SortOrder
+  storageLocation?: Prisma.SortOrder
   saleMode?: Prisma.SortOrder
   itemStatus?: Prisma.SortOrder
   stockedAt?: Prisma.SortOrder
@@ -776,6 +798,7 @@ export type InventoryItemCreateWithoutOwnerInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -797,6 +820,7 @@ export type InventoryItemUncheckedCreateWithoutOwnerInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -846,6 +870,7 @@ export type InventoryItemScalarWhereInput = {
   unitCost?: Prisma.DecimalFilter<"InventoryItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.DateTimeNullableFilter<"InventoryItem"> | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFilter<"InventoryItem"> | $Enums.LocationStatus
+  storageLocation?: Prisma.StringNullableFilter<"InventoryItem"> | string | null
   saleMode?: Prisma.EnumSaleModeFilter<"InventoryItem"> | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFilter<"InventoryItem"> | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFilter<"InventoryItem"> | Date | string
@@ -863,6 +888,7 @@ export type InventoryItemCreateWithoutPurchaseOrderItemInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -884,6 +910,7 @@ export type InventoryItemUncheckedCreateWithoutPurchaseOrderItemInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -927,6 +954,7 @@ export type InventoryItemCreateWithoutInspectionInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -948,6 +976,7 @@ export type InventoryItemUncheckedCreateWithoutInspectionInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -981,6 +1010,7 @@ export type InventoryItemUpdateWithoutInspectionInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1002,6 +1032,7 @@ export type InventoryItemUncheckedUpdateWithoutInspectionInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1021,6 +1052,7 @@ export type InventoryItemCreateManyOwnerInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -1038,6 +1070,7 @@ export type InventoryItemUpdateWithoutOwnerInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1059,6 +1092,7 @@ export type InventoryItemUncheckedUpdateWithoutOwnerInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1078,6 +1112,7 @@ export type InventoryItemUncheckedUpdateManyWithoutOwnerInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1097,6 +1132,7 @@ export type InventoryItemCreateManyPurchaseOrderItemInput = {
   unitCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Date | string | null
   locationStatus?: $Enums.LocationStatus
+  storageLocation?: string | null
   saleMode?: $Enums.SaleMode
   itemStatus: $Enums.ItemStatus
   stockedAt: Date | string
@@ -1114,6 +1150,7 @@ export type InventoryItemUpdateWithoutPurchaseOrderItemInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1135,6 +1172,7 @@ export type InventoryItemUncheckedUpdateWithoutPurchaseOrderItemInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1154,6 +1192,7 @@ export type InventoryItemUncheckedUpdateManyWithoutPurchaseOrderItemInput = {
   unitCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   expiryDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   locationStatus?: Prisma.EnumLocationStatusFieldUpdateOperationsInput | $Enums.LocationStatus
+  storageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   saleMode?: Prisma.EnumSaleModeFieldUpdateOperationsInput | $Enums.SaleMode
   itemStatus?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   stockedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1176,6 +1215,7 @@ export type InventoryItemSelect<ExtArgs extends runtime.Types.Extensions.Interna
   unitCost?: boolean
   expiryDate?: boolean
   locationStatus?: boolean
+  storageLocation?: boolean
   saleMode?: boolean
   itemStatus?: boolean
   stockedAt?: boolean
@@ -1199,6 +1239,7 @@ export type InventoryItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   unitCost?: boolean
   expiryDate?: boolean
   locationStatus?: boolean
+  storageLocation?: boolean
   saleMode?: boolean
   itemStatus?: boolean
   stockedAt?: boolean
@@ -1222,6 +1263,7 @@ export type InventoryItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   unitCost?: boolean
   expiryDate?: boolean
   locationStatus?: boolean
+  storageLocation?: boolean
   saleMode?: boolean
   itemStatus?: boolean
   stockedAt?: boolean
@@ -1245,6 +1287,7 @@ export type InventoryItemSelectScalar = {
   unitCost?: boolean
   expiryDate?: boolean
   locationStatus?: boolean
+  storageLocation?: boolean
   saleMode?: boolean
   itemStatus?: boolean
   stockedAt?: boolean
@@ -1254,7 +1297,7 @@ export type InventoryItemSelectScalar = {
   updatedAt?: boolean
 }
 
-export type InventoryItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "purchaseOrderItemId" | "inspectionId" | "inventoryCode" | "name" | "skuText" | "unitCost" | "expiryDate" | "locationStatus" | "saleMode" | "itemStatus" | "stockedAt" | "outboundAt" | "problemReason" | "createdAt" | "updatedAt", ExtArgs["result"]["inventoryItem"]>
+export type InventoryItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "purchaseOrderItemId" | "inspectionId" | "inventoryCode" | "name" | "skuText" | "unitCost" | "expiryDate" | "locationStatus" | "storageLocation" | "saleMode" | "itemStatus" | "stockedAt" | "outboundAt" | "problemReason" | "createdAt" | "updatedAt", ExtArgs["result"]["inventoryItem"]>
 export type InventoryItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   purchaseOrderItem?: boolean | Prisma.PurchaseOrderItemDefaultArgs<ExtArgs>
@@ -1289,6 +1332,7 @@ export type $InventoryItemPayload<ExtArgs extends runtime.Types.Extensions.Inter
     unitCost: runtime.Decimal
     expiryDate: Date | null
     locationStatus: $Enums.LocationStatus
+    storageLocation: string | null
     saleMode: $Enums.SaleMode
     itemStatus: $Enums.ItemStatus
     stockedAt: Date
@@ -1732,6 +1776,7 @@ export interface InventoryItemFieldRefs {
   readonly unitCost: Prisma.FieldRef<"InventoryItem", 'Decimal'>
   readonly expiryDate: Prisma.FieldRef<"InventoryItem", 'DateTime'>
   readonly locationStatus: Prisma.FieldRef<"InventoryItem", 'LocationStatus'>
+  readonly storageLocation: Prisma.FieldRef<"InventoryItem", 'String'>
   readonly saleMode: Prisma.FieldRef<"InventoryItem", 'SaleMode'>
   readonly itemStatus: Prisma.FieldRef<"InventoryItem", 'ItemStatus'>
   readonly stockedAt: Prisma.FieldRef<"InventoryItem", 'DateTime'>

@@ -13,3 +13,15 @@ export async function GET(_request: Request, context: Context) {
     return toErrorResponse(error);
   }
 }
+
+export async function PATCH(request: Request, context: Context) {
+  try {
+    const { id } = await context.params;
+    const input = await request.json();
+    return Response.json(
+      await inventoryService.update(DEFAULT_OWNER_ID, id, input),
+    );
+  } catch (error) {
+    return toErrorResponse(error);
+  }
+}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Boxes, ClipboardCheck, LayoutDashboard, Menu, ReceiptText } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -42,15 +42,18 @@ function Navigation({ pathname }: { pathname: string }) {
           pathname === item.href ||
           (item.href !== "/" && pathname.startsWith(item.href));
         return (
-          <Button
+          <Link
             key={item.label}
-            variant={active ? "secondary" : "ghost"}
-            className="w-full justify-start"
-            render={<Link href={item.href} />}
+            href={item.href}
+            className={buttonVariants({
+              variant: active ? "secondary" : "ghost",
+              size: "default",
+              className: "w-full justify-start",
+            })}
           >
             <Icon />
             {item.label}
-          </Button>
+          </Link>
         );
       })}
     </nav>
@@ -70,13 +73,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Brand />
           <Sheet>
             <SheetTrigger
-              render={
-                <Button variant="outline" size="icon" className="md:hidden" />
-              }
-            >
-              <Menu />
-              <span className="sr-only">打开导航</span>
-            </SheetTrigger>
+              render={(props) => (
+                <button
+                  {...props}
+                  className={buttonVariants({ variant: "outline", size: "icon" }) + " md:hidden"}
+                >
+                  <Menu />
+                  <span className="sr-only">打开导航</span>
+                </button>
+              )}
+            />
             <SheetContent side="left" className="w-72">
               <SheetHeader className="border-b">
                 <SheetTitle>
