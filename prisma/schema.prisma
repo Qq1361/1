@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PurchasePlatform {
+  XIANYU
+}
+
+enum PurchaseOrderStatus {
+  PAID
+  WAITING_SHIPMENT
+  IN_TRANSIT
+  PENDING_INSPECTION
+  PARTIALLY_STOCKED
+  STOCKED
+  CANCELLED
+}
+
+enum AllocationStatus {
+  UNALLOCATED
+  DRAFT
+  CONFIRMED
+}
+
+enum AttachmentType {
+  PURCHASE_ORDER
+  PURCHASE_ORDER_ITEM
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+  attachments    Attachment[]
+
+  @@map("users")
+}
+
+model PurchaseOrder {
+  id                      String              @id @default(cuid())
+  ownerId                 String
+  orderNo                 String
+  platform                PurchasePlatform    @default(XIANYU)
+  status                  PurchaseOrderStatus @default(PAID)
+  allocationStatus        AllocationStatus    @default(UNALLOCATED)
+  allocationConfirmedAt   DateTime?
+  paidAt                  DateTime
+  totalAmount             Decimal             @db.Decimal(12, 2)
+  shippingAmount          Decimal             @default(0) @db.Decimal(12, 2)
+  carrierCode             String?
+  trackingNo              String?
+  shippedAt               DateTime?
+  deliveredAt             DateTime?
+  notes                   String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  owner User                @relation(fields: [ownerId], references: [id])
+  items PurchaseOrderItem[]
+
+  @@unique([ownerId, orderNo])
+  @@index([ownerId, status])
+  @@index([ownerId, allocationStatus])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                 String   @id @default(cuid())
+  purchaseOrderId    String
+  name               String
+  skuText            String?
+  quantity           Int
+  allocatedTotalCost Decimal? @db.Decimal(12, 2)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
+
+model Attachment {
+  id         String         @id @default(cuid())
+  ownerId    String
+  entityType AttachmentType
+  entityId   String
+  fileName   String
+  mimeType   String
+  size       Int
+  storageKey String
+  createdAt  DateTime       @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("attachments")
+}
