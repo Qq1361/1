@@ -390,7 +390,10 @@ export const ModelName = {
   Attachment: 'Attachment',
   LogisticsEvent: 'LogisticsEvent',
   Inspection: 'Inspection',
-  InventoryItem: 'InventoryItem'
+  InventoryItem: 'InventoryItem',
+  ReminderState: 'ReminderState',
+  InventoryActionLog: 'InventoryActionLog',
+  TodoResolution: 'TodoResolution'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -406,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "purchaseOrder" | "purchaseOrderItem" | "attachment" | "logisticsEvent" | "inspection" | "inventoryItem"
+    modelProps: "user" | "purchaseOrder" | "purchaseOrderItem" | "attachment" | "logisticsEvent" | "inspection" | "inventoryItem" | "reminderState" | "inventoryActionLog" | "todoResolution"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -928,6 +931,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ReminderState: {
+      payload: Prisma.$ReminderStatePayload<ExtArgs>
+      fields: Prisma.ReminderStateFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ReminderStateFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ReminderStateFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>
+        }
+        findFirst: {
+          args: Prisma.ReminderStateFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ReminderStateFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>
+        }
+        findMany: {
+          args: Prisma.ReminderStateFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>[]
+        }
+        create: {
+          args: Prisma.ReminderStateCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>
+        }
+        createMany: {
+          args: Prisma.ReminderStateCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ReminderStateCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>[]
+        }
+        delete: {
+          args: Prisma.ReminderStateDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>
+        }
+        update: {
+          args: Prisma.ReminderStateUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>
+        }
+        deleteMany: {
+          args: Prisma.ReminderStateDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ReminderStateUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ReminderStateUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>[]
+        }
+        upsert: {
+          args: Prisma.ReminderStateUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReminderStatePayload>
+        }
+        aggregate: {
+          args: Prisma.ReminderStateAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateReminderState>
+        }
+        groupBy: {
+          args: Prisma.ReminderStateGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReminderStateGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ReminderStateCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReminderStateCountAggregateOutputType> | number
+        }
+      }
+    }
+    InventoryActionLog: {
+      payload: Prisma.$InventoryActionLogPayload<ExtArgs>
+      fields: Prisma.InventoryActionLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.InventoryActionLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.InventoryActionLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>
+        }
+        findFirst: {
+          args: Prisma.InventoryActionLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.InventoryActionLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>
+        }
+        findMany: {
+          args: Prisma.InventoryActionLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>[]
+        }
+        create: {
+          args: Prisma.InventoryActionLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>
+        }
+        createMany: {
+          args: Prisma.InventoryActionLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.InventoryActionLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>[]
+        }
+        delete: {
+          args: Prisma.InventoryActionLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>
+        }
+        update: {
+          args: Prisma.InventoryActionLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.InventoryActionLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.InventoryActionLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.InventoryActionLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.InventoryActionLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$InventoryActionLogPayload>
+        }
+        aggregate: {
+          args: Prisma.InventoryActionLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateInventoryActionLog>
+        }
+        groupBy: {
+          args: Prisma.InventoryActionLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.InventoryActionLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.InventoryActionLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.InventoryActionLogCountAggregateOutputType> | number
+        }
+      }
+    }
+    TodoResolution: {
+      payload: Prisma.$TodoResolutionPayload<ExtArgs>
+      fields: Prisma.TodoResolutionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TodoResolutionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TodoResolutionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>
+        }
+        findFirst: {
+          args: Prisma.TodoResolutionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TodoResolutionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>
+        }
+        findMany: {
+          args: Prisma.TodoResolutionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>[]
+        }
+        create: {
+          args: Prisma.TodoResolutionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>
+        }
+        createMany: {
+          args: Prisma.TodoResolutionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TodoResolutionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>[]
+        }
+        delete: {
+          args: Prisma.TodoResolutionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>
+        }
+        update: {
+          args: Prisma.TodoResolutionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>
+        }
+        deleteMany: {
+          args: Prisma.TodoResolutionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TodoResolutionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TodoResolutionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>[]
+        }
+        upsert: {
+          args: Prisma.TodoResolutionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TodoResolutionPayload>
+        }
+        aggregate: {
+          args: Prisma.TodoResolutionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTodoResolution>
+        }
+        groupBy: {
+          args: Prisma.TodoResolutionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TodoResolutionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TodoResolutionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TodoResolutionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1103,6 +1328,63 @@ export const InventoryItemScalarFieldEnum = {
 } as const
 
 export type InventoryItemScalarFieldEnum = (typeof InventoryItemScalarFieldEnum)[keyof typeof InventoryItemScalarFieldEnum]
+
+
+export const ReminderStateScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  todoType: 'todoType',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  status: 'status',
+  reasonKey: 'reasonKey',
+  snoozedUntil: 'snoozedUntil',
+  resolvedAt: 'resolvedAt',
+  note: 'note',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ReminderStateScalarFieldEnum = (typeof ReminderStateScalarFieldEnum)[keyof typeof ReminderStateScalarFieldEnum]
+
+
+export const InventoryActionLogScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  inventoryItemId: 'inventoryItemId',
+  purchaseOrderId: 'purchaseOrderId',
+  todoType: 'todoType',
+  reasonKey: 'reasonKey',
+  actionType: 'actionType',
+  note: 'note',
+  oldSaleMode: 'oldSaleMode',
+  newSaleMode: 'newSaleMode',
+  oldItemStatus: 'oldItemStatus',
+  newItemStatus: 'newItemStatus',
+  oldStorageLocation: 'oldStorageLocation',
+  newStorageLocation: 'newStorageLocation',
+  oldExpiryDate: 'oldExpiryDate',
+  newExpiryDate: 'newExpiryDate',
+  createdAt: 'createdAt'
+} as const
+
+export type InventoryActionLogScalarFieldEnum = (typeof InventoryActionLogScalarFieldEnum)[keyof typeof InventoryActionLogScalarFieldEnum]
+
+
+export const TodoResolutionScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  todoType: 'todoType',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  reasonKey: 'reasonKey',
+  actionType: 'actionType',
+  note: 'note',
+  resolvedAt: 'resolvedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TodoResolutionScalarFieldEnum = (typeof TodoResolutionScalarFieldEnum)[keyof typeof TodoResolutionScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1370,6 +1652,20 @@ export type ListEnumItemStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$P
 
 
 /**
+ * Reference to a field of type 'ReminderStatus'
+ */
+export type EnumReminderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReminderStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'ReminderStatus[]'
+ */
+export type ListEnumReminderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReminderStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -1499,6 +1795,9 @@ export type GlobalOmitConfig = {
   logisticsEvent?: Prisma.LogisticsEventOmit
   inspection?: Prisma.InspectionOmit
   inventoryItem?: Prisma.InventoryItemOmit
+  reminderState?: Prisma.ReminderStateOmit
+  inventoryActionLog?: Prisma.InventoryActionLogOmit
+  todoResolution?: Prisma.TodoResolutionOmit
 }
 
 /* Types for Logging */

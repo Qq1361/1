@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowRight,
+  BellOff,
+  CalendarClock,
+  ChevronDown,
   ClipboardCheck,
   Clock3,
   Plus,
@@ -48,9 +53,13 @@ type TodosResponse = {
     type: TodoType;
     orderId: string;
     orderNo: string;
+    inventoryId?: string;
+    inspectionId?: string;
     title: string;
     description: string;
-    targetPath?: string;
+    reasonKey: string;
+    primaryAction: { label: string; href: string };
+    secondaryActions?: { label: string; href: string }[];
   }[];
   counts: {
     missingTracking: number;
@@ -127,19 +136,15 @@ export default function Home() {
             <Skeleton className="h-16" />
           ) : todos.data.length ? (
             todos.data.map((todo) => (
-              <Link
+              <TodoCard
                 key={todo.id}
-                href={todo.targetPath ?? `/purchases/${todo.orderId}`}
-                className="flex items-center justify-between gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/40"
-              >
-                <div>
-                  <p className="text-sm font-medium">{todo.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {todo.orderNo} · {todo.description}
-                  </p>
-                </div>
-                <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
-              </Link>
+                todo={todo}
+                onUpdated={() => {
+                  fetch("/api/todos")
+                    .then((r) => r.json())
+                    .then(setTodos);
+                }}
+              />
             ))
           ) : (
             <div className="py-8 text-center text-sm text-muted-foreground">
@@ -187,6 +192,223 @@ export default function Home() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function deriveEntity(todo: { inventoryId?: string; orderId: string }) {
+  if (todo.inventoryId) {
+    return { entityType: "INVENTORY_ITEM", entityId: todo.inventoryId };
+  }
+  return { entityType: "PURCHASE_ORDER", entityId: todo.orderId };
+}
+
+function TodoCard({
+  todo,
+  onUpdated,
+}: {
+  todo: {
+    id: string;
+    type: string;
+    orderId: string;
+    orderNo: string;
+    inventoryId?: string;
+    inspectionId?: string;
+    title: string;
+    description: string;
+    reasonKey: string;
+    daysRemaining?: number;
+    primaryAction: { label: string; href: string };
+    secondaryActions?: { label: string; href: string }[];
+    availableActions?: {
+      label: string;
+      actionType: string;
+      confirmMessage?: string;
+      changes: Record<string, unknown>;
+      writesResolution: boolean;
+      notePrompt?: string;
+    }[];
+  };
+  onUpdated: () => void;
+}) {
+  const router = useRouter();
+  const [expanded, setExpanded] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
+  const entity = deriveEntity(todo);
+
+  const snooze = useCallback(
+    async (hours: number) => {
+      setPending("snooze");
+      await fetch("/api/todos/snooze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          todoType: todo.type,
+          entityType: entity.entityType,
+          entityId: entity.entityId,
+          reasonKey: todo.reasonKey,
+          snoozedUntil: new Date(Date.now() + hours * 3600_000).toISOString(),
+        }),
+      });
+      setPending(null);
+      onUpdated();
+    },
+    [todo.type, entity.entityType, entity.entityId, todo.reasonKey, onUpdated],
+  );
+
+  return (
+    <div
+      className="cursor-pointer rounded-lg border p-3 transition-colors hover:bg-muted/30"
+      onClick={() => router.push(todo.primaryAction.href)}
+      onKeyDown={(e) => { if (e.key === "Enter") router.push(todo.primaryAction.href); }}
+      role="link"
+      tabIndex={0}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{todo.title}</p>
+          <p className="mt-1 whitespace-pre-line text-xs leading-5 text-muted-foreground">
+            {todo.description}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              {todo.primaryAction.label}
+            </span>
+            {todo.secondaryActions?.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {action.label}
+              </Link>
+            ))}
+            {/* Dynamic processing menu from availableActions */}
+            {todo.availableActions && todo.availableActions.length > 0 ? (
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+                  disabled={pending !== null}
+                  onClick={() => setExpanded(!expanded)}
+                >
+                  处理
+                  <ChevronDown className={`size-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                </button>
+                {expanded ? (
+                  <div className="absolute left-0 top-full z-10 mt-1 w-48 rounded-lg border bg-background p-1.5 shadow-lg">
+                    {todo.availableActions.map((a) => {
+                      const isDestructive = a.actionType === "MARKED_PROBLEM";
+                      return (
+                        <button
+                          key={a.actionType}
+                          type="button"
+                          className={`w-full rounded-md px-2.5 py-1.5 text-left text-xs hover:bg-muted disabled:opacity-50 ${isDestructive ? "text-destructive" : ""}`}
+                          disabled={pending !== null}
+                          onClick={async () => {
+                            let note: string | undefined;
+                            if (a.notePrompt) {
+                              note = prompt(a.notePrompt)?.trim() || undefined;
+                              if (note === undefined && a.notePrompt.includes("到期日")) return; // cancelled
+                            }
+                            if (a.confirmMessage && !confirm(a.confirmMessage)) return;
+
+                            // SNOOZE is special
+                            if (a.actionType === "SNOOZE") {
+                              await snooze(24);
+                              setExpanded(false);
+                              return;
+                            }
+
+                            // Real business action
+                            setPending("process");
+                            if (todo.inventoryId && Object.keys(a.changes).length > 0) {
+                              const r = await fetch(`/api/inventory/${todo.inventoryId}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(a.changes),
+                              });
+                              if (!r.ok) {
+                                setPending(null);
+                                toast.error((await r.json()).message ?? "更新失败");
+                                return;
+                              }
+                            }
+                            // Write action log
+                            await fetch("/api/inventory/action-log", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                inventoryItemId: todo.inventoryId,
+                                todoType: todo.type,
+                                reasonKey: todo.reasonKey,
+                                actionType: a.actionType,
+                                note,
+                              }),
+                            }).catch(() => {});
+                            // Write TodoResolution if needed
+                            if (a.writesResolution) {
+                              await fetch("/api/todos/resolve", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  todoType: todo.type,
+                                  entityType: entity.entityType,
+                                  entityId: entity.entityId,
+                                  reasonKey: todo.reasonKey,
+                                  note: a.actionType,
+                                }),
+                              }).catch(() => {});
+                            }
+                            setPending(null);
+                            setExpanded(false);
+                            toast.success(a.label);
+                            onUpdated();
+                          }}
+                        >
+                          {a.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+            onClick={() => snooze(24)}
+            disabled={pending !== null}
+            title="明天再提醒"
+          >
+            <CalendarClock className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+            onClick={() => snooze(72)}
+            disabled={pending !== null}
+            title="3天后再提醒"
+          >
+            <CalendarClock className="size-3.5" />
+            <span className="text-[10px]">3</span>
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+            onClick={() => setExpanded(!expanded)}
+            disabled={pending !== null}
+            title="标记已处理"
+          >
+            <BellOff className="size-3.5" />
+            <ChevronDown className={`size-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

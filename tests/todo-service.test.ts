@@ -15,7 +15,7 @@ const base = {
 
 describe("calculateTodos", () => {
   it("adds missing tracking after 48 hours", () => {
-    expect(calculateTodos([base], now).map((todo) => todo.type)).toEqual([
+    expect(calculateTodos([base], [], now).map((todo) => todo.type)).toEqual([
       "MISSING_TRACKING",
     ]);
   });
@@ -28,6 +28,7 @@ describe("calculateTodos", () => {
           { ...base, id: "tracked", trackingNo: "ABC" },
           { ...base, id: "cancelled", status: "CANCELLED" },
         ],
+        [],
         now,
       ),
     ).toEqual([]);
@@ -39,23 +40,33 @@ describe("calculateTodos", () => {
   ] as const)("maps %s to %s", (logisticsStatus, expected) => {
     const todos = calculateTodos(
       [{ ...base, trackingNo: "ABC", logisticsStatus }],
+      [],
       now,
     );
     expect(todos[0].type).toBe(expected);
   });
 
-  it("adds pending inspection todo", () => {
+  it("adds pending inspection todo from inspection data", () => {
     const todos = calculateTodos(
+      [],
       [
         {
-          ...base,
-          trackingNo: "ABC1",
-          status: "PENDING_INSPECTION",
-          logisticsStatus: "DELIVERED",
+          id: "insp-1",
+          sequence: 1,
+          purchaseOrderItem: {
+            name: "测试商品",
+            skuText: null,
+            quantity: 2,
+            purchaseOrder: { id: "order-1", orderNo: "XY-1" },
+          },
         },
       ],
       now,
     );
     expect(todos[0].type).toBe("PENDING_INSPECTION");
+    expect(todos[0].primaryAction.label).toBe("开始验货");
+    expect(todos[0].primaryAction.href).toBe("/inspections/insp-1");
+    expect(todos[0].secondaryActions?.[0].label).toBe("查看订单");
+    expect(todos[0].secondaryActions?.[0].href).toBe("/purchases/order-1");
   });
 });

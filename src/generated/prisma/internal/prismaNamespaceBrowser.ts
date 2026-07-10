@@ -57,7 +57,10 @@ export const ModelName = {
   Attachment: 'Attachment',
   LogisticsEvent: 'LogisticsEvent',
   Inspection: 'Inspection',
-  InventoryItem: 'InventoryItem'
+  InventoryItem: 'InventoryItem',
+  ReminderState: 'ReminderState',
+  InventoryActionLog: 'InventoryActionLog',
+  TodoResolution: 'TodoResolution'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -212,6 +215,63 @@ export const InventoryItemScalarFieldEnum = {
 } as const
 
 export type InventoryItemScalarFieldEnum = (typeof InventoryItemScalarFieldEnum)[keyof typeof InventoryItemScalarFieldEnum]
+
+
+export const ReminderStateScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  todoType: 'todoType',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  status: 'status',
+  reasonKey: 'reasonKey',
+  snoozedUntil: 'snoozedUntil',
+  resolvedAt: 'resolvedAt',
+  note: 'note',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ReminderStateScalarFieldEnum = (typeof ReminderStateScalarFieldEnum)[keyof typeof ReminderStateScalarFieldEnum]
+
+
+export const InventoryActionLogScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  inventoryItemId: 'inventoryItemId',
+  purchaseOrderId: 'purchaseOrderId',
+  todoType: 'todoType',
+  reasonKey: 'reasonKey',
+  actionType: 'actionType',
+  note: 'note',
+  oldSaleMode: 'oldSaleMode',
+  newSaleMode: 'newSaleMode',
+  oldItemStatus: 'oldItemStatus',
+  newItemStatus: 'newItemStatus',
+  oldStorageLocation: 'oldStorageLocation',
+  newStorageLocation: 'newStorageLocation',
+  oldExpiryDate: 'oldExpiryDate',
+  newExpiryDate: 'newExpiryDate',
+  createdAt: 'createdAt'
+} as const
+
+export type InventoryActionLogScalarFieldEnum = (typeof InventoryActionLogScalarFieldEnum)[keyof typeof InventoryActionLogScalarFieldEnum]
+
+
+export const TodoResolutionScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  todoType: 'todoType',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  reasonKey: 'reasonKey',
+  actionType: 'actionType',
+  note: 'note',
+  resolvedAt: 'resolvedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TodoResolutionScalarFieldEnum = (typeof TodoResolutionScalarFieldEnum)[keyof typeof TodoResolutionScalarFieldEnum]
 
 
 export const SortOrder = {

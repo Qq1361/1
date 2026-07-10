@@ -86,10 +86,10 @@ try {
   const inspectionCard = page.locator('a[href="/inspections"]').first();
   if (await inspectionCard.isVisible()) ok("待验货卡片可点击");
 
-  const expiryCard = page.locator('a[href*="reminder=EXPIRY_UNDER_395"]');
+  const expiryCard = page.locator('a[href*="reminder=EXPIRY_UNDER_395"]').first();
   if (await expiryCard.isVisible()) ok("效期395天卡片可点击");
 
-  const stockedCard = page.locator('a[href*="reminder=STOCKED_OVER_3_DAYS"]');
+  const stockedCard = page.locator('a[href*="reminder=STOCKED_OVER_3_DAYS"]').first();
   if (await stockedCard.isVisible()) ok("入库满3天卡片可点击");
 
   // Click logistics issues card

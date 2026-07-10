@@ -46,21 +46,34 @@ export function AllocationForm({ orderId }: { orderId: string }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/purchase-orders/${orderId}/allocation`)
-      .then((response) => response.json())
-      .then((data: Summary) => {
-        setSummary(data);
-        setValues(
-          Object.fromEntries(
-            data.items.map((item) => [
-              item.id,
-              item.allocatedTotalCost ?? "",
-            ]),
-          ),
-        );
-      });
+    let cancelled = false;
+    async function load() {
+      try {
+        const response = await fetch(`/api/purchase-orders/${orderId}/allocation`);
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ message: "加载成本分摊信息失败" }));
+          if (!cancelled) setError(err.message || "加载成本分摊信息失败");
+          return;
+        }
+        const data = await response.json() as Summary;
+        if (!cancelled) {
+          setSummary(data);
+          setError(null);
+          setValues(
+            Object.fromEntries(
+              data.items.map((item) => [item.id, item.allocatedTotalCost ?? ""]),
+            ),
+          );
+        }
+      } catch {
+        if (!cancelled) setError("网络异常，加载成本分摊信息失败，请检查网络后重试。");
+      }
+    }
+    load();
+    return () => { cancelled = true; };
   }, [orderId]);
 
   const clientSummary = useMemo(() => {
@@ -82,42 +95,83 @@ export function AllocationForm({ orderId }: { orderId: string }) {
 
   async function submit(action: "save" | "confirm" | "reopen") {
     setPending(true);
-    const response = await fetch(
-      `/api/purchase-orders/${orderId}/allocation`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          allocations:
-            action === "reopen"
-              ? []
-              : summary?.items.map((item) => ({
-                  itemId: item.id,
-                  allocatedTotalCost: values[item.id] || null,
-                })),
-        }),
-      },
-    );
-    const data = (await response.json()) as Summary | ApiError;
-    if (!response.ok) {
-      toast.error((data as ApiError).message);
+    try {
+      const response = await fetch(
+        `/api/purchase-orders/${orderId}/allocation`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            allocations:
+              action === "reopen"
+                ? []
+                : summary?.items.map((item) => ({
+                    itemId: item.id,
+                    allocatedTotalCost: values[item.id] || null,
+                  })),
+          }),
+        },
+      );
+      let data: Summary | ApiError;
+      try {
+        data = await response.json();
+      } catch {
+        toast.error("服务器返回数据异常，请重试。");
+        return;
+      }
+      if (!response.ok) {
+        toast.error((data as ApiError).message || "保存失败");
+        return;
+      }
+      setSummary(data as Summary);
+      toast.success(
+        action === "confirm"
+          ? "成本分摊已确认"
+          : action === "reopen"
+            ? "已重新进入编辑"
+            : "分摊草稿已保存",
+      );
+    } catch {
+      toast.error("网络异常，保存失败，请检查网络后重试。");
+    } finally {
       setPending(false);
-      return;
     }
-    setSummary(data as Summary);
-    toast.success(
-      action === "confirm"
-        ? "成本分摊已确认"
-        : action === "reopen"
-          ? "已重新进入编辑"
-          : "分摊草稿已保存",
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4 py-8 text-center">
+        <p className="text-sm text-destructive">{error}</p>
+        <div className="flex justify-center gap-3">
+          <button
+            type="button"
+            className={buttonVariants({ variant: "outline" })}
+            onClick={() => { setError(null); setSummary(null); }}
+          >
+            重试
+          </button>
+          <Link href={`/purchases/${orderId}`} className={buttonVariants()}>
+            返回订单
+          </Link>
+        </div>
+      </div>
     );
-    setPending(false);
   }
 
   if (!summary || !clientSummary) {
     return <Skeleton className="h-96 w-full" />;
+  }
+
+  if (summary.items.length === 0) {
+    return (
+      <div className="space-y-4 py-8 text-center">
+        <p className="text-sm text-muted-foreground">该订单没有商品明细，无法进行成本分摊。</p>
+        <Link href={`/purchases/${orderId}`} className={buttonVariants()}>
+          返回订单
+        </Link>
+      </div>
+    );
   }
 
   const confirmed = summary.allocationStatus === "CONFIRMED";

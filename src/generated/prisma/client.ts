@@ -76,3 +76,18 @@ export type Inspection = Prisma.InspectionModel
  * 
  */
 export type InventoryItem = Prisma.InventoryItemModel
+/**
+ * Model ReminderState
+ * 
+ */
+export type ReminderState = Prisma.ReminderStateModel
+/**
+ * Model InventoryActionLog
+ * 
+ */
+export type InventoryActionLog = Prisma.InventoryActionLogModel
+/**
+ * Model TodoResolution
+ * 
+ */
+export type TodoResolution = Prisma.TodoResolutionModel

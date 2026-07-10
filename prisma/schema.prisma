@@ -92,11 +92,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  purchaseOrders PurchaseOrder[]
-  attachments    Attachment[]
+  purchaseOrders  PurchaseOrder[]
+  attachments     Attachment[]
   logisticsEvents LogisticsEvent[]
-  inspections      Inspection[]
-  inventoryItems   InventoryItem[]
+  inspections     Inspection[]
+  inventoryItems     InventoryItem[]
+  reminderStates     ReminderState[]
+  inventoryActionLogs InventoryActionLog[]
+  todoResolutions    TodoResolution[]
 
   @@map("users")
 }
@@ -249,9 +252,83 @@ model InventoryItem {
   owner             User              @relation(fields: [ownerId], references: [id])
   purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
   inspection       Inspection        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  actionLogs       InventoryActionLog[]
 
   @@unique([ownerId, inventoryCode])
   @@index([ownerId, itemStatus])
   @@index([ownerId, locationStatus, saleMode])
   @@map("inventory_items")
+}
+
+enum ReminderStatus {
+  SNOOZED
+  RESOLVED
+}
+
+model ReminderState {
+  id           String         @id @default(cuid())
+  ownerId      String
+  todoType     String
+  entityType   String
+  entityId     String
+  status       ReminderStatus
+  reasonKey    String?
+  snoozedUntil DateTime?
+  resolvedAt   DateTime?
+  note         String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@unique([ownerId, todoType, entityType, entityId])
+  @@index([ownerId, status, snoozedUntil])
+  @@map("reminder_states")
+}
+
+model InventoryActionLog {
+  id                 String   @id @default(cuid())
+  ownerId            String
+  inventoryItemId    String
+  purchaseOrderId    String?
+  todoType           String?
+  reasonKey          String?
+  actionType         String
+  note               String?
+  oldSaleMode        String?
+  newSaleMode        String?
+  oldItemStatus      String?
+  newItemStatus      String?
+  oldStorageLocation String?
+  newStorageLocation String?
+  oldExpiryDate      DateTime?
+  newExpiryDate      DateTime?
+  createdAt          DateTime @default(now())
+
+  owner         User          @relation(fields: [ownerId], references: [id])
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, inventoryItemId, createdAt(sort: Desc)])
+  @@index([ownerId, purchaseOrderId])
+  @@map("inventory_action_logs")
+}
+
+model TodoResolution {
+  id         String   @id @default(cuid())
+  ownerId    String
+  todoType   String
+  entityType String
+  entityId   String
+  reasonKey  String
+  actionType String
+  note       String?
+  resolvedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@unique([ownerId, todoType, reasonKey])
+  @@index([ownerId, entityType, entityId])
+  @@index([ownerId, resolvedAt])
+  @@map("todo_resolutions")
 }

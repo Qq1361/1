@@ -116,3 +116,11 @@ export const ItemStatus = {
 } as const
 
 export type ItemStatus = (typeof ItemStatus)[keyof typeof ItemStatus]
+
+
+export const ReminderStatus = {
+  SNOOZED: 'SNOOZED',
+  RESOLVED: 'RESOLVED'
+} as const
+
+export type ReminderStatus = (typeof ReminderStatus)[keyof typeof ReminderStatus]

@@ -61,16 +61,35 @@ export class InventoryService {
     return { data, total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
   }
 
-  async update(ownerId: string, id: string, data: { saleMode?: string }) {
+  async update(
+    ownerId: string,
+    id: string,
+    data: { saleMode?: string; storageLocation?: string; itemStatus?: string; problemReason?: string },
+  ) {
     const item = await db.inventoryItem.findFirst({
       where: { id, ownerId },
     });
     if (!item)
       throw new ServiceError("INVENTORY_NOT_FOUND", "库存商品不存在。", 404);
-    return db.inventoryItem.update({
-      where: { id },
-      data: { saleMode: data.saleMode as Prisma.EnumSaleModeFieldUpdateOperationsInput["set"] },
-    });
+    if (["SOLD", "REMOVED"].includes(item.itemStatus)) {
+      throw new ServiceError(
+        "ITEM_FINALIZED",
+        "该库存已售出或已移除，不允许修改。",
+        409,
+      );
+    }
+    const updateData: Record<string, unknown> = {};
+    if (data.saleMode !== undefined) updateData.saleMode = data.saleMode as Prisma.EnumSaleModeFieldUpdateOperationsInput["set"];
+    if (data.storageLocation !== undefined) updateData.storageLocation = data.storageLocation?.trim() || null;
+    if (data.itemStatus !== undefined) {
+      updateData.itemStatus = data.itemStatus as Prisma.EnumItemStatusFieldUpdateOperationsInput["set"];
+      if (data.itemStatus === "PROBLEM") {
+        updateData.problemReason = data.problemReason?.trim() || "标记为问题件";
+      } else if (data.itemStatus === "STOCKED") {
+        updateData.problemReason = null;
+      }
+    }
+    return db.inventoryItem.update({ where: { id }, data: updateData });
   }
 
   async get(ownerId: string, id: string) {

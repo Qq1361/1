@@ -37,17 +37,29 @@ export function LogisticsCard({
   const [carrierCode, setCarrierCode] = useState(order.carrierCode ?? "");
   const [trackingNo, setTrackingNo] = useState(order.trackingNo ?? "");
   const [shippedAt, setShippedAt] = useState(toLocalDateTime(order.shippedAt));
-  const [pending, setPending] = useState<"save" | "refresh" | "manual" | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [manualPending, setManualPending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ carrierCode?: string; trackingNo?: string }>({});
   const [showManualConfirm, setShowManualConfirm] = useState(false);
 
   async function handleResponse(response: Response) {
-    const data = (await response.json()) as LogisticsResponse | ApiError;
-    if (!response.ok) {
-      toast.error((data as ApiError).message);
+    let data: LogisticsResponse | ApiError;
+    try {
+      data = await response.json();
+    } catch {
+      toast.error("服务器返回数据异常，请重试。");
       return false;
     }
-    onChange(data as LogisticsResponse);
+    if (!response.ok) {
+      toast.error((data as ApiError).message || "保存物流信息失败");
+      return false;
+    }
+    try {
+      onChange(data as LogisticsResponse);
+    } catch {
+      // onChange may throw, don't let it break our state
+    }
     return true;
   }
 
@@ -59,36 +71,47 @@ export function LogisticsCard({
       toast.error("请填写快递公司代码和快递单号。");
       return;
     }
-    setPending("save");
-    const response = await fetch(`/api/purchase-orders/${order.id}/tracking`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        carrierCode,
-        trackingNo,
-        shippedAt: shippedAt ? new Date(shippedAt).toISOString() : undefined,
-      }),
-    });
-    if (await handleResponse(response)) {
-      toast.success("物流信息已保存");
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/purchase-orders/${order.id}/tracking`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carrierCode,
+          trackingNo,
+          shippedAt: shippedAt ? new Date(shippedAt).toISOString() : undefined,
+        }),
+      });
+      if (await handleResponse(response)) {
+        toast.success("物流信息已保存");
+      }
+    } catch {
+      toast.error("网络异常，保存物流信息失败，请检查网络后重试。");
+    } finally {
+      setSaving(false);
     }
-    setPending(null);
   }
 
   async function refresh() {
     if (!order.carrierCode || !order.trackingNo) {
-      toast.error("请先保存物流信息。");
+      toast.error("请先填写并保存快递单号。");
       return;
     }
-    setPending("refresh");
-    const response = await fetch(
-      `/api/purchase-orders/${order.id}/refresh-logistics`,
-      { method: "POST" },
-    );
-    if (await handleResponse(response)) {
-      toast.success("物流状态已更新");
+    if (saving) return;
+    setRefreshing(true);
+    try {
+      const response = await fetch(
+        `/api/purchase-orders/${order.id}/refresh-logistics`,
+        { method: "POST" },
+      );
+      if (await handleResponse(response)) {
+        toast.success("物流状态已更新");
+      }
+    } catch {
+      toast.error("网络异常，刷新物流失败，请检查网络后重试。");
+    } finally {
+      setRefreshing(false);
     }
-    setPending(null);
   }
 
   async function manualDeliver() {
@@ -97,15 +120,20 @@ export function LogisticsCard({
       return;
     }
     setShowManualConfirm(false);
-    setPending("manual");
-    const response = await fetch(
-      `/api/purchase-orders/${order.id}/manual-delivery`,
-      { method: "POST" },
-    );
-    if (await handleResponse(response)) {
-      toast.success("已手动标记为已签收，待验货记录已生成。");
+    setManualPending(true);
+    try {
+      const response = await fetch(
+        `/api/purchase-orders/${order.id}/manual-delivery`,
+        { method: "POST" },
+      );
+      if (await handleResponse(response)) {
+        toast.success("已手动标记为已签收，待验货记录已生成。");
+      }
+    } catch {
+      toast.error("网络异常，操作失败，请检查网络后重试。");
+    } finally {
+      setManualPending(false);
     }
-    setPending(null);
   }
 
   const hasSavedTracking = !!(order.carrierCode && order.trackingNo);
@@ -186,9 +214,9 @@ export function LogisticsCard({
           <Button
             variant="outline"
             onClick={saveTracking}
-            disabled={pending !== null}
+            disabled={saving || refreshing || manualPending}
           >
-            {pending === "save" ? (
+            {saving ? (
               <Loader2 className="animate-spin" />
             ) : (
               <PackageCheck />
@@ -197,10 +225,10 @@ export function LogisticsCard({
           </Button>
           <Button
             onClick={refresh}
-            disabled={pending !== null || !hasSavedTracking}
+            disabled={refreshing || saving || manualPending || !hasSavedTracking}
             title={!hasSavedTracking ? "请先保存物流信息" : undefined}
           >
-            {pending === "refresh" ? (
+            {refreshing ? (
               <Loader2 className="animate-spin" />
             ) : (
               <RefreshCw />
@@ -223,17 +251,17 @@ export function LogisticsCard({
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pending !== null}
+                    disabled={manualPending}
                     onClick={() => setShowManualConfirm(false)}
                   >
                     取消
                   </Button>
                   <Button
                     size="sm"
-                    disabled={pending !== null}
+                    disabled={manualPending}
                     onClick={manualDeliver}
                   >
-                    {pending === "manual" ? (
+                    {manualPending ? (
                       <Loader2 className="animate-spin" />
                     ) : (
                       <CheckCheck />
@@ -246,7 +274,7 @@ export function LogisticsCard({
               <Button
                 variant="outline"
                 onClick={() => setShowManualConfirm(true)}
-                disabled={pending !== null}
+                disabled={saving || refreshing || manualPending}
               >
                 <CheckCheck />
                 手动标记已签收
