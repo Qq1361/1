@@ -129,11 +129,47 @@ export class PurchaseOrderService {
       where.paidAt = { lte: cutoff };
     } else if (query.todo === "logisticsIssues") {
       where.logisticsStatus = { in: ["EXCEPTION", "STALLED"] };
+      where.status = { not: "CANCELLED" };
     }
     if (query.tracking === "missing") {
       where.trackingNo = null;
       where.status = { not: "CANCELLED" };
     }
+    // For todo filters, apply same ReminderState filtering as /api/todos
+    if (query.todo) {
+      const allOrders = await db.purchaseOrder.findMany({
+        where,
+        include: { _count: { select: { items: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+      const orderIds = allOrders.map((o) => o.id);
+      // Fetch reminder states for these orders
+      const reminderStates = await db.reminderState.findMany({
+        where: {
+          ownerId,
+          entityType: "PURCHASE_ORDER",
+          entityId: { in: orderIds },
+          status: { in: ["SNOOZED", "RESOLVED"] },
+        },
+        select: { entityId: true, status: true, snoozedUntil: true, reasonKey: true, todoType: true },
+      });
+      const hiddenOrderIds = new Set<string>();
+      for (const r of reminderStates) {
+        if (r.status === "RESOLVED") { hiddenOrderIds.add(r.entityId); continue; }
+        if (r.status === "SNOOZED" && r.snoozedUntil && r.snoozedUntil > now) { hiddenOrderIds.add(r.entityId); }
+      }
+      const filtered = allOrders.filter((o) => !hiddenOrderIds.has(o.id));
+      const total = filtered.length;
+      const data = filtered.slice((query.page - 1) * query.pageSize, query.page * query.pageSize);
+      return serializeOrder({
+        data,
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+      });
+    }
+
     const [orders, total] = await db.$transaction([
       db.purchaseOrder.findMany({
         where,

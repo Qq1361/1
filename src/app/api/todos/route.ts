@@ -15,6 +15,7 @@ export async function GET() {
         pendingInspection: pendingInspectionCount,
         distanceTo395Within7Days: todos.filter((t) => t.type === "DISTANCE_TO_395_WITHIN_7_DAYS").length,
         expiryUnder395: todos.filter((t) => t.type === "EXPIRY_UNDER_395").length,
+        distanceTo365Within10Days: todos.filter((t) => t.type === "DISTANCE_TO_365_WITHIN_10_DAYS").length,
         expiryUnder365: todos.filter((t) => t.type === "EXPIRY_UNDER_365").length,
         overstocked: todos.filter((t) => t.type === "OVERSTOCKED").length,
         ninetyFiveUnder90: todos.filter((t) => t.type === "NINETY_FIVE_EXPIRY_UNDER_90").length,

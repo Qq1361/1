@@ -67,6 +67,7 @@ type TodosResponse = {
     pendingInspection: number;
     distanceTo395Within7Days: number;
     expiryUnder395: number;
+    distanceTo365Within10Days: number;
     expiryUnder365: number;
     overstocked: number;
     ninetyFiveUnder90: number;
@@ -93,11 +94,12 @@ export default function Home() {
     { label: "超48小时未填单号", value: todos?.counts.missingTracking, icon: Truck, href: "/purchases?todo=missingTracking" },
     { label: "物流异常 / 停滞", value: todos?.counts.logisticsIssues, icon: AlertTriangle, href: "/purchases?todo=logisticsIssues" },
     { label: "待验货", value: todos?.counts.pendingInspection, icon: ClipboardCheck, href: "/inspections" },
-    { label: "距395天不足7天", value: todos?.counts.distanceTo395Within7Days, icon: Timer, href: "/inventory?reminder=EXPIRY_UNDER_395" },
+    { label: "距395天不足7天", value: todos?.counts.distanceTo395Within7Days, icon: Timer, href: "/inventory?reminder=DISTANCE_TO_395_WITHIN_7_DAYS" },
     { label: "效期低于395天", value: todos?.counts.expiryUnder395, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_395" },
+    { label: "距365天不足10天", value: todos?.counts.distanceTo365Within10Days, icon: Timer, href: "/inventory?reminder=DISTANCE_TO_365_WITHIN_10_DAYS" },
     { label: "效期低于365天", value: todos?.counts.expiryUnder365, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_365" },
-    { label: "95分效期接近限制", value: todos?.counts.ninetyFiveUnder90, icon: Timer, href: "/inventory?reminder=EXPIRY_UNDER_395" },
-    { label: "95分效期低于60天", value: todos?.counts.ninetyFiveUnder60, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_365" },
+    { label: "95分效期接近限制", value: todos?.counts.ninetyFiveUnder90, icon: Timer, href: "/inventory?reminder=NINETY_FIVE_EXPIRY_UNDER_90" },
+    { label: "95分效期低于60天", value: todos?.counts.ninetyFiveUnder60, icon: AlertTriangle, href: "/inventory?reminder=NINETY_FIVE_EXPIRY_UNDER_60" },
     { label: "入库满 3 天", value: todos?.counts.overstocked, icon: Clock3, href: "/inventory?reminder=STOCKED_OVER_3_DAYS" },
   ];
 

@@ -63,9 +63,13 @@ function daysInStock(date: string) {
 }
 
 const reminderLabels: Record<string, string> = {
-  EXPIRY_UNDER_395: "效期低于 395 天",
-  EXPIRY_UNDER_365: "效期低于 365 天",
-  STOCKED_OVER_3_DAYS: "入库满 3 天",
+  DISTANCE_TO_395_WITHIN_7_DAYS: "距395天不足7天",
+  EXPIRY_UNDER_395: "效期低于395天",
+  DISTANCE_TO_365_WITHIN_10_DAYS: "距365天不足10天",
+  EXPIRY_UNDER_365: "效期低于365天",
+  NINETY_FIVE_EXPIRY_UNDER_90: "95分效期接近限制",
+  NINETY_FIVE_EXPIRY_UNDER_60: "95分效期低于60天",
+  STOCKED_OVER_3_DAYS: "入库满3天",
 };
 
 export function InventoryList() {

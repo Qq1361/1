@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 import { ServiceError } from "@/server/errors";
+import { getReminderType } from "@/server/services/todo-service";
 
 export class InventoryService {
   async list(
@@ -10,7 +11,7 @@ export class InventoryService {
       itemStatus?: Prisma.EnumItemStatusFilter["equals"];
       saleMode?: Prisma.EnumSaleModeFilter["equals"];
       locationStatus?: Prisma.EnumLocationStatusFilter["equals"];
-      reminder?: "EXPIRY_UNDER_395" | "EXPIRY_UNDER_365" | "STOCKED_OVER_3_DAYS";
+      reminder?: string;
       page: number;
       pageSize: number;
     },
@@ -32,23 +33,68 @@ export class InventoryService {
           }
         : {}),
     };
-    // Apply reminder filters on top
+    // Reminder filter: fetch all, then filter in-memory using the shared getReminderType
+    // to ensure exact consistency with /api/todos counts
     if (query.reminder) {
-      where.itemStatus = "STOCKED";
+      // Use a broader DB filter first to limit data, then refine in code
       if (query.reminder === "STOCKED_OVER_3_DAYS") {
+        where.itemStatus = "STOCKED";
         where.stockedAt = { lte: new Date(now.getTime() - 72 * 60 * 60 * 1000) };
-      } else if (query.reminder === "EXPIRY_UNDER_365") {
-        where.expiryDate = {
-          not: null,
-          lte: new Date(now.getTime() + 365 * 86_400_000),
-        };
-      } else if (query.reminder === "EXPIRY_UNDER_395") {
-        where.expiryDate = {
-          not: null,
-          lte: new Date(now.getTime() + 395 * 86_400_000),
-        };
+      } else {
+        // For expiry reminders, fetch STOCKED items with any expiry
+        where.itemStatus = "STOCKED";
+        where.expiryDate = { not: null };
       }
     }
+    // For reminder filters, use the exact same todo computation as /api/todos
+    // to ensure count consistency with dashboard cards
+    if (query.reminder && query.reminder !== "STOCKED_OVER_3_DAYS") {
+      // Fetch all matching items + todos + reminder states in one transaction
+      const allItems = await db.inventoryItem.findMany({
+        where,
+        orderBy: { stockedAt: "desc" },
+      });
+      // Get reminder states to apply the same snooze/resolve filtering as /api/todos
+      const [reminderStates, todoResolutions] = await Promise.all([
+        db.reminderState.findMany({
+          where: { ownerId },
+          select: { todoType: true, entityType: true, entityId: true, status: true, snoozedUntil: true, reasonKey: true },
+        }),
+        db.todoResolution.findMany({
+          where: { ownerId },
+          select: { todoType: true, reasonKey: true },
+        }),
+      ]);
+      const resolutionSet = new Set(todoResolutions.map((r) => `${r.todoType}:${r.reasonKey}`));
+      const reminderMap = new Map<string, { status: string; snoozedUntil: Date | null; reasonKey: string | null }>();
+      for (const r of reminderStates) {
+        reminderMap.set(`${r.todoType}:${r.entityType}:${r.entityId}`, { status: r.status, snoozedUntil: r.snoozedUntil, reasonKey: r.reasonKey });
+      }
+
+      const filtered = allItems.filter((item) => {
+        const type = getReminderType({
+          saleMode: item.saleMode,
+          itemStatus: item.itemStatus,
+          expiryDate: item.expiryDate,
+          stockedAt: item.stockedAt,
+        }, now);
+        if (type !== query.reminder) return false;
+        // Apply same snooze/resolve filtering as TodoService.list
+        const reasonKey = `${item.saleMode}:${item.expiryDate?.toISOString() ?? "none"}:${item.itemStatus}`;
+        if (resolutionSet.has(`${type}:${reasonKey}`)) return false;
+        const state = reminderMap.get(`${type}:INVENTORY_ITEM:${item.id}`);
+        if (state) {
+          if (state.reasonKey && state.reasonKey !== reasonKey) return true; // state changed, show again
+          if (state.status === "RESOLVED") return false;
+          if (state.status === "SNOOZED" && state.snoozedUntil && state.snoozedUntil > now) return false;
+        }
+        return true;
+      });
+      const total = filtered.length;
+      const data = filtered.slice((query.page - 1) * query.pageSize, query.page * query.pageSize);
+      return { data, total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+    }
+
     const [data, total] = await db.$transaction([
       db.inventoryItem.findMany({
         where,

@@ -54,7 +54,15 @@ export const inventoryListSchema = z.object({
     .enum(["LOCAL", "DEWU_WAREHOUSE", "RETURNING", "SOLD"])
     .optional(),
   reminder: z
-    .enum(["EXPIRY_UNDER_395", "EXPIRY_UNDER_365", "STOCKED_OVER_3_DAYS"])
+    .enum([
+      "EXPIRY_UNDER_395",
+      "EXPIRY_UNDER_365",
+      "DISTANCE_TO_395_WITHIN_7_DAYS",
+      "DISTANCE_TO_365_WITHIN_10_DAYS",
+      "NINETY_FIVE_EXPIRY_UNDER_90",
+      "NINETY_FIVE_EXPIRY_UNDER_60",
+      "STOCKED_OVER_3_DAYS",
+    ])
     .optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

@@ -372,6 +372,41 @@ function computeInventoryActions(
   return actions;
 }
 
+/** Shared reminder type computation. Returns the single highest-priority reminder
+ *  type for a given inventory item, or null if no reminder applies.
+ *  Used by both /api/todos and /api/inventory?reminder=xxx to stay in sync. */
+export function getReminderType(
+  item: { saleMode: string; itemStatus: string; expiryDate: Date | null; stockedAt: Date },
+  now = new Date(),
+): TodoType | "OVERSTOCKED" | null {
+  // PROBLEM items don't get reminders
+  if (["PROBLEM", "SOLD", "REMOVED"].includes(item.itemStatus)) return null;
+
+  // Overstock check (applies to all sale modes)
+  if (item.stockedAt.getTime() <= now.getTime() - 72 * 60 * 60 * 1000) {
+    // overstock returned separately from expiry below
+  }
+
+  if (!item.expiryDate) return null;
+  const days = Math.ceil((item.expiryDate.getTime() - now.getTime()) / 86_400_000);
+
+  if (item.saleMode === "NINETY_FIVE") {
+    if (days <= 60) return "NINETY_FIVE_EXPIRY_UNDER_60";
+    if (days <= 90) return "NINETY_FIVE_EXPIRY_UNDER_90";
+    return null;
+  }
+
+  // XIANYU / OTHER: no expiry reminders for now
+  if (["XIANYU", "OTHER"].includes(item.saleMode)) return null;
+
+  // Standard rules (NONE, DEWU_LIGHTNING, DEWU_STANDARD)
+  if (days <= 365) return "EXPIRY_UNDER_365";
+  if (days <= 375) return "DISTANCE_TO_365_WITHIN_10_DAYS";
+  if (days <= 395) return "EXPIRY_UNDER_395";
+  if (days <= 402) return "DISTANCE_TO_395_WITHIN_7_DAYS";
+  return null;
+}
+
 export function calculateInventoryTodos(
   items: InventoryTodoInput[],
   now = new Date(),
@@ -388,87 +423,36 @@ export function calculateInventoryTodos(
       primaryAction: { label: "查看库存" as const, href: `/inventory/${item.id}` },
     };
     if (item.expiryDate) {
-      const days = Math.ceil(
-        (item.expiryDate.getTime() - now.getTime()) / 86_400_000,
-      );
-      if (item.saleMode === "NINETY_FIVE") {
-        // 95分规则：<=60天优先，其次<=90天
-        if (days <= 60) {
-          todos.push({
-            ...base,
-            id: `nf-expiry-60:${item.id}`,
-            type: "NINETY_FIVE_EXPIRY_UNDER_60",
-            severity: "critical",
-            title: "95分效期低于60天",
-            description: formatItemDesc(item, days),
-            occurredAt: now.toISOString(),
-            daysRemaining: days,
-            availableActions: computeInventoryActions("NINETY_FIVE_EXPIRY_UNDER_60", item.saleMode, item.itemStatus, days),
-          });
-        } else if (days <= 90) {
-          todos.push({
-            ...base,
-            id: `nf-expiry-90:${item.id}`,
-            type: "NINETY_FIVE_EXPIRY_UNDER_90",
-            severity: "warning",
-            title: "95分效期接近限制",
-            description: formatItemDesc(item, days),
-            occurredAt: now.toISOString(),
-            daysRemaining: days,
-            availableActions: computeInventoryActions("NINETY_FIVE_EXPIRY_UNDER_90", item.saleMode, item.itemStatus, days),
-          });
-        }
-      } else {
-        // 普通规则：优先级从高到低：EXPIRY_UNDER_365 > EXPIRY_UNDER_395 > DISTANCE_TO_395_WITHIN_7_DAYS
-        if (days <= 365) {
-          todos.push({
-            ...base,
-            id: `expiry-365:${item.id}`,
-            type: "EXPIRY_UNDER_365",
-            severity: "critical",
-            title: "效期低于365天",
-            description: formatItemDesc(item, days),
-            occurredAt: now.toISOString(),
-            daysRemaining: days,
-            availableActions: computeInventoryActions("EXPIRY_UNDER_365", item.saleMode, item.itemStatus, days),
-          });
-        } else if (days <= 375) {
-          todos.push({
-            ...base,
-            id: `dist-365-10d:${item.id}`,
-            type: "DISTANCE_TO_365_WITHIN_10_DAYS",
-            severity: "warning",
-            title: "距离365天门槛不足10天",
-            description: formatItemDesc(item, days),
-            occurredAt: now.toISOString(),
-            daysRemaining: days,
-            availableActions: computeInventoryActions("DISTANCE_TO_365_WITHIN_10_DAYS", item.saleMode, item.itemStatus, days),
-          });
-        } else if (days <= 395) {
-          todos.push({
-            ...base,
-            id: `expiry-395:${item.id}`,
-            type: "EXPIRY_UNDER_395",
-            severity: "warning",
-            title: "效期低于395天",
-            description: formatItemDesc(item, days),
-            occurredAt: now.toISOString(),
-            daysRemaining: days,
-            availableActions: computeInventoryActions("EXPIRY_UNDER_395", item.saleMode, item.itemStatus, days),
-          });
-        } else if (days <= 402) {
-          todos.push({
-            ...base,
-            id: `dist-395-7d:${item.id}`,
-            type: "DISTANCE_TO_395_WITHIN_7_DAYS",
-            severity: "info",
-            title: "距离395天门槛不足7天",
-            description: formatItemDesc(item, days),
-            occurredAt: now.toISOString(),
-            daysRemaining: days,
-            availableActions: computeInventoryActions("DISTANCE_TO_395_WITHIN_7_DAYS", item.saleMode, item.itemStatus, days),
-          });
-        }
+      const days = Math.ceil((item.expiryDate.getTime() - now.getTime()) / 86_400_000);
+      const reminderType = getReminderType(item, now);
+      if (reminderType) {
+        const titles: Record<string, string> = {
+          EXPIRY_UNDER_365: "效期低于365天",
+          DISTANCE_TO_365_WITHIN_10_DAYS: "距离365天门槛不足10天",
+          EXPIRY_UNDER_395: "效期低于395天",
+          DISTANCE_TO_395_WITHIN_7_DAYS: "距离395天门槛不足7天",
+          NINETY_FIVE_EXPIRY_UNDER_60: "95分效期低于60天",
+          NINETY_FIVE_EXPIRY_UNDER_90: "95分效期接近限制",
+        };
+        const severities: Record<string, "info" | "warning" | "critical"> = {
+          EXPIRY_UNDER_365: "critical",
+          DISTANCE_TO_365_WITHIN_10_DAYS: "warning",
+          EXPIRY_UNDER_395: "warning",
+          DISTANCE_TO_395_WITHIN_7_DAYS: "info",
+          NINETY_FIVE_EXPIRY_UNDER_60: "critical",
+          NINETY_FIVE_EXPIRY_UNDER_90: "warning",
+        };
+        todos.push({
+          ...base,
+          id: `reminder-${reminderType}:${item.id}`,
+          type: reminderType,
+          severity: severities[reminderType] ?? "warning",
+          title: titles[reminderType] ?? reminderType,
+          description: formatItemDesc(item, days),
+          occurredAt: now.toISOString(),
+          daysRemaining: days,
+          availableActions: computeInventoryActions(reminderType, item.saleMode, item.itemStatus, days),
+        });
       }
     }
     if (item.stockedAt.getTime() <= now.getTime() - 72 * 60 * 60 * 1000)
