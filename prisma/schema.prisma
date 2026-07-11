@@ -110,8 +110,10 @@ enum ShipmentPurpose {
 enum ShipmentBatchStatus {
   DRAFT
   SHIPPED
-  RECEIVED
   PARTIALLY_RECEIVED
+  RECEIVED
+  PARTIALLY_IN_WAREHOUSE
+  IN_WAREHOUSE
   PARTIALLY_LISTED
   LISTED
   PARTIALLY_REJECTED
@@ -121,6 +123,7 @@ enum ShipmentBatchStatus {
 }
 
 enum ShipmentLineStatus {
+  DRAFT
   SHIPPED
   RECEIVED
   IN_WAREHOUSE
@@ -128,6 +131,8 @@ enum ShipmentLineStatus {
   REJECTED
   RETURNING
   RETURNED
+  CANCELLED
+  SOLD
 }
 
 model User {
@@ -144,9 +149,11 @@ model User {
   reminderStates     ReminderState[]
   inventoryActionLogs InventoryActionLog[]
   todoResolutions    TodoResolution[]
-  shipmentBatches    PlatformShipmentBatch[]
-  shipmentGroups     PlatformShipmentGroup[]
-  shipmentLines      PlatformShipmentLine[]
+  shipmentBatches         PlatformShipmentBatch[]
+  shipmentGroups          PlatformShipmentGroup[]
+  shipmentLines           PlatformShipmentLine[]
+  shipmentAttachments     PlatformShipmentAttachment[]
+  shipmentActionLogs      PlatformShipmentActionLog[]
 
   @@map("users")
 }
@@ -382,23 +389,29 @@ model TodoResolution {
 }
 
 model PlatformShipmentBatch {
-  id              String              @id @default(cuid())
-  ownerId         String
-  batchNo         String
-  platform        ShipmentPlatform
-  purpose         ShipmentPurpose
-  status          ShipmentBatchStatus @default(DRAFT)
-  carrierCode     String?
-  trackingNo      String?
-  shippedAt       DateTime?
-  receivedAt      DateTime?
-  note            String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id                     String              @id @default(cuid())
+  ownerId                String
+  batchNo                String
+  platform               ShipmentPlatform
+  defaultPurpose         ShipmentPurpose
+  status                 ShipmentBatchStatus @default(DRAFT)
+  carrierCode            String?
+  trackingNo             String?
+  shippedAt              DateTime?
+  receivedAt             DateTime?
+  outboundShippingCost   Decimal?            @db.Decimal(12, 2)
+  packagingCost          Decimal?            @db.Decimal(12, 2)
+  otherShipmentCost      Decimal?            @db.Decimal(12, 2)
+  returnShippingCost     Decimal?            @db.Decimal(12, 2)
+  note                   String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 
-  owner  User                    @relation(fields: [ownerId], references: [id])
-  groups PlatformShipmentGroup[]
-  lines  PlatformShipmentLine[]
+  owner       User                      @relation(fields: [ownerId], references: [id])
+  groups      PlatformShipmentGroup[]
+  lines       PlatformShipmentLine[]
+  attachments PlatformShipmentAttachment[]
+  actionLogs  PlatformShipmentActionLog[]
 
   @@unique([ownerId, batchNo])
   @@index([ownerId, status])
@@ -407,15 +420,16 @@ model PlatformShipmentBatch {
 }
 
 model PlatformShipmentGroup {
-  id               String   @id @default(cuid())
+  id               String            @id @default(cuid())
   ownerId          String
   batchId          String
   platformOrderNo  String?
   platformTradeNo  String?
   groupName        String?
+  purpose          ShipmentPurpose?
   note             String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   owner  User                    @relation(fields: [ownerId], references: [id])
   batch  PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
@@ -431,13 +445,16 @@ model PlatformShipmentLine {
   batchId                    String
   groupId                    String?
   inventoryItemId            String
-  lineStatus                 ShipmentLineStatus  @default(SHIPPED)
+  lineStatus                 ShipmentLineStatus  @default(DRAFT)
   inventoryCodeSnapshot      String
   productNameSnapshot        String
   skuSnapshot                String?
   unitCostSnapshot           Decimal             @db.Decimal(12, 2)
-  saleModeSnapshot           String
+  oldSaleModeSnapshot        String?
+  newSaleModeSnapshot        String?
   sourcePurchaseOrderId      String
+  packedCheckedAt            DateTime?
+  packedChecked              Boolean             @default(false)
   rejectedReason             String?
   returnCarrierCode          String?
   returnTrackingNo           String?
@@ -457,4 +474,44 @@ model PlatformShipmentLine {
   @@index([ownerId, inventoryItemId])
   @@index([ownerId, lineStatus])
   @@map("platform_shipment_lines")
+}
+
+model PlatformShipmentAttachment {
+  id         String   @id @default(cuid())
+  ownerId    String
+  batchId    String
+  lineId     String?
+  fileName   String
+  fileUrl    String
+  fileType   String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  owner User                    @relation(fields: [ownerId], references: [id])
+  batch PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, batchId])
+  @@map("platform_shipment_attachments")
+}
+
+model PlatformShipmentActionLog {
+  id              String   @id @default(cuid())
+  ownerId         String
+  batchId         String
+  lineId          String?
+  inventoryItemId String?
+  actionType      String
+  oldStatus       String?
+  newStatus       String?
+  oldItemStatus   String?
+  newItemStatus   String?
+  note            String?
+  createdAt       DateTime @default(now())
+
+  owner User                    @relation(fields: [ownerId], references: [id])
+  batch PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, batchId, createdAt(sort: Desc)])
+  @@index([ownerId, inventoryItemId])
+  @@map("platform_shipment_action_logs")
 }

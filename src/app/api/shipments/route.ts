@@ -6,17 +6,15 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("query") ?? undefined;
-    return Response.json(await shipmentService.list(DEFAULT_OWNER_ID, query));
-  } catch (error) {
-    return toErrorResponse(error);
-  }
+    const platform = searchParams.get("platform") ?? undefined;
+    const status = searchParams.get("status") ?? undefined;
+    return Response.json(await shipmentService.list(DEFAULT_OWNER_ID, query, { platform, status }));
+  } catch (error) { return toErrorResponse(error); }
 }
 
 export async function POST(request: Request) {
   try {
     const input = await request.json();
-    return Response.json(await shipmentService.create(DEFAULT_OWNER_ID, input), { status: 201 });
-  } catch (error) {
-    return toErrorResponse(error);
-  }
+    return Response.json(await shipmentService.createDraft(DEFAULT_OWNER_ID, input), { status: 201 });
+  } catch (error) { return toErrorResponse(error); }
 }

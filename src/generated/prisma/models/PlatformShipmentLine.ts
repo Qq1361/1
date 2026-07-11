@@ -45,8 +45,11 @@ export type PlatformShipmentLineMinAggregateOutputType = {
   productNameSnapshot: string | null
   skuSnapshot: string | null
   unitCostSnapshot: runtime.Decimal | null
-  saleModeSnapshot: string | null
+  oldSaleModeSnapshot: string | null
+  newSaleModeSnapshot: string | null
   sourcePurchaseOrderId: string | null
+  packedCheckedAt: Date | null
+  packedChecked: boolean | null
   rejectedReason: string | null
   returnCarrierCode: string | null
   returnTrackingNo: string | null
@@ -68,8 +71,11 @@ export type PlatformShipmentLineMaxAggregateOutputType = {
   productNameSnapshot: string | null
   skuSnapshot: string | null
   unitCostSnapshot: runtime.Decimal | null
-  saleModeSnapshot: string | null
+  oldSaleModeSnapshot: string | null
+  newSaleModeSnapshot: string | null
   sourcePurchaseOrderId: string | null
+  packedCheckedAt: Date | null
+  packedChecked: boolean | null
   rejectedReason: string | null
   returnCarrierCode: string | null
   returnTrackingNo: string | null
@@ -91,8 +97,11 @@ export type PlatformShipmentLineCountAggregateOutputType = {
   productNameSnapshot: number
   skuSnapshot: number
   unitCostSnapshot: number
-  saleModeSnapshot: number
+  oldSaleModeSnapshot: number
+  newSaleModeSnapshot: number
   sourcePurchaseOrderId: number
+  packedCheckedAt: number
+  packedChecked: number
   rejectedReason: number
   returnCarrierCode: number
   returnTrackingNo: number
@@ -124,8 +133,11 @@ export type PlatformShipmentLineMinAggregateInputType = {
   productNameSnapshot?: true
   skuSnapshot?: true
   unitCostSnapshot?: true
-  saleModeSnapshot?: true
+  oldSaleModeSnapshot?: true
+  newSaleModeSnapshot?: true
   sourcePurchaseOrderId?: true
+  packedCheckedAt?: true
+  packedChecked?: true
   rejectedReason?: true
   returnCarrierCode?: true
   returnTrackingNo?: true
@@ -147,8 +159,11 @@ export type PlatformShipmentLineMaxAggregateInputType = {
   productNameSnapshot?: true
   skuSnapshot?: true
   unitCostSnapshot?: true
-  saleModeSnapshot?: true
+  oldSaleModeSnapshot?: true
+  newSaleModeSnapshot?: true
   sourcePurchaseOrderId?: true
+  packedCheckedAt?: true
+  packedChecked?: true
   rejectedReason?: true
   returnCarrierCode?: true
   returnTrackingNo?: true
@@ -170,8 +185,11 @@ export type PlatformShipmentLineCountAggregateInputType = {
   productNameSnapshot?: true
   skuSnapshot?: true
   unitCostSnapshot?: true
-  saleModeSnapshot?: true
+  oldSaleModeSnapshot?: true
+  newSaleModeSnapshot?: true
   sourcePurchaseOrderId?: true
+  packedCheckedAt?: true
+  packedChecked?: true
   rejectedReason?: true
   returnCarrierCode?: true
   returnTrackingNo?: true
@@ -280,8 +298,11 @@ export type PlatformShipmentLineGroupByOutputType = {
   productNameSnapshot: string
   skuSnapshot: string | null
   unitCostSnapshot: runtime.Decimal
-  saleModeSnapshot: string
+  oldSaleModeSnapshot: string | null
+  newSaleModeSnapshot: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt: Date | null
+  packedChecked: boolean
   rejectedReason: string | null
   returnCarrierCode: string | null
   returnTrackingNo: string | null
@@ -326,8 +347,11 @@ export type PlatformShipmentLineWhereInput = {
   productNameSnapshot?: Prisma.StringFilter<"PlatformShipmentLine"> | string
   skuSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   unitCostSnapshot?: Prisma.DecimalFilter<"PlatformShipmentLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFilter<"PlatformShipmentLine"> | string
+  oldSaleModeSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
+  newSaleModeSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   sourcePurchaseOrderId?: Prisma.StringFilter<"PlatformShipmentLine"> | string
+  packedCheckedAt?: Prisma.DateTimeNullableFilter<"PlatformShipmentLine"> | Date | string | null
+  packedChecked?: Prisma.BoolFilter<"PlatformShipmentLine"> | boolean
   rejectedReason?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   returnCarrierCode?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   returnTrackingNo?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
@@ -353,8 +377,11 @@ export type PlatformShipmentLineOrderByWithRelationInput = {
   productNameSnapshot?: Prisma.SortOrder
   skuSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   unitCostSnapshot?: Prisma.SortOrder
-  saleModeSnapshot?: Prisma.SortOrder
+  oldSaleModeSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
+  newSaleModeSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   sourcePurchaseOrderId?: Prisma.SortOrder
+  packedCheckedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  packedChecked?: Prisma.SortOrder
   rejectedReason?: Prisma.SortOrderInput | Prisma.SortOrder
   returnCarrierCode?: Prisma.SortOrderInput | Prisma.SortOrder
   returnTrackingNo?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -384,8 +411,11 @@ export type PlatformShipmentLineWhereUniqueInput = Prisma.AtLeast<{
   productNameSnapshot?: Prisma.StringFilter<"PlatformShipmentLine"> | string
   skuSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   unitCostSnapshot?: Prisma.DecimalFilter<"PlatformShipmentLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFilter<"PlatformShipmentLine"> | string
+  oldSaleModeSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
+  newSaleModeSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   sourcePurchaseOrderId?: Prisma.StringFilter<"PlatformShipmentLine"> | string
+  packedCheckedAt?: Prisma.DateTimeNullableFilter<"PlatformShipmentLine"> | Date | string | null
+  packedChecked?: Prisma.BoolFilter<"PlatformShipmentLine"> | boolean
   rejectedReason?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   returnCarrierCode?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   returnTrackingNo?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
@@ -411,8 +441,11 @@ export type PlatformShipmentLineOrderByWithAggregationInput = {
   productNameSnapshot?: Prisma.SortOrder
   skuSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   unitCostSnapshot?: Prisma.SortOrder
-  saleModeSnapshot?: Prisma.SortOrder
+  oldSaleModeSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
+  newSaleModeSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   sourcePurchaseOrderId?: Prisma.SortOrder
+  packedCheckedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  packedChecked?: Prisma.SortOrder
   rejectedReason?: Prisma.SortOrderInput | Prisma.SortOrder
   returnCarrierCode?: Prisma.SortOrderInput | Prisma.SortOrder
   returnTrackingNo?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -442,8 +475,11 @@ export type PlatformShipmentLineScalarWhereWithAggregatesInput = {
   productNameSnapshot?: Prisma.StringWithAggregatesFilter<"PlatformShipmentLine"> | string
   skuSnapshot?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentLine"> | string | null
   unitCostSnapshot?: Prisma.DecimalWithAggregatesFilter<"PlatformShipmentLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringWithAggregatesFilter<"PlatformShipmentLine"> | string
+  oldSaleModeSnapshot?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentLine"> | string | null
+  newSaleModeSnapshot?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentLine"> | string | null
   sourcePurchaseOrderId?: Prisma.StringWithAggregatesFilter<"PlatformShipmentLine"> | string
+  packedCheckedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PlatformShipmentLine"> | Date | string | null
+  packedChecked?: Prisma.BoolWithAggregatesFilter<"PlatformShipmentLine"> | boolean
   rejectedReason?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentLine"> | string | null
   returnCarrierCode?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentLine"> | string | null
   returnTrackingNo?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentLine"> | string | null
@@ -461,8 +497,11 @@ export type PlatformShipmentLineCreateInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -488,8 +527,11 @@ export type PlatformShipmentLineUncheckedCreateInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -507,8 +549,11 @@ export type PlatformShipmentLineUpdateInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -534,8 +579,11 @@ export type PlatformShipmentLineUncheckedUpdateInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -557,8 +605,11 @@ export type PlatformShipmentLineCreateManyInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -576,8 +627,11 @@ export type PlatformShipmentLineUpdateManyMutationInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -599,8 +653,11 @@ export type PlatformShipmentLineUncheckedUpdateManyInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -638,8 +695,11 @@ export type PlatformShipmentLineCountOrderByAggregateInput = {
   productNameSnapshot?: Prisma.SortOrder
   skuSnapshot?: Prisma.SortOrder
   unitCostSnapshot?: Prisma.SortOrder
-  saleModeSnapshot?: Prisma.SortOrder
+  oldSaleModeSnapshot?: Prisma.SortOrder
+  newSaleModeSnapshot?: Prisma.SortOrder
   sourcePurchaseOrderId?: Prisma.SortOrder
+  packedCheckedAt?: Prisma.SortOrder
+  packedChecked?: Prisma.SortOrder
   rejectedReason?: Prisma.SortOrder
   returnCarrierCode?: Prisma.SortOrder
   returnTrackingNo?: Prisma.SortOrder
@@ -665,8 +725,11 @@ export type PlatformShipmentLineMaxOrderByAggregateInput = {
   productNameSnapshot?: Prisma.SortOrder
   skuSnapshot?: Prisma.SortOrder
   unitCostSnapshot?: Prisma.SortOrder
-  saleModeSnapshot?: Prisma.SortOrder
+  oldSaleModeSnapshot?: Prisma.SortOrder
+  newSaleModeSnapshot?: Prisma.SortOrder
   sourcePurchaseOrderId?: Prisma.SortOrder
+  packedCheckedAt?: Prisma.SortOrder
+  packedChecked?: Prisma.SortOrder
   rejectedReason?: Prisma.SortOrder
   returnCarrierCode?: Prisma.SortOrder
   returnTrackingNo?: Prisma.SortOrder
@@ -688,8 +751,11 @@ export type PlatformShipmentLineMinOrderByAggregateInput = {
   productNameSnapshot?: Prisma.SortOrder
   skuSnapshot?: Prisma.SortOrder
   unitCostSnapshot?: Prisma.SortOrder
-  saleModeSnapshot?: Prisma.SortOrder
+  oldSaleModeSnapshot?: Prisma.SortOrder
+  newSaleModeSnapshot?: Prisma.SortOrder
   sourcePurchaseOrderId?: Prisma.SortOrder
+  packedCheckedAt?: Prisma.SortOrder
+  packedChecked?: Prisma.SortOrder
   rejectedReason?: Prisma.SortOrder
   returnCarrierCode?: Prisma.SortOrder
   returnTrackingNo?: Prisma.SortOrder
@@ -876,6 +942,10 @@ export type EnumShipmentLineStatusFieldUpdateOperationsInput = {
   set?: $Enums.ShipmentLineStatus
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type PlatformShipmentLineCreateWithoutOwnerInput = {
   id?: string
   lineStatus?: $Enums.ShipmentLineStatus
@@ -883,8 +953,11 @@ export type PlatformShipmentLineCreateWithoutOwnerInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -908,8 +981,11 @@ export type PlatformShipmentLineUncheckedCreateWithoutOwnerInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -960,8 +1036,11 @@ export type PlatformShipmentLineScalarWhereInput = {
   productNameSnapshot?: Prisma.StringFilter<"PlatformShipmentLine"> | string
   skuSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   unitCostSnapshot?: Prisma.DecimalFilter<"PlatformShipmentLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFilter<"PlatformShipmentLine"> | string
+  oldSaleModeSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
+  newSaleModeSnapshot?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   sourcePurchaseOrderId?: Prisma.StringFilter<"PlatformShipmentLine"> | string
+  packedCheckedAt?: Prisma.DateTimeNullableFilter<"PlatformShipmentLine"> | Date | string | null
+  packedChecked?: Prisma.BoolFilter<"PlatformShipmentLine"> | boolean
   rejectedReason?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   returnCarrierCode?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
   returnTrackingNo?: Prisma.StringNullableFilter<"PlatformShipmentLine"> | string | null
@@ -979,8 +1058,11 @@ export type PlatformShipmentLineCreateWithoutInventoryItemInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1004,8 +1086,11 @@ export type PlatformShipmentLineUncheckedCreateWithoutInventoryItemInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1049,8 +1134,11 @@ export type PlatformShipmentLineCreateWithoutBatchInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1074,8 +1162,11 @@ export type PlatformShipmentLineUncheckedCreateWithoutBatchInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1119,8 +1210,11 @@ export type PlatformShipmentLineCreateWithoutGroupInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1144,8 +1238,11 @@ export type PlatformShipmentLineUncheckedCreateWithoutGroupInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1192,8 +1289,11 @@ export type PlatformShipmentLineCreateManyOwnerInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1211,8 +1311,11 @@ export type PlatformShipmentLineUpdateWithoutOwnerInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1236,8 +1339,11 @@ export type PlatformShipmentLineUncheckedUpdateWithoutOwnerInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1258,8 +1364,11 @@ export type PlatformShipmentLineUncheckedUpdateManyWithoutOwnerInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1280,8 +1389,11 @@ export type PlatformShipmentLineCreateManyInventoryItemInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1299,8 +1411,11 @@ export type PlatformShipmentLineUpdateWithoutInventoryItemInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1324,8 +1439,11 @@ export type PlatformShipmentLineUncheckedUpdateWithoutInventoryItemInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1346,8 +1464,11 @@ export type PlatformShipmentLineUncheckedUpdateManyWithoutInventoryItemInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1368,8 +1489,11 @@ export type PlatformShipmentLineCreateManyBatchInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1387,8 +1511,11 @@ export type PlatformShipmentLineUpdateWithoutBatchInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1412,8 +1539,11 @@ export type PlatformShipmentLineUncheckedUpdateWithoutBatchInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1434,8 +1564,11 @@ export type PlatformShipmentLineUncheckedUpdateManyWithoutBatchInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1456,8 +1589,11 @@ export type PlatformShipmentLineCreateManyGroupInput = {
   productNameSnapshot: string
   skuSnapshot?: string | null
   unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot: string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
   sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
   rejectedReason?: string | null
   returnCarrierCode?: string | null
   returnTrackingNo?: string | null
@@ -1475,8 +1611,11 @@ export type PlatformShipmentLineUpdateWithoutGroupInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1500,8 +1639,11 @@ export type PlatformShipmentLineUncheckedUpdateWithoutGroupInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1522,8 +1664,11 @@ export type PlatformShipmentLineUncheckedUpdateManyWithoutGroupInput = {
   productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  saleModeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1547,8 +1692,11 @@ export type PlatformShipmentLineSelect<ExtArgs extends runtime.Types.Extensions.
   productNameSnapshot?: boolean
   skuSnapshot?: boolean
   unitCostSnapshot?: boolean
-  saleModeSnapshot?: boolean
+  oldSaleModeSnapshot?: boolean
+  newSaleModeSnapshot?: boolean
   sourcePurchaseOrderId?: boolean
+  packedCheckedAt?: boolean
+  packedChecked?: boolean
   rejectedReason?: boolean
   returnCarrierCode?: boolean
   returnTrackingNo?: boolean
@@ -1574,8 +1722,11 @@ export type PlatformShipmentLineSelectCreateManyAndReturn<ExtArgs extends runtim
   productNameSnapshot?: boolean
   skuSnapshot?: boolean
   unitCostSnapshot?: boolean
-  saleModeSnapshot?: boolean
+  oldSaleModeSnapshot?: boolean
+  newSaleModeSnapshot?: boolean
   sourcePurchaseOrderId?: boolean
+  packedCheckedAt?: boolean
+  packedChecked?: boolean
   rejectedReason?: boolean
   returnCarrierCode?: boolean
   returnTrackingNo?: boolean
@@ -1601,8 +1752,11 @@ export type PlatformShipmentLineSelectUpdateManyAndReturn<ExtArgs extends runtim
   productNameSnapshot?: boolean
   skuSnapshot?: boolean
   unitCostSnapshot?: boolean
-  saleModeSnapshot?: boolean
+  oldSaleModeSnapshot?: boolean
+  newSaleModeSnapshot?: boolean
   sourcePurchaseOrderId?: boolean
+  packedCheckedAt?: boolean
+  packedChecked?: boolean
   rejectedReason?: boolean
   returnCarrierCode?: boolean
   returnTrackingNo?: boolean
@@ -1628,8 +1782,11 @@ export type PlatformShipmentLineSelectScalar = {
   productNameSnapshot?: boolean
   skuSnapshot?: boolean
   unitCostSnapshot?: boolean
-  saleModeSnapshot?: boolean
+  oldSaleModeSnapshot?: boolean
+  newSaleModeSnapshot?: boolean
   sourcePurchaseOrderId?: boolean
+  packedCheckedAt?: boolean
+  packedChecked?: boolean
   rejectedReason?: boolean
   returnCarrierCode?: boolean
   returnTrackingNo?: boolean
@@ -1640,7 +1797,7 @@ export type PlatformShipmentLineSelectScalar = {
   updatedAt?: boolean
 }
 
-export type PlatformShipmentLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "batchId" | "groupId" | "inventoryItemId" | "lineStatus" | "inventoryCodeSnapshot" | "productNameSnapshot" | "skuSnapshot" | "unitCostSnapshot" | "saleModeSnapshot" | "sourcePurchaseOrderId" | "rejectedReason" | "returnCarrierCode" | "returnTrackingNo" | "returnedAt" | "returnedStorageLocation" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["platformShipmentLine"]>
+export type PlatformShipmentLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "batchId" | "groupId" | "inventoryItemId" | "lineStatus" | "inventoryCodeSnapshot" | "productNameSnapshot" | "skuSnapshot" | "unitCostSnapshot" | "oldSaleModeSnapshot" | "newSaleModeSnapshot" | "sourcePurchaseOrderId" | "packedCheckedAt" | "packedChecked" | "rejectedReason" | "returnCarrierCode" | "returnTrackingNo" | "returnedAt" | "returnedStorageLocation" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["platformShipmentLine"]>
 export type PlatformShipmentLineInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   batch?: boolean | Prisma.PlatformShipmentBatchDefaultArgs<ExtArgs>
@@ -1679,8 +1836,11 @@ export type $PlatformShipmentLinePayload<ExtArgs extends runtime.Types.Extension
     productNameSnapshot: string
     skuSnapshot: string | null
     unitCostSnapshot: runtime.Decimal
-    saleModeSnapshot: string
+    oldSaleModeSnapshot: string | null
+    newSaleModeSnapshot: string | null
     sourcePurchaseOrderId: string
+    packedCheckedAt: Date | null
+    packedChecked: boolean
     rejectedReason: string | null
     returnCarrierCode: string | null
     returnTrackingNo: string | null
@@ -2126,8 +2286,11 @@ export interface PlatformShipmentLineFieldRefs {
   readonly productNameSnapshot: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
   readonly skuSnapshot: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
   readonly unitCostSnapshot: Prisma.FieldRef<"PlatformShipmentLine", 'Decimal'>
-  readonly saleModeSnapshot: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
+  readonly oldSaleModeSnapshot: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
+  readonly newSaleModeSnapshot: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
   readonly sourcePurchaseOrderId: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
+  readonly packedCheckedAt: Prisma.FieldRef<"PlatformShipmentLine", 'DateTime'>
+  readonly packedChecked: Prisma.FieldRef<"PlatformShipmentLine", 'Boolean'>
   readonly rejectedReason: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
   readonly returnCarrierCode: Prisma.FieldRef<"PlatformShipmentLine", 'String'>
   readonly returnTrackingNo: Prisma.FieldRef<"PlatformShipmentLine", 'String'>

@@ -31,6 +31,7 @@ export type PlatformShipmentGroupMinAggregateOutputType = {
   platformOrderNo: string | null
   platformTradeNo: string | null
   groupName: string | null
+  purpose: $Enums.ShipmentPurpose | null
   note: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -43,6 +44,7 @@ export type PlatformShipmentGroupMaxAggregateOutputType = {
   platformOrderNo: string | null
   platformTradeNo: string | null
   groupName: string | null
+  purpose: $Enums.ShipmentPurpose | null
   note: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -55,6 +57,7 @@ export type PlatformShipmentGroupCountAggregateOutputType = {
   platformOrderNo: number
   platformTradeNo: number
   groupName: number
+  purpose: number
   note: number
   createdAt: number
   updatedAt: number
@@ -69,6 +72,7 @@ export type PlatformShipmentGroupMinAggregateInputType = {
   platformOrderNo?: true
   platformTradeNo?: true
   groupName?: true
+  purpose?: true
   note?: true
   createdAt?: true
   updatedAt?: true
@@ -81,6 +85,7 @@ export type PlatformShipmentGroupMaxAggregateInputType = {
   platformOrderNo?: true
   platformTradeNo?: true
   groupName?: true
+  purpose?: true
   note?: true
   createdAt?: true
   updatedAt?: true
@@ -93,6 +98,7 @@ export type PlatformShipmentGroupCountAggregateInputType = {
   platformOrderNo?: true
   platformTradeNo?: true
   groupName?: true
+  purpose?: true
   note?: true
   createdAt?: true
   updatedAt?: true
@@ -178,6 +184,7 @@ export type PlatformShipmentGroupGroupByOutputType = {
   platformOrderNo: string | null
   platformTradeNo: string | null
   groupName: string | null
+  purpose: $Enums.ShipmentPurpose | null
   note: string | null
   createdAt: Date
   updatedAt: Date
@@ -211,6 +218,7 @@ export type PlatformShipmentGroupWhereInput = {
   platformOrderNo?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   platformTradeNo?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   groupName?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
+  purpose?: Prisma.EnumShipmentPurposeNullableFilter<"PlatformShipmentGroup"> | $Enums.ShipmentPurpose | null
   note?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PlatformShipmentGroup"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PlatformShipmentGroup"> | Date | string
@@ -226,6 +234,7 @@ export type PlatformShipmentGroupOrderByWithRelationInput = {
   platformOrderNo?: Prisma.SortOrderInput | Prisma.SortOrder
   platformTradeNo?: Prisma.SortOrderInput | Prisma.SortOrder
   groupName?: Prisma.SortOrderInput | Prisma.SortOrder
+  purpose?: Prisma.SortOrderInput | Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -244,6 +253,7 @@ export type PlatformShipmentGroupWhereUniqueInput = Prisma.AtLeast<{
   platformOrderNo?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   platformTradeNo?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   groupName?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
+  purpose?: Prisma.EnumShipmentPurposeNullableFilter<"PlatformShipmentGroup"> | $Enums.ShipmentPurpose | null
   note?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PlatformShipmentGroup"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PlatformShipmentGroup"> | Date | string
@@ -259,6 +269,7 @@ export type PlatformShipmentGroupOrderByWithAggregationInput = {
   platformOrderNo?: Prisma.SortOrderInput | Prisma.SortOrder
   platformTradeNo?: Prisma.SortOrderInput | Prisma.SortOrder
   groupName?: Prisma.SortOrderInput | Prisma.SortOrder
+  purpose?: Prisma.SortOrderInput | Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -277,6 +288,7 @@ export type PlatformShipmentGroupScalarWhereWithAggregatesInput = {
   platformOrderNo?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentGroup"> | string | null
   platformTradeNo?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentGroup"> | string | null
   groupName?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentGroup"> | string | null
+  purpose?: Prisma.EnumShipmentPurposeNullableWithAggregatesFilter<"PlatformShipmentGroup"> | $Enums.ShipmentPurpose | null
   note?: Prisma.StringNullableWithAggregatesFilter<"PlatformShipmentGroup"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PlatformShipmentGroup"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PlatformShipmentGroup"> | Date | string
@@ -287,6 +299,7 @@ export type PlatformShipmentGroupCreateInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -302,6 +315,7 @@ export type PlatformShipmentGroupUncheckedCreateInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -313,6 +327,7 @@ export type PlatformShipmentGroupUpdateInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -328,6 +343,7 @@ export type PlatformShipmentGroupUncheckedUpdateInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -341,6 +357,7 @@ export type PlatformShipmentGroupCreateManyInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -351,6 +368,7 @@ export type PlatformShipmentGroupUpdateManyMutationInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -363,6 +381,7 @@ export type PlatformShipmentGroupUncheckedUpdateManyInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -385,6 +404,7 @@ export type PlatformShipmentGroupCountOrderByAggregateInput = {
   platformOrderNo?: Prisma.SortOrder
   platformTradeNo?: Prisma.SortOrder
   groupName?: Prisma.SortOrder
+  purpose?: Prisma.SortOrder
   note?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -397,6 +417,7 @@ export type PlatformShipmentGroupMaxOrderByAggregateInput = {
   platformOrderNo?: Prisma.SortOrder
   platformTradeNo?: Prisma.SortOrder
   groupName?: Prisma.SortOrder
+  purpose?: Prisma.SortOrder
   note?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -409,6 +430,7 @@ export type PlatformShipmentGroupMinOrderByAggregateInput = {
   platformOrderNo?: Prisma.SortOrder
   platformTradeNo?: Prisma.SortOrder
   groupName?: Prisma.SortOrder
+  purpose?: Prisma.SortOrder
   note?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -503,6 +525,10 @@ export type PlatformShipmentGroupUncheckedUpdateManyWithoutBatchNestedInput = {
   deleteMany?: Prisma.PlatformShipmentGroupScalarWhereInput | Prisma.PlatformShipmentGroupScalarWhereInput[]
 }
 
+export type NullableEnumShipmentPurposeFieldUpdateOperationsInput = {
+  set?: $Enums.ShipmentPurpose | null
+}
+
 export type PlatformShipmentGroupCreateNestedOneWithoutLinesInput = {
   create?: Prisma.XOR<Prisma.PlatformShipmentGroupCreateWithoutLinesInput, Prisma.PlatformShipmentGroupUncheckedCreateWithoutLinesInput>
   connectOrCreate?: Prisma.PlatformShipmentGroupCreateOrConnectWithoutLinesInput
@@ -524,6 +550,7 @@ export type PlatformShipmentGroupCreateWithoutOwnerInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -537,6 +564,7 @@ export type PlatformShipmentGroupUncheckedCreateWithoutOwnerInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -579,6 +607,7 @@ export type PlatformShipmentGroupScalarWhereInput = {
   platformOrderNo?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   platformTradeNo?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   groupName?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
+  purpose?: Prisma.EnumShipmentPurposeNullableFilter<"PlatformShipmentGroup"> | $Enums.ShipmentPurpose | null
   note?: Prisma.StringNullableFilter<"PlatformShipmentGroup"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PlatformShipmentGroup"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PlatformShipmentGroup"> | Date | string
@@ -589,6 +618,7 @@ export type PlatformShipmentGroupCreateWithoutBatchInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -602,6 +632,7 @@ export type PlatformShipmentGroupUncheckedCreateWithoutBatchInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -639,6 +670,7 @@ export type PlatformShipmentGroupCreateWithoutLinesInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -653,6 +685,7 @@ export type PlatformShipmentGroupUncheckedCreateWithoutLinesInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -679,6 +712,7 @@ export type PlatformShipmentGroupUpdateWithoutLinesInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -693,6 +727,7 @@ export type PlatformShipmentGroupUncheckedUpdateWithoutLinesInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -704,6 +739,7 @@ export type PlatformShipmentGroupCreateManyOwnerInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -714,6 +750,7 @@ export type PlatformShipmentGroupUpdateWithoutOwnerInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -727,6 +764,7 @@ export type PlatformShipmentGroupUncheckedUpdateWithoutOwnerInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -739,6 +777,7 @@ export type PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -750,6 +789,7 @@ export type PlatformShipmentGroupCreateManyBatchInput = {
   platformOrderNo?: string | null
   platformTradeNo?: string | null
   groupName?: string | null
+  purpose?: $Enums.ShipmentPurpose | null
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -760,6 +800,7 @@ export type PlatformShipmentGroupUpdateWithoutBatchInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -773,6 +814,7 @@ export type PlatformShipmentGroupUncheckedUpdateWithoutBatchInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -785,6 +827,7 @@ export type PlatformShipmentGroupUncheckedUpdateManyWithoutBatchInput = {
   platformOrderNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   platformTradeNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   groupName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  purpose?: Prisma.NullableEnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose | null
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -828,6 +871,7 @@ export type PlatformShipmentGroupSelect<ExtArgs extends runtime.Types.Extensions
   platformOrderNo?: boolean
   platformTradeNo?: boolean
   groupName?: boolean
+  purpose?: boolean
   note?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -844,6 +888,7 @@ export type PlatformShipmentGroupSelectCreateManyAndReturn<ExtArgs extends runti
   platformOrderNo?: boolean
   platformTradeNo?: boolean
   groupName?: boolean
+  purpose?: boolean
   note?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -858,6 +903,7 @@ export type PlatformShipmentGroupSelectUpdateManyAndReturn<ExtArgs extends runti
   platformOrderNo?: boolean
   platformTradeNo?: boolean
   groupName?: boolean
+  purpose?: boolean
   note?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -872,12 +918,13 @@ export type PlatformShipmentGroupSelectScalar = {
   platformOrderNo?: boolean
   platformTradeNo?: boolean
   groupName?: boolean
+  purpose?: boolean
   note?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PlatformShipmentGroupOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "batchId" | "platformOrderNo" | "platformTradeNo" | "groupName" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["platformShipmentGroup"]>
+export type PlatformShipmentGroupOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerId" | "batchId" | "platformOrderNo" | "platformTradeNo" | "groupName" | "purpose" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["platformShipmentGroup"]>
 export type PlatformShipmentGroupInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   batch?: boolean | Prisma.PlatformShipmentBatchDefaultArgs<ExtArgs>
@@ -907,6 +954,7 @@ export type $PlatformShipmentGroupPayload<ExtArgs extends runtime.Types.Extensio
     platformOrderNo: string | null
     platformTradeNo: string | null
     groupName: string | null
+    purpose: $Enums.ShipmentPurpose | null
     note: string | null
     createdAt: Date
     updatedAt: Date
@@ -1342,6 +1390,7 @@ export interface PlatformShipmentGroupFieldRefs {
   readonly platformOrderNo: Prisma.FieldRef<"PlatformShipmentGroup", 'String'>
   readonly platformTradeNo: Prisma.FieldRef<"PlatformShipmentGroup", 'String'>
   readonly groupName: Prisma.FieldRef<"PlatformShipmentGroup", 'String'>
+  readonly purpose: Prisma.FieldRef<"PlatformShipmentGroup", 'ShipmentPurpose'>
   readonly note: Prisma.FieldRef<"PlatformShipmentGroup", 'String'>
   readonly createdAt: Prisma.FieldRef<"PlatformShipmentGroup", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PlatformShipmentGroup", 'DateTime'>

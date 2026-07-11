@@ -396,7 +396,9 @@ export const ModelName = {
   TodoResolution: 'TodoResolution',
   PlatformShipmentBatch: 'PlatformShipmentBatch',
   PlatformShipmentGroup: 'PlatformShipmentGroup',
-  PlatformShipmentLine: 'PlatformShipmentLine'
+  PlatformShipmentLine: 'PlatformShipmentLine',
+  PlatformShipmentAttachment: 'PlatformShipmentAttachment',
+  PlatformShipmentActionLog: 'PlatformShipmentActionLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -412,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "purchaseOrder" | "purchaseOrderItem" | "attachment" | "logisticsEvent" | "inspection" | "inventoryItem" | "reminderState" | "inventoryActionLog" | "todoResolution" | "platformShipmentBatch" | "platformShipmentGroup" | "platformShipmentLine"
+    modelProps: "user" | "purchaseOrder" | "purchaseOrderItem" | "attachment" | "logisticsEvent" | "inspection" | "inventoryItem" | "reminderState" | "inventoryActionLog" | "todoResolution" | "platformShipmentBatch" | "platformShipmentGroup" | "platformShipmentLine" | "platformShipmentAttachment" | "platformShipmentActionLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1378,6 +1380,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PlatformShipmentAttachment: {
+      payload: Prisma.$PlatformShipmentAttachmentPayload<ExtArgs>
+      fields: Prisma.PlatformShipmentAttachmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PlatformShipmentAttachmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PlatformShipmentAttachmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>
+        }
+        findFirst: {
+          args: Prisma.PlatformShipmentAttachmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PlatformShipmentAttachmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>
+        }
+        findMany: {
+          args: Prisma.PlatformShipmentAttachmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>[]
+        }
+        create: {
+          args: Prisma.PlatformShipmentAttachmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>
+        }
+        createMany: {
+          args: Prisma.PlatformShipmentAttachmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PlatformShipmentAttachmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>[]
+        }
+        delete: {
+          args: Prisma.PlatformShipmentAttachmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>
+        }
+        update: {
+          args: Prisma.PlatformShipmentAttachmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.PlatformShipmentAttachmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PlatformShipmentAttachmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PlatformShipmentAttachmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.PlatformShipmentAttachmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentAttachmentPayload>
+        }
+        aggregate: {
+          args: Prisma.PlatformShipmentAttachmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePlatformShipmentAttachment>
+        }
+        groupBy: {
+          args: Prisma.PlatformShipmentAttachmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformShipmentAttachmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PlatformShipmentAttachmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformShipmentAttachmentCountAggregateOutputType> | number
+        }
+      }
+    }
+    PlatformShipmentActionLog: {
+      payload: Prisma.$PlatformShipmentActionLogPayload<ExtArgs>
+      fields: Prisma.PlatformShipmentActionLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PlatformShipmentActionLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PlatformShipmentActionLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>
+        }
+        findFirst: {
+          args: Prisma.PlatformShipmentActionLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PlatformShipmentActionLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>
+        }
+        findMany: {
+          args: Prisma.PlatformShipmentActionLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>[]
+        }
+        create: {
+          args: Prisma.PlatformShipmentActionLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>
+        }
+        createMany: {
+          args: Prisma.PlatformShipmentActionLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PlatformShipmentActionLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>[]
+        }
+        delete: {
+          args: Prisma.PlatformShipmentActionLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>
+        }
+        update: {
+          args: Prisma.PlatformShipmentActionLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.PlatformShipmentActionLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PlatformShipmentActionLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PlatformShipmentActionLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.PlatformShipmentActionLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformShipmentActionLogPayload>
+        }
+        aggregate: {
+          args: Prisma.PlatformShipmentActionLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePlatformShipmentActionLog>
+        }
+        groupBy: {
+          args: Prisma.PlatformShipmentActionLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformShipmentActionLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PlatformShipmentActionLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformShipmentActionLogCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1617,12 +1767,16 @@ export const PlatformShipmentBatchScalarFieldEnum = {
   ownerId: 'ownerId',
   batchNo: 'batchNo',
   platform: 'platform',
-  purpose: 'purpose',
+  defaultPurpose: 'defaultPurpose',
   status: 'status',
   carrierCode: 'carrierCode',
   trackingNo: 'trackingNo',
   shippedAt: 'shippedAt',
   receivedAt: 'receivedAt',
+  outboundShippingCost: 'outboundShippingCost',
+  packagingCost: 'packagingCost',
+  otherShipmentCost: 'otherShipmentCost',
+  returnShippingCost: 'returnShippingCost',
   note: 'note',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1638,6 +1792,7 @@ export const PlatformShipmentGroupScalarFieldEnum = {
   platformOrderNo: 'platformOrderNo',
   platformTradeNo: 'platformTradeNo',
   groupName: 'groupName',
+  purpose: 'purpose',
   note: 'note',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1657,8 +1812,11 @@ export const PlatformShipmentLineScalarFieldEnum = {
   productNameSnapshot: 'productNameSnapshot',
   skuSnapshot: 'skuSnapshot',
   unitCostSnapshot: 'unitCostSnapshot',
-  saleModeSnapshot: 'saleModeSnapshot',
+  oldSaleModeSnapshot: 'oldSaleModeSnapshot',
+  newSaleModeSnapshot: 'newSaleModeSnapshot',
   sourcePurchaseOrderId: 'sourcePurchaseOrderId',
+  packedCheckedAt: 'packedCheckedAt',
+  packedChecked: 'packedChecked',
   rejectedReason: 'rejectedReason',
   returnCarrierCode: 'returnCarrierCode',
   returnTrackingNo: 'returnTrackingNo',
@@ -1670,6 +1828,39 @@ export const PlatformShipmentLineScalarFieldEnum = {
 } as const
 
 export type PlatformShipmentLineScalarFieldEnum = (typeof PlatformShipmentLineScalarFieldEnum)[keyof typeof PlatformShipmentLineScalarFieldEnum]
+
+
+export const PlatformShipmentAttachmentScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  batchId: 'batchId',
+  lineId: 'lineId',
+  fileName: 'fileName',
+  fileUrl: 'fileUrl',
+  fileType: 'fileType',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type PlatformShipmentAttachmentScalarFieldEnum = (typeof PlatformShipmentAttachmentScalarFieldEnum)[keyof typeof PlatformShipmentAttachmentScalarFieldEnum]
+
+
+export const PlatformShipmentActionLogScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  batchId: 'batchId',
+  lineId: 'lineId',
+  inventoryItemId: 'inventoryItemId',
+  actionType: 'actionType',
+  oldStatus: 'oldStatus',
+  newStatus: 'newStatus',
+  oldItemStatus: 'oldItemStatus',
+  newItemStatus: 'newItemStatus',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type PlatformShipmentActionLogScalarFieldEnum = (typeof PlatformShipmentActionLogScalarFieldEnum)[keyof typeof PlatformShipmentActionLogScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2142,6 +2333,8 @@ export type GlobalOmitConfig = {
   platformShipmentBatch?: Prisma.PlatformShipmentBatchOmit
   platformShipmentGroup?: Prisma.PlatformShipmentGroupOmit
   platformShipmentLine?: Prisma.PlatformShipmentLineOmit
+  platformShipmentAttachment?: Prisma.PlatformShipmentAttachmentOmit
+  platformShipmentActionLog?: Prisma.PlatformShipmentActionLogOmit
 }
 
 /* Types for Logging */

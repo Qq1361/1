@@ -63,7 +63,9 @@ export const ModelName = {
   TodoResolution: 'TodoResolution',
   PlatformShipmentBatch: 'PlatformShipmentBatch',
   PlatformShipmentGroup: 'PlatformShipmentGroup',
-  PlatformShipmentLine: 'PlatformShipmentLine'
+  PlatformShipmentLine: 'PlatformShipmentLine',
+  PlatformShipmentAttachment: 'PlatformShipmentAttachment',
+  PlatformShipmentActionLog: 'PlatformShipmentActionLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -282,12 +284,16 @@ export const PlatformShipmentBatchScalarFieldEnum = {
   ownerId: 'ownerId',
   batchNo: 'batchNo',
   platform: 'platform',
-  purpose: 'purpose',
+  defaultPurpose: 'defaultPurpose',
   status: 'status',
   carrierCode: 'carrierCode',
   trackingNo: 'trackingNo',
   shippedAt: 'shippedAt',
   receivedAt: 'receivedAt',
+  outboundShippingCost: 'outboundShippingCost',
+  packagingCost: 'packagingCost',
+  otherShipmentCost: 'otherShipmentCost',
+  returnShippingCost: 'returnShippingCost',
   note: 'note',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -303,6 +309,7 @@ export const PlatformShipmentGroupScalarFieldEnum = {
   platformOrderNo: 'platformOrderNo',
   platformTradeNo: 'platformTradeNo',
   groupName: 'groupName',
+  purpose: 'purpose',
   note: 'note',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -322,8 +329,11 @@ export const PlatformShipmentLineScalarFieldEnum = {
   productNameSnapshot: 'productNameSnapshot',
   skuSnapshot: 'skuSnapshot',
   unitCostSnapshot: 'unitCostSnapshot',
-  saleModeSnapshot: 'saleModeSnapshot',
+  oldSaleModeSnapshot: 'oldSaleModeSnapshot',
+  newSaleModeSnapshot: 'newSaleModeSnapshot',
   sourcePurchaseOrderId: 'sourcePurchaseOrderId',
+  packedCheckedAt: 'packedCheckedAt',
+  packedChecked: 'packedChecked',
   rejectedReason: 'rejectedReason',
   returnCarrierCode: 'returnCarrierCode',
   returnTrackingNo: 'returnTrackingNo',
@@ -335,6 +345,39 @@ export const PlatformShipmentLineScalarFieldEnum = {
 } as const
 
 export type PlatformShipmentLineScalarFieldEnum = (typeof PlatformShipmentLineScalarFieldEnum)[keyof typeof PlatformShipmentLineScalarFieldEnum]
+
+
+export const PlatformShipmentAttachmentScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  batchId: 'batchId',
+  lineId: 'lineId',
+  fileName: 'fileName',
+  fileUrl: 'fileUrl',
+  fileType: 'fileType',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type PlatformShipmentAttachmentScalarFieldEnum = (typeof PlatformShipmentAttachmentScalarFieldEnum)[keyof typeof PlatformShipmentAttachmentScalarFieldEnum]
+
+
+export const PlatformShipmentActionLogScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  batchId: 'batchId',
+  lineId: 'lineId',
+  inventoryItemId: 'inventoryItemId',
+  actionType: 'actionType',
+  oldStatus: 'oldStatus',
+  newStatus: 'newStatus',
+  oldItemStatus: 'oldItemStatus',
+  newItemStatus: 'newItemStatus',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type PlatformShipmentActionLogScalarFieldEnum = (typeof PlatformShipmentActionLogScalarFieldEnum)[keyof typeof PlatformShipmentActionLogScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -518,11 +518,33 @@ export type EnumShipmentBatchStatusWithAggregatesFilter<$PrismaModel = never> = 
   _max?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel>
 }
 
+export type EnumShipmentPurposeNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumShipmentPurposeNullableFilter<$PrismaModel> | $Enums.ShipmentPurpose | null
+}
+
+export type EnumShipmentPurposeNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumShipmentPurposeNullableWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentPurpose | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentPurposeNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentPurposeNullableFilter<$PrismaModel>
+}
+
 export type EnumShipmentLineStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.ShipmentLineStatus | Prisma.EnumShipmentLineStatusFieldRefInput<$PrismaModel>
   in?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel> | $Enums.ShipmentLineStatus
+}
+
+export type BoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
 }
 
 export type EnumShipmentLineStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -533,6 +555,14 @@ export type EnumShipmentLineStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
+}
+
+export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
 export type NestedStringFilter<$PrismaModel = never> = {
@@ -1025,11 +1055,33 @@ export type NestedEnumShipmentBatchStatusWithAggregatesFilter<$PrismaModel = nev
   _max?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel>
 }
 
+export type NestedEnumShipmentPurposeNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumShipmentPurposeNullableFilter<$PrismaModel> | $Enums.ShipmentPurpose | null
+}
+
+export type NestedEnumShipmentPurposeNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumShipmentPurposeNullableWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentPurpose | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentPurposeNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentPurposeNullableFilter<$PrismaModel>
+}
+
 export type NestedEnumShipmentLineStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.ShipmentLineStatus | Prisma.EnumShipmentLineStatusFieldRefInput<$PrismaModel>
   in?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel> | $Enums.ShipmentLineStatus
+}
+
+export type NestedBoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
 }
 
 export type NestedEnumShipmentLineStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -1040,6 +1092,14 @@ export type NestedEnumShipmentLineStatusWithAggregatesFilter<$PrismaModel = neve
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
+}
+
+export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
 

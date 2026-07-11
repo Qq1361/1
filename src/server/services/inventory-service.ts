@@ -29,6 +29,8 @@ export class InventoryService {
               { skuText: { contains: query.query, mode: "insensitive" } },
               { inventoryCode: { contains: query.query, mode: "insensitive" } },
               { storageLocation: { contains: query.query, mode: "insensitive" } },
+              { purchaseOrderItem: { purchaseOrder: { orderNo: { contains: query.query, mode: "insensitive" } } } },
+              { purchaseOrderItem: { purchaseOrder: { sellerNickname: { contains: query.query, mode: "insensitive" } } } },
             ],
           }
         : {}),

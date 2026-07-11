@@ -118,7 +118,7 @@ export function InventoryList() {
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="搜索库存编号、商品名、SKU 或库位"
+            placeholder="搜索库存编号、商品名、SKU、库位、采购订单号、卖家昵称"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />

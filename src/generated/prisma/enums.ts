@@ -148,8 +148,10 @@ export type ShipmentPurpose = (typeof ShipmentPurpose)[keyof typeof ShipmentPurp
 export const ShipmentBatchStatus = {
   DRAFT: 'DRAFT',
   SHIPPED: 'SHIPPED',
-  RECEIVED: 'RECEIVED',
   PARTIALLY_RECEIVED: 'PARTIALLY_RECEIVED',
+  RECEIVED: 'RECEIVED',
+  PARTIALLY_IN_WAREHOUSE: 'PARTIALLY_IN_WAREHOUSE',
+  IN_WAREHOUSE: 'IN_WAREHOUSE',
   PARTIALLY_LISTED: 'PARTIALLY_LISTED',
   LISTED: 'LISTED',
   PARTIALLY_REJECTED: 'PARTIALLY_REJECTED',
@@ -162,13 +164,16 @@ export type ShipmentBatchStatus = (typeof ShipmentBatchStatus)[keyof typeof Ship
 
 
 export const ShipmentLineStatus = {
+  DRAFT: 'DRAFT',
   SHIPPED: 'SHIPPED',
   RECEIVED: 'RECEIVED',
   IN_WAREHOUSE: 'IN_WAREHOUSE',
   LISTED: 'LISTED',
   REJECTED: 'REJECTED',
   RETURNING: 'RETURNING',
-  RETURNED: 'RETURNED'
+  RETURNED: 'RETURNED',
+  CANCELLED: 'CANCELLED',
+  SOLD: 'SOLD'
 } as const
 
 export type ShipmentLineStatus = (typeof ShipmentLineStatus)[keyof typeof ShipmentLineStatus]

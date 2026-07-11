@@ -82,3 +82,13 @@ export type PlatformShipmentGroup = Prisma.PlatformShipmentGroupModel
  * 
  */
 export type PlatformShipmentLine = Prisma.PlatformShipmentLineModel
+/**
+ * Model PlatformShipmentAttachment
+ * 
+ */
+export type PlatformShipmentAttachment = Prisma.PlatformShipmentAttachmentModel
+/**
+ * Model PlatformShipmentActionLog
+ * 
+ */
+export type PlatformShipmentActionLog = Prisma.PlatformShipmentActionLogModel

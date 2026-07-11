@@ -57,7 +57,7 @@ type Detail = {
   purchaseOrderItem: {
     name: string;
     skuText: string | null;
-    purchaseOrder: { id: string; orderNo: string };
+    purchaseOrder: { id: string; orderNo: string; sellerNickname: string | null };
   };
   attachments: AttachmentDto[];
 };
@@ -125,7 +125,12 @@ export function InventoryDetail({ id }: { id: string }) {
           <CardHeader><CardTitle className="text-base">采购来源</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <Info label="采购订单" text={item.purchaseOrderItem.purchaseOrder.orderNo} />
+            {item.purchaseOrderItem.purchaseOrder.orderNo ? (
+              <Info label="闲鱼订单号" text={item.purchaseOrderItem.purchaseOrder.orderNo} />
+            ) : null}
+            <Info label="卖家昵称" text={item.purchaseOrderItem.purchaseOrder.sellerNickname || "未填写"} />
             <Info label="采购明细" text={item.purchaseOrderItem.name} />
+            <Info label="SKU" text={item.purchaseOrderItem.skuText || "未填写"} />
             <Info label="单件序号" text={`第 ${item.inspection.sequence} 件`} />
             <Link href={`/purchases/${item.purchaseOrderItem.purchaseOrder.id}?returnTo=/inventory/${item.id}`} className={buttonVariants({ variant: "outline" })}>
               查看采购订单
