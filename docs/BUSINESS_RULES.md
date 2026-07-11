@@ -156,7 +156,18 @@ PAID → WAITING_SHIPMENT → IN_TRANSIT → PENDING_INSPECTION → PARTIALLY_ST
 
 ---
 
-## 9. 验证命令
+## 9. 统一数据来源
+
+所有统计卡片、待办中心、筛选列表必须基于同一套计算逻辑：
+
+- `getReminderType()` — 唯一权威的提醒计算函数（`src/server/services/todo-service.ts`）
+- `/api/todos` — 首页卡片 + 待办中心
+- `/api/inventory?reminder=xxx` — 库存筛选（使用相同的 `getReminderType` + ReminderState 过滤）
+- `/api/purchase-orders?todo=xxx` — 采购筛选（使用相同的 ReminderState 过滤）
+
+禁止：不同位置使用不同的计算条件。
+
+## 10. 验证命令
 
 ```bash
 pnpm prisma migrate dev
