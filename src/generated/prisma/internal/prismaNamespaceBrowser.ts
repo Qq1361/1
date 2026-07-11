@@ -60,7 +60,10 @@ export const ModelName = {
   InventoryItem: 'InventoryItem',
   ReminderState: 'ReminderState',
   InventoryActionLog: 'InventoryActionLog',
-  TodoResolution: 'TodoResolution'
+  TodoResolution: 'TodoResolution',
+  PlatformShipmentBatch: 'PlatformShipmentBatch',
+  PlatformShipmentGroup: 'PlatformShipmentGroup',
+  PlatformShipmentLine: 'PlatformShipmentLine'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -272,6 +275,66 @@ export const TodoResolutionScalarFieldEnum = {
 } as const
 
 export type TodoResolutionScalarFieldEnum = (typeof TodoResolutionScalarFieldEnum)[keyof typeof TodoResolutionScalarFieldEnum]
+
+
+export const PlatformShipmentBatchScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  batchNo: 'batchNo',
+  platform: 'platform',
+  purpose: 'purpose',
+  status: 'status',
+  carrierCode: 'carrierCode',
+  trackingNo: 'trackingNo',
+  shippedAt: 'shippedAt',
+  receivedAt: 'receivedAt',
+  note: 'note',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlatformShipmentBatchScalarFieldEnum = (typeof PlatformShipmentBatchScalarFieldEnum)[keyof typeof PlatformShipmentBatchScalarFieldEnum]
+
+
+export const PlatformShipmentGroupScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  batchId: 'batchId',
+  platformOrderNo: 'platformOrderNo',
+  platformTradeNo: 'platformTradeNo',
+  groupName: 'groupName',
+  note: 'note',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlatformShipmentGroupScalarFieldEnum = (typeof PlatformShipmentGroupScalarFieldEnum)[keyof typeof PlatformShipmentGroupScalarFieldEnum]
+
+
+export const PlatformShipmentLineScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  batchId: 'batchId',
+  groupId: 'groupId',
+  inventoryItemId: 'inventoryItemId',
+  lineStatus: 'lineStatus',
+  inventoryCodeSnapshot: 'inventoryCodeSnapshot',
+  productNameSnapshot: 'productNameSnapshot',
+  skuSnapshot: 'skuSnapshot',
+  unitCostSnapshot: 'unitCostSnapshot',
+  saleModeSnapshot: 'saleModeSnapshot',
+  sourcePurchaseOrderId: 'sourcePurchaseOrderId',
+  rejectedReason: 'rejectedReason',
+  returnCarrierCode: 'returnCarrierCode',
+  returnTrackingNo: 'returnTrackingNo',
+  returnedAt: 'returnedAt',
+  returnedStorageLocation: 'returnedStorageLocation',
+  note: 'note',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlatformShipmentLineScalarFieldEnum = (typeof PlatformShipmentLineScalarFieldEnum)[keyof typeof PlatformShipmentLineScalarFieldEnum]
 
 
 export const SortOrder = {

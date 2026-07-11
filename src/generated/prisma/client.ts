@@ -91,3 +91,18 @@ export type InventoryActionLog = Prisma.InventoryActionLogModel
  * 
  */
 export type TodoResolution = Prisma.TodoResolutionModel
+/**
+ * Model PlatformShipmentBatch
+ * 
+ */
+export type PlatformShipmentBatch = Prisma.PlatformShipmentBatchModel
+/**
+ * Model PlatformShipmentGroup
+ * 
+ */
+export type PlatformShipmentGroup = Prisma.PlatformShipmentGroupModel
+/**
+ * Model PlatformShipmentLine
+ * 
+ */
+export type PlatformShipmentLine = Prisma.PlatformShipmentLineModel

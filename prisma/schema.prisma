@@ -75,6 +75,14 @@ enum SaleMode {
 enum ItemStatus {
   PENDING_INSPECTION
   STOCKED
+  PLATFORM_SHIPPED
+  PLATFORM_RECEIVED
+  PLATFORM_IN_WAREHOUSE
+  PLATFORM_LISTED
+  PLATFORM_REJECTED
+  RETURNING
+  RETURNED
+  SOLD
   LISTED
   IN_BATCH
   SHIPPED_TO_WAREHOUSE
@@ -84,6 +92,42 @@ enum ItemStatus {
   PENDING_SETTLEMENT
   SETTLED
   PROBLEM
+}
+
+enum ShipmentPlatform {
+  DEWU
+  NINETY_FIVE
+  OTHER
+}
+
+enum ShipmentPurpose {
+  DEWU_LIGHTNING_INBOUND
+  DEWU_STANDARD_FULFILLMENT
+  NINETY_FIVE_INBOUND
+  OTHER
+}
+
+enum ShipmentBatchStatus {
+  DRAFT
+  SHIPPED
+  RECEIVED
+  PARTIALLY_RECEIVED
+  PARTIALLY_LISTED
+  LISTED
+  PARTIALLY_REJECTED
+  RETURNING
+  COMPLETED
+  CANCELLED
+}
+
+enum ShipmentLineStatus {
+  SHIPPED
+  RECEIVED
+  IN_WAREHOUSE
+  LISTED
+  REJECTED
+  RETURNING
+  RETURNED
 }
 
 model User {
@@ -100,6 +144,9 @@ model User {
   reminderStates     ReminderState[]
   inventoryActionLogs InventoryActionLog[]
   todoResolutions    TodoResolution[]
+  shipmentBatches    PlatformShipmentBatch[]
+  shipmentGroups     PlatformShipmentGroup[]
+  shipmentLines      PlatformShipmentLine[]
 
   @@map("users")
 }
@@ -253,6 +300,7 @@ model InventoryItem {
   purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
   inspection       Inspection        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   actionLogs       InventoryActionLog[]
+  shipmentLines    PlatformShipmentLine[]
 
   @@unique([ownerId, inventoryCode])
   @@index([ownerId, itemStatus])
@@ -331,4 +379,82 @@ model TodoResolution {
   @@index([ownerId, entityType, entityId])
   @@index([ownerId, resolvedAt])
   @@map("todo_resolutions")
+}
+
+model PlatformShipmentBatch {
+  id              String              @id @default(cuid())
+  ownerId         String
+  batchNo         String
+  platform        ShipmentPlatform
+  purpose         ShipmentPurpose
+  status          ShipmentBatchStatus @default(DRAFT)
+  carrierCode     String?
+  trackingNo      String?
+  shippedAt       DateTime?
+  receivedAt      DateTime?
+  note            String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  owner  User                    @relation(fields: [ownerId], references: [id])
+  groups PlatformShipmentGroup[]
+  lines  PlatformShipmentLine[]
+
+  @@unique([ownerId, batchNo])
+  @@index([ownerId, status])
+  @@index([ownerId, platform])
+  @@map("platform_shipment_batches")
+}
+
+model PlatformShipmentGroup {
+  id               String   @id @default(cuid())
+  ownerId          String
+  batchId          String
+  platformOrderNo  String?
+  platformTradeNo  String?
+  groupName        String?
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  owner  User                    @relation(fields: [ownerId], references: [id])
+  batch  PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  lines  PlatformShipmentLine[]
+
+  @@index([ownerId, batchId])
+  @@map("platform_shipment_groups")
+}
+
+model PlatformShipmentLine {
+  id                         String              @id @default(cuid())
+  ownerId                    String
+  batchId                    String
+  groupId                    String?
+  inventoryItemId            String
+  lineStatus                 ShipmentLineStatus  @default(SHIPPED)
+  inventoryCodeSnapshot      String
+  productNameSnapshot        String
+  skuSnapshot                String?
+  unitCostSnapshot           Decimal             @db.Decimal(12, 2)
+  saleModeSnapshot           String
+  sourcePurchaseOrderId      String
+  rejectedReason             String?
+  returnCarrierCode          String?
+  returnTrackingNo           String?
+  returnedAt                 DateTime?
+  returnedStorageLocation    String?
+  note                       String?
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
+
+  owner         User                    @relation(fields: [ownerId], references: [id])
+  batch         PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  group         PlatformShipmentGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  inventoryItem InventoryItem           @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, inventoryItemId, batchId])
+  @@index([ownerId, batchId])
+  @@index([ownerId, inventoryItemId])
+  @@index([ownerId, lineStatus])
+  @@map("platform_shipment_lines")
 }

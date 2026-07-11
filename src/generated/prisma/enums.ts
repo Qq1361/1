@@ -104,6 +104,14 @@ export type SaleMode = (typeof SaleMode)[keyof typeof SaleMode]
 export const ItemStatus = {
   PENDING_INSPECTION: 'PENDING_INSPECTION',
   STOCKED: 'STOCKED',
+  PLATFORM_SHIPPED: 'PLATFORM_SHIPPED',
+  PLATFORM_RECEIVED: 'PLATFORM_RECEIVED',
+  PLATFORM_IN_WAREHOUSE: 'PLATFORM_IN_WAREHOUSE',
+  PLATFORM_LISTED: 'PLATFORM_LISTED',
+  PLATFORM_REJECTED: 'PLATFORM_REJECTED',
+  RETURNING: 'RETURNING',
+  RETURNED: 'RETURNED',
+  SOLD: 'SOLD',
   LISTED: 'LISTED',
   IN_BATCH: 'IN_BATCH',
   SHIPPED_TO_WAREHOUSE: 'SHIPPED_TO_WAREHOUSE',
@@ -116,6 +124,54 @@ export const ItemStatus = {
 } as const
 
 export type ItemStatus = (typeof ItemStatus)[keyof typeof ItemStatus]
+
+
+export const ShipmentPlatform = {
+  DEWU: 'DEWU',
+  NINETY_FIVE: 'NINETY_FIVE',
+  OTHER: 'OTHER'
+} as const
+
+export type ShipmentPlatform = (typeof ShipmentPlatform)[keyof typeof ShipmentPlatform]
+
+
+export const ShipmentPurpose = {
+  DEWU_LIGHTNING_INBOUND: 'DEWU_LIGHTNING_INBOUND',
+  DEWU_STANDARD_FULFILLMENT: 'DEWU_STANDARD_FULFILLMENT',
+  NINETY_FIVE_INBOUND: 'NINETY_FIVE_INBOUND',
+  OTHER: 'OTHER'
+} as const
+
+export type ShipmentPurpose = (typeof ShipmentPurpose)[keyof typeof ShipmentPurpose]
+
+
+export const ShipmentBatchStatus = {
+  DRAFT: 'DRAFT',
+  SHIPPED: 'SHIPPED',
+  RECEIVED: 'RECEIVED',
+  PARTIALLY_RECEIVED: 'PARTIALLY_RECEIVED',
+  PARTIALLY_LISTED: 'PARTIALLY_LISTED',
+  LISTED: 'LISTED',
+  PARTIALLY_REJECTED: 'PARTIALLY_REJECTED',
+  RETURNING: 'RETURNING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type ShipmentBatchStatus = (typeof ShipmentBatchStatus)[keyof typeof ShipmentBatchStatus]
+
+
+export const ShipmentLineStatus = {
+  SHIPPED: 'SHIPPED',
+  RECEIVED: 'RECEIVED',
+  IN_WAREHOUSE: 'IN_WAREHOUSE',
+  LISTED: 'LISTED',
+  REJECTED: 'REJECTED',
+  RETURNING: 'RETURNING',
+  RETURNED: 'RETURNED'
+} as const
+
+export type ShipmentLineStatus = (typeof ShipmentLineStatus)[keyof typeof ShipmentLineStatus]
 
 
 export const ReminderStatus = {

@@ -467,6 +467,74 @@ export type EnumReminderStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumReminderStatusFilter<$PrismaModel>
 }
 
+export type EnumShipmentPlatformFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPlatform | Prisma.EnumShipmentPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPlatformFilter<$PrismaModel> | $Enums.ShipmentPlatform
+}
+
+export type EnumShipmentPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPurposeFilter<$PrismaModel> | $Enums.ShipmentPurpose
+}
+
+export type EnumShipmentBatchStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentBatchStatus | Prisma.EnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel> | $Enums.ShipmentBatchStatus
+}
+
+export type EnumShipmentPlatformWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPlatform | Prisma.EnumShipmentPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPlatformWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentPlatform
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentPlatformFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentPlatformFilter<$PrismaModel>
+}
+
+export type EnumShipmentPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPurposeWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentPurposeFilter<$PrismaModel>
+}
+
+export type EnumShipmentBatchStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentBatchStatus | Prisma.EnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentBatchStatusWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentBatchStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel>
+}
+
+export type EnumShipmentLineStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentLineStatus | Prisma.EnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel> | $Enums.ShipmentLineStatus
+}
+
+export type EnumShipmentLineStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentLineStatus | Prisma.EnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentLineStatusWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentLineStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -904,6 +972,74 @@ export type NestedEnumReminderStatusWithAggregatesFilter<$PrismaModel = never> =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumReminderStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumReminderStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumShipmentPlatformFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPlatform | Prisma.EnumShipmentPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPlatformFilter<$PrismaModel> | $Enums.ShipmentPlatform
+}
+
+export type NestedEnumShipmentPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPurposeFilter<$PrismaModel> | $Enums.ShipmentPurpose
+}
+
+export type NestedEnumShipmentBatchStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentBatchStatus | Prisma.EnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel> | $Enums.ShipmentBatchStatus
+}
+
+export type NestedEnumShipmentPlatformWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPlatform | Prisma.EnumShipmentPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPlatform[] | Prisma.ListEnumShipmentPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPlatformWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentPlatform
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentPlatformFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentPlatformFilter<$PrismaModel>
+}
+
+export type NestedEnumShipmentPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentPurpose | Prisma.EnumShipmentPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentPurpose[] | Prisma.ListEnumShipmentPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentPurposeWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentPurposeFilter<$PrismaModel>
+}
+
+export type NestedEnumShipmentBatchStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentBatchStatus | Prisma.EnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentBatchStatus[] | Prisma.ListEnumShipmentBatchStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentBatchStatusWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentBatchStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentBatchStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumShipmentLineStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentLineStatus | Prisma.EnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel> | $Enums.ShipmentLineStatus
+}
+
+export type NestedEnumShipmentLineStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ShipmentLineStatus | Prisma.EnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ShipmentLineStatus[] | Prisma.ListEnumShipmentLineStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumShipmentLineStatusWithAggregatesFilter<$PrismaModel> | $Enums.ShipmentLineStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumShipmentLineStatusFilter<$PrismaModel>
 }
 
 

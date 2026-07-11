@@ -380,7 +380,7 @@ export function getReminderType(
   now = new Date(),
 ): TodoType | "OVERSTOCKED" | null {
   // PROBLEM items don't get reminders
-  if (["PROBLEM", "SOLD", "REMOVED"].includes(item.itemStatus)) return null;
+  if (["PROBLEM", "SOLD", "REMOVED", "RETURNING", "RETURNED"].includes(item.itemStatus)) return null;
 
   // Overstock check (applies to all sale modes)
   if (item.stockedAt.getTime() <= now.getTime() - 72 * 60 * 60 * 1000) {
@@ -455,7 +455,8 @@ export function calculateInventoryTodos(
         });
       }
     }
-    if (item.stockedAt.getTime() <= now.getTime() - 72 * 60 * 60 * 1000)
+    // Overstock only for local STOCKED items
+    if (item.itemStatus === "STOCKED" && item.stockedAt.getTime() <= now.getTime() - 72 * 60 * 60 * 1000)
       todos.push({
         ...base,
         id: `overstocked:${item.id}`,
