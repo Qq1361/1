@@ -65,7 +65,11 @@ export const ModelName = {
   PlatformShipmentGroup: 'PlatformShipmentGroup',
   PlatformShipmentLine: 'PlatformShipmentLine',
   PlatformShipmentAttachment: 'PlatformShipmentAttachment',
-  PlatformShipmentActionLog: 'PlatformShipmentActionLog'
+  PlatformShipmentActionLog: 'PlatformShipmentActionLog',
+  SaleOrder: 'SaleOrder',
+  SaleLine: 'SaleLine',
+  SaleFeeLine: 'SaleFeeLine',
+  SaleActionLog: 'SaleActionLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -378,6 +382,82 @@ export const PlatformShipmentActionLogScalarFieldEnum = {
 } as const
 
 export type PlatformShipmentActionLogScalarFieldEnum = (typeof PlatformShipmentActionLogScalarFieldEnum)[keyof typeof PlatformShipmentActionLogScalarFieldEnum]
+
+
+export const SaleOrderScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  saleNo: 'saleNo',
+  platform: 'platform',
+  platformOrderNo: 'platformOrderNo',
+  platformTradeNo: 'platformTradeNo',
+  buyerName: 'buyerName',
+  soldAt: 'soldAt',
+  grossAmount: 'grossAmount',
+  expectedIncome: 'expectedIncome',
+  actualReceivedAmount: 'actualReceivedAmount',
+  shippingCost: 'shippingCost',
+  otherCost: 'otherCost',
+  status: 'status',
+  note: 'note',
+  confirmedAt: 'confirmedAt',
+  settledAt: 'settledAt',
+  cancelledAt: 'cancelledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SaleOrderScalarFieldEnum = (typeof SaleOrderScalarFieldEnum)[keyof typeof SaleOrderScalarFieldEnum]
+
+
+export const SaleLineScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  saleOrderId: 'saleOrderId',
+  inventoryItemId: 'inventoryItemId',
+  inventoryCodeSnapshot: 'inventoryCodeSnapshot',
+  productNameSnapshot: 'productNameSnapshot',
+  skuSnapshot: 'skuSnapshot',
+  unitCostSnapshot: 'unitCostSnapshot',
+  saleAmount: 'saleAmount',
+  costAmount: 'costAmount',
+  profitAmount: 'profitAmount',
+  sourcePurchaseOrderId: 'sourcePurchaseOrderId',
+  sourcePurchaseOrderItemId: 'sourcePurchaseOrderItemId',
+  sourceShipmentBatchId: 'sourceShipmentBatchId',
+  sourceShipmentLineId: 'sourceShipmentLineId',
+  preSaleItemStatus: 'preSaleItemStatus',
+  preSaleSaleMode: 'preSaleSaleMode',
+  preSaleStorageLocation: 'preSaleStorageLocation',
+  createdAt: 'createdAt'
+} as const
+
+export type SaleLineScalarFieldEnum = (typeof SaleLineScalarFieldEnum)[keyof typeof SaleLineScalarFieldEnum]
+
+
+export const SaleFeeLineScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  saleOrderId: 'saleOrderId',
+  feeType: 'feeType',
+  amount: 'amount',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type SaleFeeLineScalarFieldEnum = (typeof SaleFeeLineScalarFieldEnum)[keyof typeof SaleFeeLineScalarFieldEnum]
+
+
+export const SaleActionLogScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  saleOrderId: 'saleOrderId',
+  actionType: 'actionType',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type SaleActionLogScalarFieldEnum = (typeof SaleActionLogScalarFieldEnum)[keyof typeof SaleActionLogScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -92,3 +92,23 @@ export type PlatformShipmentAttachment = Prisma.PlatformShipmentAttachmentModel
  * 
  */
 export type PlatformShipmentActionLog = Prisma.PlatformShipmentActionLogModel
+/**
+ * Model SaleOrder
+ * 
+ */
+export type SaleOrder = Prisma.SaleOrderModel
+/**
+ * Model SaleLine
+ * 
+ */
+export type SaleLine = Prisma.SaleLineModel
+/**
+ * Model SaleFeeLine
+ * 
+ */
+export type SaleFeeLine = Prisma.SaleFeeLineModel
+/**
+ * Model SaleActionLog
+ * 
+ */
+export type SaleActionLog = Prisma.SaleActionLogModel

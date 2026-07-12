@@ -13,6 +13,7 @@
     "verify:m2a": "tsx scripts/verify-m2a.mjs",
     "verify:m2b": "tsx scripts/verify-m2b.mjs",
     "verify:m30": "tsx scripts/verify-m30.mjs",
+    "verify:m3a": "tsx scripts/verify-m3a.mjs",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",

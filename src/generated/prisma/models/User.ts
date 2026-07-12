@@ -187,6 +187,10 @@ export type UserWhereInput = {
   shipmentLines?: Prisma.PlatformShipmentLineListRelationFilter
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentListRelationFilter
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogListRelationFilter
+  saleOrders?: Prisma.SaleOrderListRelationFilter
+  saleLines?: Prisma.SaleLineListRelationFilter
+  saleFeeLines?: Prisma.SaleFeeLineListRelationFilter
+  saleActionLogs?: Prisma.SaleActionLogListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -207,6 +211,10 @@ export type UserOrderByWithRelationInput = {
   shipmentLines?: Prisma.PlatformShipmentLineOrderByRelationAggregateInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentOrderByRelationAggregateInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogOrderByRelationAggregateInput
+  saleOrders?: Prisma.SaleOrderOrderByRelationAggregateInput
+  saleLines?: Prisma.SaleLineOrderByRelationAggregateInput
+  saleFeeLines?: Prisma.SaleFeeLineOrderByRelationAggregateInput
+  saleActionLogs?: Prisma.SaleActionLogOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -230,6 +238,10 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   shipmentLines?: Prisma.PlatformShipmentLineListRelationFilter
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentListRelationFilter
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogListRelationFilter
+  saleOrders?: Prisma.SaleOrderListRelationFilter
+  saleLines?: Prisma.SaleLineListRelationFilter
+  saleFeeLines?: Prisma.SaleFeeLineListRelationFilter
+  saleActionLogs?: Prisma.SaleActionLogListRelationFilter
 }, "id">
 
 export type UserOrderByWithAggregationInput = {
@@ -270,6 +282,10 @@ export type UserCreateInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -290,6 +306,10 @@ export type UserUncheckedCreateInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUpdateInput = {
@@ -310,6 +330,10 @@ export type UserUpdateInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -330,6 +354,10 @@ export type UserUncheckedUpdateInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -569,6 +597,62 @@ export type UserUpdateOneRequiredWithoutShipmentActionLogsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutShipmentActionLogsInput, Prisma.UserUpdateWithoutShipmentActionLogsInput>, Prisma.UserUncheckedUpdateWithoutShipmentActionLogsInput>
 }
 
+export type UserCreateNestedOneWithoutSaleOrdersInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleOrdersInput, Prisma.UserUncheckedCreateWithoutSaleOrdersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleOrdersInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSaleOrdersNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleOrdersInput, Prisma.UserUncheckedCreateWithoutSaleOrdersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleOrdersInput
+  upsert?: Prisma.UserUpsertWithoutSaleOrdersInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSaleOrdersInput, Prisma.UserUpdateWithoutSaleOrdersInput>, Prisma.UserUncheckedUpdateWithoutSaleOrdersInput>
+}
+
+export type UserCreateNestedOneWithoutSaleLinesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleLinesInput, Prisma.UserUncheckedCreateWithoutSaleLinesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleLinesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSaleLinesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleLinesInput, Prisma.UserUncheckedCreateWithoutSaleLinesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleLinesInput
+  upsert?: Prisma.UserUpsertWithoutSaleLinesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSaleLinesInput, Prisma.UserUpdateWithoutSaleLinesInput>, Prisma.UserUncheckedUpdateWithoutSaleLinesInput>
+}
+
+export type UserCreateNestedOneWithoutSaleFeeLinesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleFeeLinesInput, Prisma.UserUncheckedCreateWithoutSaleFeeLinesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleFeeLinesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSaleFeeLinesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleFeeLinesInput, Prisma.UserUncheckedCreateWithoutSaleFeeLinesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleFeeLinesInput
+  upsert?: Prisma.UserUpsertWithoutSaleFeeLinesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSaleFeeLinesInput, Prisma.UserUpdateWithoutSaleFeeLinesInput>, Prisma.UserUncheckedUpdateWithoutSaleFeeLinesInput>
+}
+
+export type UserCreateNestedOneWithoutSaleActionLogsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleActionLogsInput, Prisma.UserUncheckedCreateWithoutSaleActionLogsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleActionLogsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSaleActionLogsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSaleActionLogsInput, Prisma.UserUncheckedCreateWithoutSaleActionLogsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSaleActionLogsInput
+  upsert?: Prisma.UserUpsertWithoutSaleActionLogsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSaleActionLogsInput, Prisma.UserUpdateWithoutSaleActionLogsInput>, Prisma.UserUncheckedUpdateWithoutSaleActionLogsInput>
+}
+
 export type UserCreateWithoutPurchaseOrdersInput = {
   id?: string
   name: string
@@ -586,6 +670,10 @@ export type UserCreateWithoutPurchaseOrdersInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutPurchaseOrdersInput = {
@@ -605,6 +693,10 @@ export type UserUncheckedCreateWithoutPurchaseOrdersInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutPurchaseOrdersInput = {
@@ -640,6 +732,10 @@ export type UserUpdateWithoutPurchaseOrdersInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPurchaseOrdersInput = {
@@ -659,6 +755,10 @@ export type UserUncheckedUpdateWithoutPurchaseOrdersInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutAttachmentsInput = {
@@ -678,6 +778,10 @@ export type UserCreateWithoutAttachmentsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutAttachmentsInput = {
@@ -697,6 +801,10 @@ export type UserUncheckedCreateWithoutAttachmentsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutAttachmentsInput = {
@@ -732,6 +840,10 @@ export type UserUpdateWithoutAttachmentsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAttachmentsInput = {
@@ -751,6 +863,10 @@ export type UserUncheckedUpdateWithoutAttachmentsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutLogisticsEventsInput = {
@@ -770,6 +886,10 @@ export type UserCreateWithoutLogisticsEventsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutLogisticsEventsInput = {
@@ -789,6 +909,10 @@ export type UserUncheckedCreateWithoutLogisticsEventsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutLogisticsEventsInput = {
@@ -824,6 +948,10 @@ export type UserUpdateWithoutLogisticsEventsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLogisticsEventsInput = {
@@ -843,6 +971,10 @@ export type UserUncheckedUpdateWithoutLogisticsEventsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutInspectionsInput = {
@@ -862,6 +994,10 @@ export type UserCreateWithoutInspectionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutInspectionsInput = {
@@ -881,6 +1017,10 @@ export type UserUncheckedCreateWithoutInspectionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutInspectionsInput = {
@@ -916,6 +1056,10 @@ export type UserUpdateWithoutInspectionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutInspectionsInput = {
@@ -935,6 +1079,10 @@ export type UserUncheckedUpdateWithoutInspectionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutInventoryItemsInput = {
@@ -954,6 +1102,10 @@ export type UserCreateWithoutInventoryItemsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutInventoryItemsInput = {
@@ -973,6 +1125,10 @@ export type UserUncheckedCreateWithoutInventoryItemsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutInventoryItemsInput = {
@@ -1008,6 +1164,10 @@ export type UserUpdateWithoutInventoryItemsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutInventoryItemsInput = {
@@ -1027,6 +1187,10 @@ export type UserUncheckedUpdateWithoutInventoryItemsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutReminderStatesInput = {
@@ -1046,6 +1210,10 @@ export type UserCreateWithoutReminderStatesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutReminderStatesInput = {
@@ -1065,6 +1233,10 @@ export type UserUncheckedCreateWithoutReminderStatesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutReminderStatesInput = {
@@ -1100,6 +1272,10 @@ export type UserUpdateWithoutReminderStatesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReminderStatesInput = {
@@ -1119,6 +1295,10 @@ export type UserUncheckedUpdateWithoutReminderStatesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutInventoryActionLogsInput = {
@@ -1138,6 +1318,10 @@ export type UserCreateWithoutInventoryActionLogsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutInventoryActionLogsInput = {
@@ -1157,6 +1341,10 @@ export type UserUncheckedCreateWithoutInventoryActionLogsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutInventoryActionLogsInput = {
@@ -1192,6 +1380,10 @@ export type UserUpdateWithoutInventoryActionLogsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutInventoryActionLogsInput = {
@@ -1211,6 +1403,10 @@ export type UserUncheckedUpdateWithoutInventoryActionLogsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutTodoResolutionsInput = {
@@ -1230,6 +1426,10 @@ export type UserCreateWithoutTodoResolutionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutTodoResolutionsInput = {
@@ -1249,6 +1449,10 @@ export type UserUncheckedCreateWithoutTodoResolutionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutTodoResolutionsInput = {
@@ -1284,6 +1488,10 @@ export type UserUpdateWithoutTodoResolutionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTodoResolutionsInput = {
@@ -1303,6 +1511,10 @@ export type UserUncheckedUpdateWithoutTodoResolutionsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutShipmentBatchesInput = {
@@ -1322,6 +1534,10 @@ export type UserCreateWithoutShipmentBatchesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutShipmentBatchesInput = {
@@ -1341,6 +1557,10 @@ export type UserUncheckedCreateWithoutShipmentBatchesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutShipmentBatchesInput = {
@@ -1376,6 +1596,10 @@ export type UserUpdateWithoutShipmentBatchesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutShipmentBatchesInput = {
@@ -1395,6 +1619,10 @@ export type UserUncheckedUpdateWithoutShipmentBatchesInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutShipmentGroupsInput = {
@@ -1414,6 +1642,10 @@ export type UserCreateWithoutShipmentGroupsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutShipmentGroupsInput = {
@@ -1433,6 +1665,10 @@ export type UserUncheckedCreateWithoutShipmentGroupsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutShipmentGroupsInput = {
@@ -1468,6 +1704,10 @@ export type UserUpdateWithoutShipmentGroupsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutShipmentGroupsInput = {
@@ -1487,6 +1727,10 @@ export type UserUncheckedUpdateWithoutShipmentGroupsInput = {
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutShipmentLinesInput = {
@@ -1506,6 +1750,10 @@ export type UserCreateWithoutShipmentLinesInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutShipmentLinesInput = {
@@ -1525,6 +1773,10 @@ export type UserUncheckedCreateWithoutShipmentLinesInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutShipmentLinesInput = {
@@ -1560,6 +1812,10 @@ export type UserUpdateWithoutShipmentLinesInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutShipmentLinesInput = {
@@ -1579,6 +1835,10 @@ export type UserUncheckedUpdateWithoutShipmentLinesInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutShipmentAttachmentsInput = {
@@ -1598,6 +1858,10 @@ export type UserCreateWithoutShipmentAttachmentsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutOwnerInput
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutShipmentAttachmentsInput = {
@@ -1617,6 +1881,10 @@ export type UserUncheckedCreateWithoutShipmentAttachmentsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutOwnerInput
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutShipmentAttachmentsInput = {
@@ -1652,6 +1920,10 @@ export type UserUpdateWithoutShipmentAttachmentsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUpdateManyWithoutOwnerNestedInput
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutShipmentAttachmentsInput = {
@@ -1671,6 +1943,10 @@ export type UserUncheckedUpdateWithoutShipmentAttachmentsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutShipmentActionLogsInput = {
@@ -1690,6 +1966,10 @@ export type UserCreateWithoutShipmentActionLogsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutOwnerInput
   shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutShipmentActionLogsInput = {
@@ -1709,6 +1989,10 @@ export type UserUncheckedCreateWithoutShipmentActionLogsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutOwnerInput
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutShipmentActionLogsInput = {
@@ -1744,6 +2028,10 @@ export type UserUpdateWithoutShipmentActionLogsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUpdateManyWithoutOwnerNestedInput
   shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutShipmentActionLogsInput = {
@@ -1763,6 +2051,442 @@ export type UserUncheckedUpdateWithoutShipmentActionLogsInput = {
   shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
   shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutSaleOrdersInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutSaleOrdersInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutSaleOrdersInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleOrdersInput, Prisma.UserUncheckedCreateWithoutSaleOrdersInput>
+}
+
+export type UserUpsertWithoutSaleOrdersInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSaleOrdersInput, Prisma.UserUncheckedUpdateWithoutSaleOrdersInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleOrdersInput, Prisma.UserUncheckedCreateWithoutSaleOrdersInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSaleOrdersInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSaleOrdersInput, Prisma.UserUncheckedUpdateWithoutSaleOrdersInput>
+}
+
+export type UserUpdateWithoutSaleOrdersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSaleOrdersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutSaleLinesInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutSaleLinesInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutSaleLinesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleLinesInput, Prisma.UserUncheckedCreateWithoutSaleLinesInput>
+}
+
+export type UserUpsertWithoutSaleLinesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSaleLinesInput, Prisma.UserUncheckedUpdateWithoutSaleLinesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleLinesInput, Prisma.UserUncheckedCreateWithoutSaleLinesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSaleLinesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSaleLinesInput, Prisma.UserUncheckedUpdateWithoutSaleLinesInput>
+}
+
+export type UserUpdateWithoutSaleLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSaleLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutSaleFeeLinesInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutSaleFeeLinesInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutSaleFeeLinesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleFeeLinesInput, Prisma.UserUncheckedCreateWithoutSaleFeeLinesInput>
+}
+
+export type UserUpsertWithoutSaleFeeLinesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSaleFeeLinesInput, Prisma.UserUncheckedUpdateWithoutSaleFeeLinesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleFeeLinesInput, Prisma.UserUncheckedCreateWithoutSaleFeeLinesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSaleFeeLinesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSaleFeeLinesInput, Prisma.UserUncheckedUpdateWithoutSaleFeeLinesInput>
+}
+
+export type UserUpdateWithoutSaleFeeLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSaleFeeLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleActionLogs?: Prisma.SaleActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutSaleActionLogsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutSaleActionLogsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedCreateNestedManyWithoutOwnerInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedCreateNestedManyWithoutOwnerInput
+  inspections?: Prisma.InspectionUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryItems?: Prisma.InventoryItemUncheckedCreateNestedManyWithoutOwnerInput
+  reminderStates?: Prisma.ReminderStateUncheckedCreateNestedManyWithoutOwnerInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutOwnerInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutOwnerInput
+  saleOrders?: Prisma.SaleOrderUncheckedCreateNestedManyWithoutOwnerInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutOwnerInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutSaleActionLogsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleActionLogsInput, Prisma.UserUncheckedCreateWithoutSaleActionLogsInput>
+}
+
+export type UserUpsertWithoutSaleActionLogsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSaleActionLogsInput, Prisma.UserUncheckedUpdateWithoutSaleActionLogsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSaleActionLogsInput, Prisma.UserUncheckedCreateWithoutSaleActionLogsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSaleActionLogsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSaleActionLogsInput, Prisma.UserUncheckedUpdateWithoutSaleActionLogsInput>
+}
+
+export type UserUpdateWithoutSaleActionLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSaleActionLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  purchaseOrders?: Prisma.PurchaseOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  logisticsEvents?: Prisma.LogisticsEventUncheckedUpdateManyWithoutOwnerNestedInput
+  inspections?: Prisma.InspectionUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryItems?: Prisma.InventoryItemUncheckedUpdateManyWithoutOwnerNestedInput
+  reminderStates?: Prisma.ReminderStateUncheckedUpdateManyWithoutOwnerNestedInput
+  inventoryActionLogs?: Prisma.InventoryActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  todoResolutions?: Prisma.TodoResolutionUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentBatches?: Prisma.PlatformShipmentBatchUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentGroups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentLines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentAttachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutOwnerNestedInput
+  shipmentActionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutOwnerNestedInput
+  saleOrders?: Prisma.SaleOrderUncheckedUpdateManyWithoutOwnerNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutOwnerNestedInput
+  saleFeeLines?: Prisma.SaleFeeLineUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 
@@ -1784,6 +2508,10 @@ export type UserCountOutputType = {
   shipmentLines: number
   shipmentAttachments: number
   shipmentActionLogs: number
+  saleOrders: number
+  saleLines: number
+  saleFeeLines: number
+  saleActionLogs: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1800,6 +2528,10 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   shipmentLines?: boolean | UserCountOutputTypeCountShipmentLinesArgs
   shipmentAttachments?: boolean | UserCountOutputTypeCountShipmentAttachmentsArgs
   shipmentActionLogs?: boolean | UserCountOutputTypeCountShipmentActionLogsArgs
+  saleOrders?: boolean | UserCountOutputTypeCountSaleOrdersArgs
+  saleLines?: boolean | UserCountOutputTypeCountSaleLinesArgs
+  saleFeeLines?: boolean | UserCountOutputTypeCountSaleFeeLinesArgs
+  saleActionLogs?: boolean | UserCountOutputTypeCountSaleActionLogsArgs
 }
 
 /**
@@ -1903,6 +2635,34 @@ export type UserCountOutputTypeCountShipmentActionLogsArgs<ExtArgs extends runti
   where?: Prisma.PlatformShipmentActionLogWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountSaleOrdersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SaleOrderWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountSaleLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SaleLineWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountSaleFeeLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SaleFeeLineWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountSaleActionLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SaleActionLogWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1922,6 +2682,10 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   shipmentLines?: boolean | Prisma.User$shipmentLinesArgs<ExtArgs>
   shipmentAttachments?: boolean | Prisma.User$shipmentAttachmentsArgs<ExtArgs>
   shipmentActionLogs?: boolean | Prisma.User$shipmentActionLogsArgs<ExtArgs>
+  saleOrders?: boolean | Prisma.User$saleOrdersArgs<ExtArgs>
+  saleLines?: boolean | Prisma.User$saleLinesArgs<ExtArgs>
+  saleFeeLines?: boolean | Prisma.User$saleFeeLinesArgs<ExtArgs>
+  saleActionLogs?: boolean | Prisma.User$saleActionLogsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1961,6 +2725,10 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   shipmentLines?: boolean | Prisma.User$shipmentLinesArgs<ExtArgs>
   shipmentAttachments?: boolean | Prisma.User$shipmentAttachmentsArgs<ExtArgs>
   shipmentActionLogs?: boolean | Prisma.User$shipmentActionLogsArgs<ExtArgs>
+  saleOrders?: boolean | Prisma.User$saleOrdersArgs<ExtArgs>
+  saleLines?: boolean | Prisma.User$saleLinesArgs<ExtArgs>
+  saleFeeLines?: boolean | Prisma.User$saleFeeLinesArgs<ExtArgs>
+  saleActionLogs?: boolean | Prisma.User$saleActionLogsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1982,6 +2750,10 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     shipmentLines: Prisma.$PlatformShipmentLinePayload<ExtArgs>[]
     shipmentAttachments: Prisma.$PlatformShipmentAttachmentPayload<ExtArgs>[]
     shipmentActionLogs: Prisma.$PlatformShipmentActionLogPayload<ExtArgs>[]
+    saleOrders: Prisma.$SaleOrderPayload<ExtArgs>[]
+    saleLines: Prisma.$SaleLinePayload<ExtArgs>[]
+    saleFeeLines: Prisma.$SaleFeeLinePayload<ExtArgs>[]
+    saleActionLogs: Prisma.$SaleActionLogPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2395,6 +3167,10 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   shipmentLines<T extends Prisma.User$shipmentLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$shipmentLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   shipmentAttachments<T extends Prisma.User$shipmentAttachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$shipmentAttachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentAttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   shipmentActionLogs<T extends Prisma.User$shipmentActionLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$shipmentActionLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentActionLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  saleOrders<T extends Prisma.User$saleOrdersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$saleOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SaleOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  saleLines<T extends Prisma.User$saleLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$saleLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SaleLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  saleFeeLines<T extends Prisma.User$saleFeeLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$saleFeeLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SaleFeeLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  saleActionLogs<T extends Prisma.User$saleActionLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$saleActionLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SaleActionLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3130,6 +3906,102 @@ export type User$shipmentActionLogsArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.PlatformShipmentActionLogScalarFieldEnum | Prisma.PlatformShipmentActionLogScalarFieldEnum[]
+}
+
+/**
+ * User.saleOrders
+ */
+export type User$saleOrdersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SaleOrder
+   */
+  select?: Prisma.SaleOrderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SaleOrder
+   */
+  omit?: Prisma.SaleOrderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SaleOrderInclude<ExtArgs> | null
+  where?: Prisma.SaleOrderWhereInput
+  orderBy?: Prisma.SaleOrderOrderByWithRelationInput | Prisma.SaleOrderOrderByWithRelationInput[]
+  cursor?: Prisma.SaleOrderWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SaleOrderScalarFieldEnum | Prisma.SaleOrderScalarFieldEnum[]
+}
+
+/**
+ * User.saleLines
+ */
+export type User$saleLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SaleLine
+   */
+  select?: Prisma.SaleLineSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SaleLine
+   */
+  omit?: Prisma.SaleLineOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SaleLineInclude<ExtArgs> | null
+  where?: Prisma.SaleLineWhereInput
+  orderBy?: Prisma.SaleLineOrderByWithRelationInput | Prisma.SaleLineOrderByWithRelationInput[]
+  cursor?: Prisma.SaleLineWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SaleLineScalarFieldEnum | Prisma.SaleLineScalarFieldEnum[]
+}
+
+/**
+ * User.saleFeeLines
+ */
+export type User$saleFeeLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SaleFeeLine
+   */
+  select?: Prisma.SaleFeeLineSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SaleFeeLine
+   */
+  omit?: Prisma.SaleFeeLineOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SaleFeeLineInclude<ExtArgs> | null
+  where?: Prisma.SaleFeeLineWhereInput
+  orderBy?: Prisma.SaleFeeLineOrderByWithRelationInput | Prisma.SaleFeeLineOrderByWithRelationInput[]
+  cursor?: Prisma.SaleFeeLineWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SaleFeeLineScalarFieldEnum | Prisma.SaleFeeLineScalarFieldEnum[]
+}
+
+/**
+ * User.saleActionLogs
+ */
+export type User$saleActionLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SaleActionLog
+   */
+  select?: Prisma.SaleActionLogSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SaleActionLog
+   */
+  omit?: Prisma.SaleActionLogOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SaleActionLogInclude<ExtArgs> | null
+  where?: Prisma.SaleActionLogWhereInput
+  orderBy?: Prisma.SaleActionLogOrderByWithRelationInput | Prisma.SaleActionLogOrderByWithRelationInput[]
+  cursor?: Prisma.SaleActionLogWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SaleActionLogScalarFieldEnum | Prisma.SaleActionLogScalarFieldEnum[]
 }
 
 /**

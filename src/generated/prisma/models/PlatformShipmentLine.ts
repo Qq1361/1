@@ -364,6 +364,7 @@ export type PlatformShipmentLineWhereInput = {
   batch?: Prisma.XOR<Prisma.PlatformShipmentBatchScalarRelationFilter, Prisma.PlatformShipmentBatchWhereInput>
   group?: Prisma.XOR<Prisma.PlatformShipmentGroupNullableScalarRelationFilter, Prisma.PlatformShipmentGroupWhereInput> | null
   inventoryItem?: Prisma.XOR<Prisma.InventoryItemScalarRelationFilter, Prisma.InventoryItemWhereInput>
+  saleLines?: Prisma.SaleLineListRelationFilter
 }
 
 export type PlatformShipmentLineOrderByWithRelationInput = {
@@ -394,6 +395,7 @@ export type PlatformShipmentLineOrderByWithRelationInput = {
   batch?: Prisma.PlatformShipmentBatchOrderByWithRelationInput
   group?: Prisma.PlatformShipmentGroupOrderByWithRelationInput
   inventoryItem?: Prisma.InventoryItemOrderByWithRelationInput
+  saleLines?: Prisma.SaleLineOrderByRelationAggregateInput
 }
 
 export type PlatformShipmentLineWhereUniqueInput = Prisma.AtLeast<{
@@ -428,6 +430,7 @@ export type PlatformShipmentLineWhereUniqueInput = Prisma.AtLeast<{
   batch?: Prisma.XOR<Prisma.PlatformShipmentBatchScalarRelationFilter, Prisma.PlatformShipmentBatchWhereInput>
   group?: Prisma.XOR<Prisma.PlatformShipmentGroupNullableScalarRelationFilter, Prisma.PlatformShipmentGroupWhereInput> | null
   inventoryItem?: Prisma.XOR<Prisma.InventoryItemScalarRelationFilter, Prisma.InventoryItemWhereInput>
+  saleLines?: Prisma.SaleLineListRelationFilter
 }, "id" | "ownerId_inventoryItemId_batchId">
 
 export type PlatformShipmentLineOrderByWithAggregationInput = {
@@ -514,6 +517,7 @@ export type PlatformShipmentLineCreateInput = {
   batch: Prisma.PlatformShipmentBatchCreateNestedOneWithoutLinesInput
   group?: Prisma.PlatformShipmentGroupCreateNestedOneWithoutLinesInput
   inventoryItem: Prisma.InventoryItemCreateNestedOneWithoutShipmentLinesInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineUncheckedCreateInput = {
@@ -540,6 +544,7 @@ export type PlatformShipmentLineUncheckedCreateInput = {
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineUpdateInput = {
@@ -566,6 +571,7 @@ export type PlatformShipmentLineUpdateInput = {
   batch?: Prisma.PlatformShipmentBatchUpdateOneRequiredWithoutLinesNestedInput
   group?: Prisma.PlatformShipmentGroupUpdateOneWithoutLinesNestedInput
   inventoryItem?: Prisma.InventoryItemUpdateOneRequiredWithoutShipmentLinesNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateInput = {
@@ -592,6 +598,7 @@ export type PlatformShipmentLineUncheckedUpdateInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineCreateManyInput = {
@@ -770,6 +777,11 @@ export type PlatformShipmentLineSumOrderByAggregateInput = {
   unitCostSnapshot?: Prisma.SortOrder
 }
 
+export type PlatformShipmentLineNullableScalarRelationFilter = {
+  is?: Prisma.PlatformShipmentLineWhereInput | null
+  isNot?: Prisma.PlatformShipmentLineWhereInput | null
+}
+
 export type PlatformShipmentLineCreateNestedManyWithoutOwnerInput = {
   create?: Prisma.XOR<Prisma.PlatformShipmentLineCreateWithoutOwnerInput, Prisma.PlatformShipmentLineUncheckedCreateWithoutOwnerInput> | Prisma.PlatformShipmentLineCreateWithoutOwnerInput[] | Prisma.PlatformShipmentLineUncheckedCreateWithoutOwnerInput[]
   connectOrCreate?: Prisma.PlatformShipmentLineCreateOrConnectWithoutOwnerInput | Prisma.PlatformShipmentLineCreateOrConnectWithoutOwnerInput[]
@@ -946,6 +958,22 @@ export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
 
+export type PlatformShipmentLineCreateNestedOneWithoutSaleLinesInput = {
+  create?: Prisma.XOR<Prisma.PlatformShipmentLineCreateWithoutSaleLinesInput, Prisma.PlatformShipmentLineUncheckedCreateWithoutSaleLinesInput>
+  connectOrCreate?: Prisma.PlatformShipmentLineCreateOrConnectWithoutSaleLinesInput
+  connect?: Prisma.PlatformShipmentLineWhereUniqueInput
+}
+
+export type PlatformShipmentLineUpdateOneWithoutSaleLinesNestedInput = {
+  create?: Prisma.XOR<Prisma.PlatformShipmentLineCreateWithoutSaleLinesInput, Prisma.PlatformShipmentLineUncheckedCreateWithoutSaleLinesInput>
+  connectOrCreate?: Prisma.PlatformShipmentLineCreateOrConnectWithoutSaleLinesInput
+  upsert?: Prisma.PlatformShipmentLineUpsertWithoutSaleLinesInput
+  disconnect?: Prisma.PlatformShipmentLineWhereInput | boolean
+  delete?: Prisma.PlatformShipmentLineWhereInput | boolean
+  connect?: Prisma.PlatformShipmentLineWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PlatformShipmentLineUpdateToOneWithWhereWithoutSaleLinesInput, Prisma.PlatformShipmentLineUpdateWithoutSaleLinesInput>, Prisma.PlatformShipmentLineUncheckedUpdateWithoutSaleLinesInput>
+}
+
 export type PlatformShipmentLineCreateWithoutOwnerInput = {
   id?: string
   lineStatus?: $Enums.ShipmentLineStatus
@@ -969,6 +997,7 @@ export type PlatformShipmentLineCreateWithoutOwnerInput = {
   batch: Prisma.PlatformShipmentBatchCreateNestedOneWithoutLinesInput
   group?: Prisma.PlatformShipmentGroupCreateNestedOneWithoutLinesInput
   inventoryItem: Prisma.InventoryItemCreateNestedOneWithoutShipmentLinesInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineUncheckedCreateWithoutOwnerInput = {
@@ -994,6 +1023,7 @@ export type PlatformShipmentLineUncheckedCreateWithoutOwnerInput = {
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineCreateOrConnectWithoutOwnerInput = {
@@ -1074,6 +1104,7 @@ export type PlatformShipmentLineCreateWithoutInventoryItemInput = {
   owner: Prisma.UserCreateNestedOneWithoutShipmentLinesInput
   batch: Prisma.PlatformShipmentBatchCreateNestedOneWithoutLinesInput
   group?: Prisma.PlatformShipmentGroupCreateNestedOneWithoutLinesInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineUncheckedCreateWithoutInventoryItemInput = {
@@ -1099,6 +1130,7 @@ export type PlatformShipmentLineUncheckedCreateWithoutInventoryItemInput = {
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineCreateOrConnectWithoutInventoryItemInput = {
@@ -1150,6 +1182,7 @@ export type PlatformShipmentLineCreateWithoutBatchInput = {
   owner: Prisma.UserCreateNestedOneWithoutShipmentLinesInput
   group?: Prisma.PlatformShipmentGroupCreateNestedOneWithoutLinesInput
   inventoryItem: Prisma.InventoryItemCreateNestedOneWithoutShipmentLinesInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineUncheckedCreateWithoutBatchInput = {
@@ -1175,6 +1208,7 @@ export type PlatformShipmentLineUncheckedCreateWithoutBatchInput = {
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineCreateOrConnectWithoutBatchInput = {
@@ -1226,6 +1260,7 @@ export type PlatformShipmentLineCreateWithoutGroupInput = {
   owner: Prisma.UserCreateNestedOneWithoutShipmentLinesInput
   batch: Prisma.PlatformShipmentBatchCreateNestedOneWithoutLinesInput
   inventoryItem: Prisma.InventoryItemCreateNestedOneWithoutShipmentLinesInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineUncheckedCreateWithoutGroupInput = {
@@ -1251,6 +1286,7 @@ export type PlatformShipmentLineUncheckedCreateWithoutGroupInput = {
   note?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentLineInput
 }
 
 export type PlatformShipmentLineCreateOrConnectWithoutGroupInput = {
@@ -1277,6 +1313,126 @@ export type PlatformShipmentLineUpdateWithWhereUniqueWithoutGroupInput = {
 export type PlatformShipmentLineUpdateManyWithWhereWithoutGroupInput = {
   where: Prisma.PlatformShipmentLineScalarWhereInput
   data: Prisma.XOR<Prisma.PlatformShipmentLineUpdateManyMutationInput, Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutGroupInput>
+}
+
+export type PlatformShipmentLineCreateWithoutSaleLinesInput = {
+  id?: string
+  lineStatus?: $Enums.ShipmentLineStatus
+  inventoryCodeSnapshot: string
+  productNameSnapshot: string
+  skuSnapshot?: string | null
+  unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
+  sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
+  rejectedReason?: string | null
+  returnCarrierCode?: string | null
+  returnTrackingNo?: string | null
+  returnedAt?: Date | string | null
+  returnedStorageLocation?: string | null
+  note?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutShipmentLinesInput
+  batch: Prisma.PlatformShipmentBatchCreateNestedOneWithoutLinesInput
+  group?: Prisma.PlatformShipmentGroupCreateNestedOneWithoutLinesInput
+  inventoryItem: Prisma.InventoryItemCreateNestedOneWithoutShipmentLinesInput
+}
+
+export type PlatformShipmentLineUncheckedCreateWithoutSaleLinesInput = {
+  id?: string
+  ownerId: string
+  batchId: string
+  groupId?: string | null
+  inventoryItemId: string
+  lineStatus?: $Enums.ShipmentLineStatus
+  inventoryCodeSnapshot: string
+  productNameSnapshot: string
+  skuSnapshot?: string | null
+  unitCostSnapshot: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oldSaleModeSnapshot?: string | null
+  newSaleModeSnapshot?: string | null
+  sourcePurchaseOrderId: string
+  packedCheckedAt?: Date | string | null
+  packedChecked?: boolean
+  rejectedReason?: string | null
+  returnCarrierCode?: string | null
+  returnTrackingNo?: string | null
+  returnedAt?: Date | string | null
+  returnedStorageLocation?: string | null
+  note?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type PlatformShipmentLineCreateOrConnectWithoutSaleLinesInput = {
+  where: Prisma.PlatformShipmentLineWhereUniqueInput
+  create: Prisma.XOR<Prisma.PlatformShipmentLineCreateWithoutSaleLinesInput, Prisma.PlatformShipmentLineUncheckedCreateWithoutSaleLinesInput>
+}
+
+export type PlatformShipmentLineUpsertWithoutSaleLinesInput = {
+  update: Prisma.XOR<Prisma.PlatformShipmentLineUpdateWithoutSaleLinesInput, Prisma.PlatformShipmentLineUncheckedUpdateWithoutSaleLinesInput>
+  create: Prisma.XOR<Prisma.PlatformShipmentLineCreateWithoutSaleLinesInput, Prisma.PlatformShipmentLineUncheckedCreateWithoutSaleLinesInput>
+  where?: Prisma.PlatformShipmentLineWhereInput
+}
+
+export type PlatformShipmentLineUpdateToOneWithWhereWithoutSaleLinesInput = {
+  where?: Prisma.PlatformShipmentLineWhereInput
+  data: Prisma.XOR<Prisma.PlatformShipmentLineUpdateWithoutSaleLinesInput, Prisma.PlatformShipmentLineUncheckedUpdateWithoutSaleLinesInput>
+}
+
+export type PlatformShipmentLineUpdateWithoutSaleLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  lineStatus?: Prisma.EnumShipmentLineStatusFieldUpdateOperationsInput | $Enums.ShipmentLineStatus
+  inventoryCodeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  returnedStorageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutShipmentLinesNestedInput
+  batch?: Prisma.PlatformShipmentBatchUpdateOneRequiredWithoutLinesNestedInput
+  group?: Prisma.PlatformShipmentGroupUpdateOneWithoutLinesNestedInput
+  inventoryItem?: Prisma.InventoryItemUpdateOneRequiredWithoutShipmentLinesNestedInput
+}
+
+export type PlatformShipmentLineUncheckedUpdateWithoutSaleLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  batchId?: Prisma.StringFieldUpdateOperationsInput | string
+  groupId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  inventoryItemId?: Prisma.StringFieldUpdateOperationsInput | string
+  lineStatus?: Prisma.EnumShipmentLineStatusFieldUpdateOperationsInput | $Enums.ShipmentLineStatus
+  inventoryCodeSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  productNameSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
+  skuSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  unitCostSnapshot?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oldSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  newSaleModeSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourcePurchaseOrderId?: Prisma.StringFieldUpdateOperationsInput | string
+  packedCheckedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  packedChecked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  returnCarrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  returnTrackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  returnedStorageLocation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PlatformShipmentLineCreateManyOwnerInput = {
@@ -1327,6 +1483,7 @@ export type PlatformShipmentLineUpdateWithoutOwnerInput = {
   batch?: Prisma.PlatformShipmentBatchUpdateOneRequiredWithoutLinesNestedInput
   group?: Prisma.PlatformShipmentGroupUpdateOneWithoutLinesNestedInput
   inventoryItem?: Prisma.InventoryItemUpdateOneRequiredWithoutShipmentLinesNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateWithoutOwnerInput = {
@@ -1352,6 +1509,7 @@ export type PlatformShipmentLineUncheckedUpdateWithoutOwnerInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateManyWithoutOwnerInput = {
@@ -1427,6 +1585,7 @@ export type PlatformShipmentLineUpdateWithoutInventoryItemInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutShipmentLinesNestedInput
   batch?: Prisma.PlatformShipmentBatchUpdateOneRequiredWithoutLinesNestedInput
   group?: Prisma.PlatformShipmentGroupUpdateOneWithoutLinesNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateWithoutInventoryItemInput = {
@@ -1452,6 +1611,7 @@ export type PlatformShipmentLineUncheckedUpdateWithoutInventoryItemInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateManyWithoutInventoryItemInput = {
@@ -1527,6 +1687,7 @@ export type PlatformShipmentLineUpdateWithoutBatchInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutShipmentLinesNestedInput
   group?: Prisma.PlatformShipmentGroupUpdateOneWithoutLinesNestedInput
   inventoryItem?: Prisma.InventoryItemUpdateOneRequiredWithoutShipmentLinesNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateWithoutBatchInput = {
@@ -1552,6 +1713,7 @@ export type PlatformShipmentLineUncheckedUpdateWithoutBatchInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateManyWithoutBatchInput = {
@@ -1627,6 +1789,7 @@ export type PlatformShipmentLineUpdateWithoutGroupInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutShipmentLinesNestedInput
   batch?: Prisma.PlatformShipmentBatchUpdateOneRequiredWithoutLinesNestedInput
   inventoryItem?: Prisma.InventoryItemUpdateOneRequiredWithoutShipmentLinesNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateWithoutGroupInput = {
@@ -1652,6 +1815,7 @@ export type PlatformShipmentLineUncheckedUpdateWithoutGroupInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentLineNestedInput
 }
 
 export type PlatformShipmentLineUncheckedUpdateManyWithoutGroupInput = {
@@ -1679,6 +1843,35 @@ export type PlatformShipmentLineUncheckedUpdateManyWithoutGroupInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type PlatformShipmentLineCountOutputType
+ */
+
+export type PlatformShipmentLineCountOutputType = {
+  saleLines: number
+}
+
+export type PlatformShipmentLineCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  saleLines?: boolean | PlatformShipmentLineCountOutputTypeCountSaleLinesArgs
+}
+
+/**
+ * PlatformShipmentLineCountOutputType without action
+ */
+export type PlatformShipmentLineCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PlatformShipmentLineCountOutputType
+   */
+  select?: Prisma.PlatformShipmentLineCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PlatformShipmentLineCountOutputType without action
+ */
+export type PlatformShipmentLineCountOutputTypeCountSaleLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SaleLineWhereInput
+}
 
 
 export type PlatformShipmentLineSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1709,6 +1902,8 @@ export type PlatformShipmentLineSelect<ExtArgs extends runtime.Types.Extensions.
   batch?: boolean | Prisma.PlatformShipmentBatchDefaultArgs<ExtArgs>
   group?: boolean | Prisma.PlatformShipmentLine$groupArgs<ExtArgs>
   inventoryItem?: boolean | Prisma.InventoryItemDefaultArgs<ExtArgs>
+  saleLines?: boolean | Prisma.PlatformShipmentLine$saleLinesArgs<ExtArgs>
+  _count?: boolean | Prisma.PlatformShipmentLineCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["platformShipmentLine"]>
 
 export type PlatformShipmentLineSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1803,6 +1998,8 @@ export type PlatformShipmentLineInclude<ExtArgs extends runtime.Types.Extensions
   batch?: boolean | Prisma.PlatformShipmentBatchDefaultArgs<ExtArgs>
   group?: boolean | Prisma.PlatformShipmentLine$groupArgs<ExtArgs>
   inventoryItem?: boolean | Prisma.InventoryItemDefaultArgs<ExtArgs>
+  saleLines?: boolean | Prisma.PlatformShipmentLine$saleLinesArgs<ExtArgs>
+  _count?: boolean | Prisma.PlatformShipmentLineCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PlatformShipmentLineIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1824,6 +2021,7 @@ export type $PlatformShipmentLinePayload<ExtArgs extends runtime.Types.Extension
     batch: Prisma.$PlatformShipmentBatchPayload<ExtArgs>
     group: Prisma.$PlatformShipmentGroupPayload<ExtArgs> | null
     inventoryItem: Prisma.$InventoryItemPayload<ExtArgs>
+    saleLines: Prisma.$SaleLinePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2247,6 +2445,7 @@ export interface Prisma__PlatformShipmentLineClient<T, Null = never, ExtArgs ext
   batch<T extends Prisma.PlatformShipmentBatchDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlatformShipmentBatchDefaultArgs<ExtArgs>>): Prisma.Prisma__PlatformShipmentBatchClient<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentBatchPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   group<T extends Prisma.PlatformShipmentLine$groupArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlatformShipmentLine$groupArgs<ExtArgs>>): Prisma.Prisma__PlatformShipmentGroupClient<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentGroupPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   inventoryItem<T extends Prisma.InventoryItemDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InventoryItemDefaultArgs<ExtArgs>>): Prisma.Prisma__InventoryItemClient<runtime.Types.Result.GetResult<Prisma.$InventoryItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  saleLines<T extends Prisma.PlatformShipmentLine$saleLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlatformShipmentLine$saleLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SaleLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2716,6 +2915,30 @@ export type PlatformShipmentLine$groupArgs<ExtArgs extends runtime.Types.Extensi
    */
   include?: Prisma.PlatformShipmentGroupInclude<ExtArgs> | null
   where?: Prisma.PlatformShipmentGroupWhereInput
+}
+
+/**
+ * PlatformShipmentLine.saleLines
+ */
+export type PlatformShipmentLine$saleLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SaleLine
+   */
+  select?: Prisma.SaleLineSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SaleLine
+   */
+  omit?: Prisma.SaleLineOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SaleLineInclude<ExtArgs> | null
+  where?: Prisma.SaleLineWhereInput
+  orderBy?: Prisma.SaleLineOrderByWithRelationInput | Prisma.SaleLineOrderByWithRelationInput[]
+  cursor?: Prisma.SaleLineWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SaleLineScalarFieldEnum | Prisma.SaleLineScalarFieldEnum[]
 }
 
 /**

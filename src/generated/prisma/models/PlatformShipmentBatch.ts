@@ -329,6 +329,7 @@ export type PlatformShipmentBatchWhereInput = {
   lines?: Prisma.PlatformShipmentLineListRelationFilter
   attachments?: Prisma.PlatformShipmentAttachmentListRelationFilter
   actionLogs?: Prisma.PlatformShipmentActionLogListRelationFilter
+  saleLines?: Prisma.SaleLineListRelationFilter
 }
 
 export type PlatformShipmentBatchOrderByWithRelationInput = {
@@ -354,6 +355,7 @@ export type PlatformShipmentBatchOrderByWithRelationInput = {
   lines?: Prisma.PlatformShipmentLineOrderByRelationAggregateInput
   attachments?: Prisma.PlatformShipmentAttachmentOrderByRelationAggregateInput
   actionLogs?: Prisma.PlatformShipmentActionLogOrderByRelationAggregateInput
+  saleLines?: Prisma.SaleLineOrderByRelationAggregateInput
 }
 
 export type PlatformShipmentBatchWhereUniqueInput = Prisma.AtLeast<{
@@ -383,6 +385,7 @@ export type PlatformShipmentBatchWhereUniqueInput = Prisma.AtLeast<{
   lines?: Prisma.PlatformShipmentLineListRelationFilter
   attachments?: Prisma.PlatformShipmentAttachmentListRelationFilter
   actionLogs?: Prisma.PlatformShipmentActionLogListRelationFilter
+  saleLines?: Prisma.SaleLineListRelationFilter
 }, "id" | "ownerId_batchNo">
 
 export type PlatformShipmentBatchOrderByWithAggregationInput = {
@@ -455,6 +458,7 @@ export type PlatformShipmentBatchCreateInput = {
   lines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchUncheckedCreateInput = {
@@ -479,6 +483,7 @@ export type PlatformShipmentBatchUncheckedCreateInput = {
   lines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchUpdateInput = {
@@ -503,6 +508,7 @@ export type PlatformShipmentBatchUpdateInput = {
   lines?: Prisma.PlatformShipmentLineUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchUncheckedUpdateInput = {
@@ -527,6 +533,7 @@ export type PlatformShipmentBatchUncheckedUpdateInput = {
   lines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchCreateManyInput = {
@@ -682,6 +689,11 @@ export type PlatformShipmentBatchScalarRelationFilter = {
   isNot?: Prisma.PlatformShipmentBatchWhereInput
 }
 
+export type PlatformShipmentBatchNullableScalarRelationFilter = {
+  is?: Prisma.PlatformShipmentBatchWhereInput | null
+  isNot?: Prisma.PlatformShipmentBatchWhereInput | null
+}
+
 export type PlatformShipmentBatchCreateNestedManyWithoutOwnerInput = {
   create?: Prisma.XOR<Prisma.PlatformShipmentBatchCreateWithoutOwnerInput, Prisma.PlatformShipmentBatchUncheckedCreateWithoutOwnerInput> | Prisma.PlatformShipmentBatchCreateWithoutOwnerInput[] | Prisma.PlatformShipmentBatchUncheckedCreateWithoutOwnerInput[]
   connectOrCreate?: Prisma.PlatformShipmentBatchCreateOrConnectWithoutOwnerInput | Prisma.PlatformShipmentBatchCreateOrConnectWithoutOwnerInput[]
@@ -792,6 +804,22 @@ export type PlatformShipmentBatchUpdateOneRequiredWithoutActionLogsNestedInput =
   update?: Prisma.XOR<Prisma.XOR<Prisma.PlatformShipmentBatchUpdateToOneWithWhereWithoutActionLogsInput, Prisma.PlatformShipmentBatchUpdateWithoutActionLogsInput>, Prisma.PlatformShipmentBatchUncheckedUpdateWithoutActionLogsInput>
 }
 
+export type PlatformShipmentBatchCreateNestedOneWithoutSaleLinesInput = {
+  create?: Prisma.XOR<Prisma.PlatformShipmentBatchCreateWithoutSaleLinesInput, Prisma.PlatformShipmentBatchUncheckedCreateWithoutSaleLinesInput>
+  connectOrCreate?: Prisma.PlatformShipmentBatchCreateOrConnectWithoutSaleLinesInput
+  connect?: Prisma.PlatformShipmentBatchWhereUniqueInput
+}
+
+export type PlatformShipmentBatchUpdateOneWithoutSaleLinesNestedInput = {
+  create?: Prisma.XOR<Prisma.PlatformShipmentBatchCreateWithoutSaleLinesInput, Prisma.PlatformShipmentBatchUncheckedCreateWithoutSaleLinesInput>
+  connectOrCreate?: Prisma.PlatformShipmentBatchCreateOrConnectWithoutSaleLinesInput
+  upsert?: Prisma.PlatformShipmentBatchUpsertWithoutSaleLinesInput
+  disconnect?: Prisma.PlatformShipmentBatchWhereInput | boolean
+  delete?: Prisma.PlatformShipmentBatchWhereInput | boolean
+  connect?: Prisma.PlatformShipmentBatchWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PlatformShipmentBatchUpdateToOneWithWhereWithoutSaleLinesInput, Prisma.PlatformShipmentBatchUpdateWithoutSaleLinesInput>, Prisma.PlatformShipmentBatchUncheckedUpdateWithoutSaleLinesInput>
+}
+
 export type PlatformShipmentBatchCreateWithoutOwnerInput = {
   id?: string
   batchNo: string
@@ -813,6 +841,7 @@ export type PlatformShipmentBatchCreateWithoutOwnerInput = {
   lines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchUncheckedCreateWithoutOwnerInput = {
@@ -836,6 +865,7 @@ export type PlatformShipmentBatchUncheckedCreateWithoutOwnerInput = {
   lines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchCreateOrConnectWithoutOwnerInput = {
@@ -908,6 +938,7 @@ export type PlatformShipmentBatchCreateWithoutGroupsInput = {
   lines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchUncheckedCreateWithoutGroupsInput = {
@@ -931,6 +962,7 @@ export type PlatformShipmentBatchUncheckedCreateWithoutGroupsInput = {
   lines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchCreateOrConnectWithoutGroupsInput = {
@@ -970,6 +1002,7 @@ export type PlatformShipmentBatchUpdateWithoutGroupsInput = {
   lines?: Prisma.PlatformShipmentLineUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchUncheckedUpdateWithoutGroupsInput = {
@@ -993,6 +1026,7 @@ export type PlatformShipmentBatchUncheckedUpdateWithoutGroupsInput = {
   lines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchCreateWithoutLinesInput = {
@@ -1016,6 +1050,7 @@ export type PlatformShipmentBatchCreateWithoutLinesInput = {
   groups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchUncheckedCreateWithoutLinesInput = {
@@ -1039,6 +1074,7 @@ export type PlatformShipmentBatchUncheckedCreateWithoutLinesInput = {
   groups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchCreateOrConnectWithoutLinesInput = {
@@ -1078,6 +1114,7 @@ export type PlatformShipmentBatchUpdateWithoutLinesInput = {
   groups?: Prisma.PlatformShipmentGroupUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchUncheckedUpdateWithoutLinesInput = {
@@ -1101,6 +1138,7 @@ export type PlatformShipmentBatchUncheckedUpdateWithoutLinesInput = {
   groups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchCreateWithoutAttachmentsInput = {
@@ -1124,6 +1162,7 @@ export type PlatformShipmentBatchCreateWithoutAttachmentsInput = {
   groups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutBatchInput
   lines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchUncheckedCreateWithoutAttachmentsInput = {
@@ -1147,6 +1186,7 @@ export type PlatformShipmentBatchUncheckedCreateWithoutAttachmentsInput = {
   groups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutBatchInput
   lines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutBatchInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchCreateOrConnectWithoutAttachmentsInput = {
@@ -1186,6 +1226,7 @@ export type PlatformShipmentBatchUpdateWithoutAttachmentsInput = {
   groups?: Prisma.PlatformShipmentGroupUpdateManyWithoutBatchNestedInput
   lines?: Prisma.PlatformShipmentLineUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchUncheckedUpdateWithoutAttachmentsInput = {
@@ -1209,6 +1250,7 @@ export type PlatformShipmentBatchUncheckedUpdateWithoutAttachmentsInput = {
   groups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutBatchNestedInput
   lines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchCreateWithoutActionLogsInput = {
@@ -1232,6 +1274,7 @@ export type PlatformShipmentBatchCreateWithoutActionLogsInput = {
   groups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutBatchInput
   lines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchUncheckedCreateWithoutActionLogsInput = {
@@ -1255,6 +1298,7 @@ export type PlatformShipmentBatchUncheckedCreateWithoutActionLogsInput = {
   groups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutBatchInput
   lines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutBatchInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutBatchInput
+  saleLines?: Prisma.SaleLineUncheckedCreateNestedManyWithoutShipmentBatchInput
 }
 
 export type PlatformShipmentBatchCreateOrConnectWithoutActionLogsInput = {
@@ -1294,6 +1338,7 @@ export type PlatformShipmentBatchUpdateWithoutActionLogsInput = {
   groups?: Prisma.PlatformShipmentGroupUpdateManyWithoutBatchNestedInput
   lines?: Prisma.PlatformShipmentLineUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchUncheckedUpdateWithoutActionLogsInput = {
@@ -1317,6 +1362,119 @@ export type PlatformShipmentBatchUncheckedUpdateWithoutActionLogsInput = {
   groups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutBatchNestedInput
   lines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentBatchNestedInput
+}
+
+export type PlatformShipmentBatchCreateWithoutSaleLinesInput = {
+  id?: string
+  batchNo: string
+  platform: $Enums.ShipmentPlatform
+  defaultPurpose: $Enums.ShipmentPurpose
+  status?: $Enums.ShipmentBatchStatus
+  carrierCode?: string | null
+  trackingNo?: string | null
+  shippedAt?: Date | string | null
+  receivedAt?: Date | string | null
+  outboundShippingCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  packagingCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  otherShipmentCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  returnShippingCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  note?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutShipmentBatchesInput
+  groups?: Prisma.PlatformShipmentGroupCreateNestedManyWithoutBatchInput
+  lines?: Prisma.PlatformShipmentLineCreateNestedManyWithoutBatchInput
+  attachments?: Prisma.PlatformShipmentAttachmentCreateNestedManyWithoutBatchInput
+  actionLogs?: Prisma.PlatformShipmentActionLogCreateNestedManyWithoutBatchInput
+}
+
+export type PlatformShipmentBatchUncheckedCreateWithoutSaleLinesInput = {
+  id?: string
+  ownerId: string
+  batchNo: string
+  platform: $Enums.ShipmentPlatform
+  defaultPurpose: $Enums.ShipmentPurpose
+  status?: $Enums.ShipmentBatchStatus
+  carrierCode?: string | null
+  trackingNo?: string | null
+  shippedAt?: Date | string | null
+  receivedAt?: Date | string | null
+  outboundShippingCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  packagingCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  otherShipmentCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  returnShippingCost?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  note?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  groups?: Prisma.PlatformShipmentGroupUncheckedCreateNestedManyWithoutBatchInput
+  lines?: Prisma.PlatformShipmentLineUncheckedCreateNestedManyWithoutBatchInput
+  attachments?: Prisma.PlatformShipmentAttachmentUncheckedCreateNestedManyWithoutBatchInput
+  actionLogs?: Prisma.PlatformShipmentActionLogUncheckedCreateNestedManyWithoutBatchInput
+}
+
+export type PlatformShipmentBatchCreateOrConnectWithoutSaleLinesInput = {
+  where: Prisma.PlatformShipmentBatchWhereUniqueInput
+  create: Prisma.XOR<Prisma.PlatformShipmentBatchCreateWithoutSaleLinesInput, Prisma.PlatformShipmentBatchUncheckedCreateWithoutSaleLinesInput>
+}
+
+export type PlatformShipmentBatchUpsertWithoutSaleLinesInput = {
+  update: Prisma.XOR<Prisma.PlatformShipmentBatchUpdateWithoutSaleLinesInput, Prisma.PlatformShipmentBatchUncheckedUpdateWithoutSaleLinesInput>
+  create: Prisma.XOR<Prisma.PlatformShipmentBatchCreateWithoutSaleLinesInput, Prisma.PlatformShipmentBatchUncheckedCreateWithoutSaleLinesInput>
+  where?: Prisma.PlatformShipmentBatchWhereInput
+}
+
+export type PlatformShipmentBatchUpdateToOneWithWhereWithoutSaleLinesInput = {
+  where?: Prisma.PlatformShipmentBatchWhereInput
+  data: Prisma.XOR<Prisma.PlatformShipmentBatchUpdateWithoutSaleLinesInput, Prisma.PlatformShipmentBatchUncheckedUpdateWithoutSaleLinesInput>
+}
+
+export type PlatformShipmentBatchUpdateWithoutSaleLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  batchNo?: Prisma.StringFieldUpdateOperationsInput | string
+  platform?: Prisma.EnumShipmentPlatformFieldUpdateOperationsInput | $Enums.ShipmentPlatform
+  defaultPurpose?: Prisma.EnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose
+  status?: Prisma.EnumShipmentBatchStatusFieldUpdateOperationsInput | $Enums.ShipmentBatchStatus
+  carrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  receivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  outboundShippingCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  packagingCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  otherShipmentCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  returnShippingCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutShipmentBatchesNestedInput
+  groups?: Prisma.PlatformShipmentGroupUpdateManyWithoutBatchNestedInput
+  lines?: Prisma.PlatformShipmentLineUpdateManyWithoutBatchNestedInput
+  attachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutBatchNestedInput
+  actionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutBatchNestedInput
+}
+
+export type PlatformShipmentBatchUncheckedUpdateWithoutSaleLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  batchNo?: Prisma.StringFieldUpdateOperationsInput | string
+  platform?: Prisma.EnumShipmentPlatformFieldUpdateOperationsInput | $Enums.ShipmentPlatform
+  defaultPurpose?: Prisma.EnumShipmentPurposeFieldUpdateOperationsInput | $Enums.ShipmentPurpose
+  status?: Prisma.EnumShipmentBatchStatusFieldUpdateOperationsInput | $Enums.ShipmentBatchStatus
+  carrierCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trackingNo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  receivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  outboundShippingCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  packagingCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  otherShipmentCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  returnShippingCost?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  groups?: Prisma.PlatformShipmentGroupUncheckedUpdateManyWithoutBatchNestedInput
+  lines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutBatchNestedInput
+  attachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutBatchNestedInput
+  actionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutBatchNestedInput
 }
 
 export type PlatformShipmentBatchCreateManyOwnerInput = {
@@ -1359,6 +1517,7 @@ export type PlatformShipmentBatchUpdateWithoutOwnerInput = {
   lines?: Prisma.PlatformShipmentLineUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchUncheckedUpdateWithoutOwnerInput = {
@@ -1382,6 +1541,7 @@ export type PlatformShipmentBatchUncheckedUpdateWithoutOwnerInput = {
   lines?: Prisma.PlatformShipmentLineUncheckedUpdateManyWithoutBatchNestedInput
   attachments?: Prisma.PlatformShipmentAttachmentUncheckedUpdateManyWithoutBatchNestedInput
   actionLogs?: Prisma.PlatformShipmentActionLogUncheckedUpdateManyWithoutBatchNestedInput
+  saleLines?: Prisma.SaleLineUncheckedUpdateManyWithoutShipmentBatchNestedInput
 }
 
 export type PlatformShipmentBatchUncheckedUpdateManyWithoutOwnerInput = {
@@ -1413,6 +1573,7 @@ export type PlatformShipmentBatchCountOutputType = {
   lines: number
   attachments: number
   actionLogs: number
+  saleLines: number
 }
 
 export type PlatformShipmentBatchCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1420,6 +1581,7 @@ export type PlatformShipmentBatchCountOutputTypeSelect<ExtArgs extends runtime.T
   lines?: boolean | PlatformShipmentBatchCountOutputTypeCountLinesArgs
   attachments?: boolean | PlatformShipmentBatchCountOutputTypeCountAttachmentsArgs
   actionLogs?: boolean | PlatformShipmentBatchCountOutputTypeCountActionLogsArgs
+  saleLines?: boolean | PlatformShipmentBatchCountOutputTypeCountSaleLinesArgs
 }
 
 /**
@@ -1460,6 +1622,13 @@ export type PlatformShipmentBatchCountOutputTypeCountActionLogsArgs<ExtArgs exte
   where?: Prisma.PlatformShipmentActionLogWhereInput
 }
 
+/**
+ * PlatformShipmentBatchCountOutputType without action
+ */
+export type PlatformShipmentBatchCountOutputTypeCountSaleLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SaleLineWhereInput
+}
+
 
 export type PlatformShipmentBatchSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1484,6 +1653,7 @@ export type PlatformShipmentBatchSelect<ExtArgs extends runtime.Types.Extensions
   lines?: boolean | Prisma.PlatformShipmentBatch$linesArgs<ExtArgs>
   attachments?: boolean | Prisma.PlatformShipmentBatch$attachmentsArgs<ExtArgs>
   actionLogs?: boolean | Prisma.PlatformShipmentBatch$actionLogsArgs<ExtArgs>
+  saleLines?: boolean | Prisma.PlatformShipmentBatch$saleLinesArgs<ExtArgs>
   _count?: boolean | Prisma.PlatformShipmentBatchCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["platformShipmentBatch"]>
 
@@ -1556,6 +1726,7 @@ export type PlatformShipmentBatchInclude<ExtArgs extends runtime.Types.Extension
   lines?: boolean | Prisma.PlatformShipmentBatch$linesArgs<ExtArgs>
   attachments?: boolean | Prisma.PlatformShipmentBatch$attachmentsArgs<ExtArgs>
   actionLogs?: boolean | Prisma.PlatformShipmentBatch$actionLogsArgs<ExtArgs>
+  saleLines?: boolean | Prisma.PlatformShipmentBatch$saleLinesArgs<ExtArgs>
   _count?: boolean | Prisma.PlatformShipmentBatchCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PlatformShipmentBatchIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1573,6 +1744,7 @@ export type $PlatformShipmentBatchPayload<ExtArgs extends runtime.Types.Extensio
     lines: Prisma.$PlatformShipmentLinePayload<ExtArgs>[]
     attachments: Prisma.$PlatformShipmentAttachmentPayload<ExtArgs>[]
     actionLogs: Prisma.$PlatformShipmentActionLogPayload<ExtArgs>[]
+    saleLines: Prisma.$SaleLinePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1991,6 +2163,7 @@ export interface Prisma__PlatformShipmentBatchClient<T, Null = never, ExtArgs ex
   lines<T extends Prisma.PlatformShipmentBatch$linesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlatformShipmentBatch$linesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.PlatformShipmentBatch$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlatformShipmentBatch$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentAttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   actionLogs<T extends Prisma.PlatformShipmentBatch$actionLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlatformShipmentBatch$actionLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlatformShipmentActionLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  saleLines<T extends Prisma.PlatformShipmentBatch$saleLinesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlatformShipmentBatch$saleLinesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SaleLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2531,6 +2704,30 @@ export type PlatformShipmentBatch$actionLogsArgs<ExtArgs extends runtime.Types.E
   take?: number
   skip?: number
   distinct?: Prisma.PlatformShipmentActionLogScalarFieldEnum | Prisma.PlatformShipmentActionLogScalarFieldEnum[]
+}
+
+/**
+ * PlatformShipmentBatch.saleLines
+ */
+export type PlatformShipmentBatch$saleLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SaleLine
+   */
+  select?: Prisma.SaleLineSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SaleLine
+   */
+  omit?: Prisma.SaleLineOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SaleLineInclude<ExtArgs> | null
+  where?: Prisma.SaleLineWhereInput
+  orderBy?: Prisma.SaleLineOrderByWithRelationInput | Prisma.SaleLineOrderByWithRelationInput[]
+  cursor?: Prisma.SaleLineWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SaleLineScalarFieldEnum | Prisma.SaleLineScalarFieldEnum[]
 }
 
 /**

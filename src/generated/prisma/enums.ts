@@ -179,6 +179,27 @@ export const ShipmentLineStatus = {
 export type ShipmentLineStatus = (typeof ShipmentLineStatus)[keyof typeof ShipmentLineStatus]
 
 
+export const SaleOrderStatus = {
+  DRAFT: 'DRAFT',
+  CONFIRMED: 'CONFIRMED',
+  SETTLED: 'SETTLED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type SaleOrderStatus = (typeof SaleOrderStatus)[keyof typeof SaleOrderStatus]
+
+
+export const SaleFeeType = {
+  PLATFORM_COMMISSION: 'PLATFORM_COMMISSION',
+  AUTHENTICATION: 'AUTHENTICATION',
+  SHIPPING: 'SHIPPING',
+  PACKAGING: 'PACKAGING',
+  OTHER: 'OTHER'
+} as const
+
+export type SaleFeeType = (typeof SaleFeeType)[keyof typeof SaleFeeType]
+
+
 export const ReminderStatus = {
   SNOOZED: 'SNOOZED',
   RESOLVED: 'RESOLVED'
