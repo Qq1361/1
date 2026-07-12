@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Pencil, PackageCheck, Save, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { getAvailableActions, getActionLabel, type ShipmentLineAction } from "@/lib/shipment-status-machine";
+import { formatItemStatus, formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform } from "@/lib/status-labels";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const PL: Record<string, string> = { DEWU: "得物", NINETY_FIVE: "95分", OTHER: "其他" };
-const PuL: Record<string, string> = { DEWU_LIGHTNING_INBOUND: "闪电入仓", DEWU_STANDARD_FULFILLMENT: "普通寄送", NINETY_FIVE_INBOUND: "95分寄送", OTHER: "其他" };
-const SL: Record<string, string> = { DRAFT: "草稿", SHIPPED: "已发货", RECEIVED: "平台已签收", PARTIALLY_RECEIVED: "部分签收", PARTIALLY_IN_WAREHOUSE: "部分入仓", IN_WAREHOUSE: "入仓成功", PARTIALLY_LISTED: "部分上架", LISTED: "已上架", PARTIALLY_REJECTED: "部分拒收", RETURNING: "退回中", COMPLETED: "已完成", CANCELLED: "已取消" };
-const LSL: Record<string, string> = { DRAFT: "草稿", SHIPPED: "已发货", RECEIVED: "平台已签收", IN_WAREHOUSE: "入仓成功", LISTED: "平台已上架/可售", REJECTED: "平台拒收", RETURNING: "退回中", RETURNED: "已退回", CANCELLED: "已取消", SOLD: "已售出" };
 
 interface LineDetail { id: string; lineStatus: string; inventoryCodeSnapshot: string; productNameSnapshot: string; skuSnapshot: string | null; unitCostSnapshot: string; packedChecked: boolean; rejectedReason: string | null; returnCarrierCode: string | null; returnTrackingNo: string | null; returnedStorageLocation: string | null; inventoryItemId: string; inventoryItem: { storageLocation: string | null; purchaseOrderItem: { purchaseOrder: { id: string } } } | null; group: { groupName: string | null; platformOrderNo: string | null } | null; }
 interface ActionLog { id: string; createdAt: string; actionType: string; note: string | null; }
@@ -167,9 +164,9 @@ export function ShipmentDetail({ id }: { id: string }) {
     <div className="space-y-5">
       <Link href="/shipments" className={buttonVariants({ variant: "ghost", size: "sm" })}><ArrowLeft />返回寄送批次</Link>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><h1 className="text-2xl font-semibold">{batch.batchNo}</h1><p className="text-sm text-muted-foreground">{PL[batch.platform] ?? batch.platform} · {PuL[batch.defaultPurpose] ?? batch.defaultPurpose}</p></div>
+        <div><h1 className="text-2xl font-semibold">{batch.batchNo}</h1><p className="text-sm text-muted-foreground">{formatPlatform(batch.platform)} · {formatPurpose(batch.defaultPurpose)}</p></div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">{SL[batch.status] ?? batch.status}</Badge>
+          <Badge variant="secondary">{formatBatchStatus(batch.status)}</Badge>
           {isDraft ? <Button size="sm" onClick={startShipping}><Truck />确认发货</Button> : null}
           {isDraft ? <Button variant="outline" size="sm" onClick={() => { if (confirm("确认取消批次？")) { fetch(`/api/shipments/${id}/cancel`, { method: "POST" }).then(async r => { if (r.ok) { toast.success("已取消"); reload(); } else { const d = await r.json(); toast.error(d.message); } }).catch(() => toast.error("网络异常")); } }}><X />取消批次</Button> : null}
           {["SHIPPED", "PARTIALLY_RECEIVED"].includes(batch.status) ? <Button size="sm" variant="outline" onClick={() => { fetch(`/api/shipments/${id}/mark-received`, { method: "POST" }).then(async r => { if (r.ok) { toast.success("整批已签收"); reload(); } else { const d = await r.json(); toast.error(d.message); } }).catch(() => toast.error("网络异常")); }}><PackageCheck />整批签收</Button> : null}
@@ -241,7 +238,7 @@ export function ShipmentDetail({ id }: { id: string }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{line.productNameSnapshot}</p>
-                      <Badge variant="outline">{LSL[line.lineStatus] ?? line.lineStatus}</Badge>
+                      <Badge variant="outline">{formatLineStatus(line.lineStatus)}</Badge>
                       {line.packedChecked ? <Badge variant="default" className="text-[10px]">已核对</Badge> : isDraft ? <Badge variant="outline" className="text-[10px]">未核对</Badge> : null}
                     </div>
                     <p className="text-xs text-muted-foreground">{line.inventoryCodeSnapshot} · {line.skuSnapshot || "无SKU"} · ¥{line.unitCostSnapshot}</p>

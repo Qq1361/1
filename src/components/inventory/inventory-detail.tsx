@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { formatItemStatus, formatSaleMode } from "@/lib/status-labels";
 import { AttachmentUploader } from "@/components/purchases/attachment-uploader";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -16,15 +17,6 @@ const locationStatusLabels: Record<string, string> = {
   DEWU_WAREHOUSE: "得物仓",
   RETURNING: "退回中",
   SOLD: "已售出",
-};
-
-const saleModeLabels: Record<string, string> = {
-  NONE: "未选择",
-  DEWU_LIGHTNING: "得物闪电",
-  DEWU_STANDARD: "得物普通",
-  NINETY_FIVE: "95分",
-  XIANYU: "闲鱼",
-  OTHER: "其他",
 };
 
 type Detail = {
@@ -105,7 +97,7 @@ export function InventoryDetail({ id }: { id: string }) {
           <p className="text-sm text-muted-foreground">{item.skuText || "无 SKU"}</p>
         </div>
         <Badge variant={item.itemStatus === "PROBLEM" ? "destructive" : "secondary"}>
-          {item.itemStatus === "PROBLEM" ? "问题件" : "已入库"}
+          {formatItemStatus(item.itemStatus)}
         </Badge>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -213,8 +205,8 @@ function SaleModeField({
           disabled={pending}
           onChange={(e) => save(e.target.value)}
         >
-          {Object.entries(saleModeLabels).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
+          {["NONE", "DEWU_LIGHTNING", "DEWU_STANDARD", "NINETY_FIVE", "XIANYU", "OTHER"].map(value => (
+            <option key={value} value={value}>{formatSaleMode(value)}</option>
           ))}
         </select>
         {pending ? <Loader2 className="size-3 animate-spin text-muted-foreground" /> : null}

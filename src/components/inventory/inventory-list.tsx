@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
+import { formatItemStatus, formatSaleMode } from "@/lib/status-labels";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,15 +43,6 @@ type InventoryRow = {
 const statusLabels: Record<string, string> = {
   STOCKED: "已入库",
   PROBLEM: "问题件",
-};
-
-const saleModeLabels: Record<string, string> = {
-  NONE: "未选择",
-  DEWU_LIGHTNING: "得物闪电",
-  DEWU_STANDARD: "得物普通",
-  NINETY_FIVE: "95分",
-  XIANYU: "闲鱼",
-  OTHER: "其他",
 };
 
 function daysUntil(date: string | null) {
@@ -147,13 +139,13 @@ export function InventoryList() {
                       <p className="text-xs text-muted-foreground">{item.inventoryCode}</p>
                     </div>
                     <Badge variant={item.itemStatus === "PROBLEM" ? "destructive" : "secondary"}>
-                      {statusLabels[item.itemStatus] ?? item.itemStatus}
+                      {formatItemStatus(item.itemStatus)}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <span>成本 ¥{item.unitCost}</span>
                     <span>库位 {item.storageLocation || "未填写"}</span>
-                    <span>{saleModeLabels[item.saleMode] ?? item.saleMode}</span>
+                    <span>{formatSaleMode(item.saleMode)}</span>
                   </div>
                   <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "outline", className: "w-full" })}>
                     查看详情
@@ -186,13 +178,13 @@ export function InventoryList() {
                       <p className="text-xs text-muted-foreground">{item.skuText || "无 SKU"}</p>
                     </TableCell>
                     <TableCell className="text-xs">{item.storageLocation || "未填写"}</TableCell>
-                    <TableCell className="text-xs">{saleModeLabels[item.saleMode] ?? item.saleMode}</TableCell>
+                    <TableCell className="text-xs">{formatSaleMode(item.saleMode)}</TableCell>
                     <TableCell>¥{item.unitCost}</TableCell>
                     <TableCell>{daysUntil(item.expiryDate)}</TableCell>
                     <TableCell>{daysInStock(item.stockedAt)}</TableCell>
                     <TableCell>
                       <Badge variant={item.itemStatus === "PROBLEM" ? "destructive" : "secondary"}>
-                        {statusLabels[item.itemStatus] ?? item.itemStatus}
+                        {formatItemStatus(item.itemStatus)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
