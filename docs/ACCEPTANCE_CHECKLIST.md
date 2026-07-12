@@ -180,3 +180,21 @@ pnpm verify:m2b           # M2-B 验货库存验证（9 checks）
 - [ ] 平台状态库存继续效期提醒
 - [ ] 平台状态库存不进入本地压货提醒
 - [ ] 统计卡片和筛选列表数量一致
+
+## M3-A V1 销售出库验收（设计冻结，待实现）
+
+详见 `docs/M3A_V1_SPEC.md`。
+
+- [ ] 创建销售草稿不改变库存状态
+- [ ] 确认销售后库存变 SOLD（唯一入口）
+- [ ] 一件库存不能重复确认销售
+- [ ] 取消 CONFIRMED 恢复 preSaleItemStatus
+- [ ] SETTLED 不能取消
+- [ ] actualReceivedAmount 优先计算利润
+- [ ] expectedIncome 次优先计算利润
+- [ ] grossAmount + feeLines 不重复扣费
+- [ ] SOLD 不进效期提醒
+- [ ] SOLD 不进压货提醒
+- [ ] PLATFORM_LISTED 不会自动变 SOLD
+- [ ] API 失败不半更新
+- [ ] 利润刷新后仍正确

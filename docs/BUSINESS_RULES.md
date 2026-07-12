@@ -187,7 +187,17 @@ PAID → WAITING_SHIPMENT → IN_TRANSIT → PENDING_INSPECTION → PARTIALLY_ST
 
 不进入本地压货：PLATFORM_SHIPPED, PLATFORM_RECEIVED, PLATFORM_IN_WAREHOUSE, PLATFORM_LISTED, PLATFORM_REJECTED, RETURNING, RETURNED, SOLD, PROBLEM, REMOVED
 
-## 10. 统一数据来源
+## 10. M3-A 销售规则（V1 冻结）
+
+详见 `docs/M3A_V1_SPEC.md`。核心规则：
+
+1. SOLD 只能由 M3-A 确认销售产生。
+2. PLATFORM_LISTED / PLATFORM_IN_WAREHOUSE / PLATFORM_RECEIVED ≠ SOLD。
+3. 销售取消恢复 preSaleItemStatus 快照，不默认回 STOCKED。
+4. 利润三条路径互斥：actualReceivedAmount > expectedIncome > grossAmount + feeLines。
+5. 销售草稿不占用库存，确认时 transaction 防重复销售。
+
+## 11. 统一数据来源
 
 所有统计卡片、待办中心、筛选列表必须基于同一套计算逻辑：
 
