@@ -139,3 +139,44 @@ pnpm verify:m2b           # M2-B 验货库存验证（9 checks）
 - [ ] API 失败时待办不消失，显示 toast 错误
 - [ ] 刷新页面后数据仍存在
 - [ ] 顶部统计数量和待办列表一致
+
+## M3-0 平台寄送批次验收
+
+### 创建和发货
+
+- [ ] 创建草稿批次后库存 itemStatus 仍是 STOCKED
+- [ ] 草稿批次占用库存，不能加入其他批次
+- [ ] 确认发货后 lineStatus=SHIPPED, itemStatus=PLATFORM_SHIPPED
+- [ ] 确认发货后 saleMode 按 purpose 更新
+- [ ] DRAFT 批次可编辑批次信息（物流/成本/备注）
+- [ ] 确认发货弹窗可补齐物流信息
+- [ ] 装箱核对可勾选
+
+### 状态流转
+
+- [ ] 平台签收：RECEIVED / PLATFORM_RECEIVED
+- [ ] 入仓成功：IN_WAREHOUSE / PLATFORM_IN_WAREHOUSE ≠ SOLD
+- [ ] 鉴别通过/待结算（得物普通）：IN_WAREHOUSE / PLATFORM_IN_WAREHOUSE ≠ SOLD
+- [ ] 上架可售：LISTED / PLATFORM_LISTED ≠ SOLD
+- [ ] 平台拒收：REJECTED / PLATFORM_REJECTED，必须填写原因
+- [ ] 退回中：RETURNING / RETURNING
+- [ ] 已退回：RETURNED / RETURNED ≠ STOCKED
+- [ ] 确认重新入库：itemStatus→STOCKED，line 保持 RETURNED
+- [ ] 重新入库后库存可再次加入新批次
+
+### 安全规则
+
+- [ ] 全流程不产生 SOLD
+- [ ] RECEIVED→SHIPPED 非法跳转被拦截
+- [ ] LISTED→IN_WAREHOUSE 非法跳转被拦截
+- [ ] SOLD/PROBLEM/REMOVED 库存不能执行寄送操作
+- [ ] batch.status 自动汇总
+- [ ] API 失败不半更新
+
+### 展示
+
+- [ ] 状态枚举全部显示中文（不暴露 PLATFORM_SHIPPED 等英文）
+- [ ] 库存详情显示平台寄送追溯卡片
+- [ ] 平台状态库存继续效期提醒
+- [ ] 平台状态库存不进入本地压货提醒
+- [ ] 统计卡片和筛选列表数量一致

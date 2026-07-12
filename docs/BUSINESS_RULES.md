@@ -156,7 +156,38 @@ PAID → WAITING_SHIPMENT → IN_TRANSIT → PENDING_INSPECTION → PARTIALLY_ST
 
 ---
 
-## 9. 统一数据来源
+## 9. M3-0 平台寄送状态规则
+
+### 状态对应
+
+| lineStatus | itemStatus | 中文 |
+|-----------|-----------|------|
+| DRAFT | STOCKED | 已入库（草稿占用） |
+| SHIPPED | PLATFORM_SHIPPED | 已发往平台 |
+| RECEIVED | PLATFORM_RECEIVED | 平台已签收 |
+| IN_WAREHOUSE | PLATFORM_IN_WAREHOUSE | 入仓成功/鉴别通过 |
+| LISTED | PLATFORM_LISTED | 平台已上架/可售 |
+| REJECTED | PLATFORM_REJECTED | 平台拒收 |
+| RETURNING | RETURNING | 退回中 |
+| RETURNED | RETURNED | 已退回，待重新入库 |
+| confirmRestocked | STOCKED | 已入库（line 保持 RETURNED） |
+
+### 关键规则
+
+1. **M3-0 任何操作不产生 SOLD**。SOLD 只能由后续 M3-A 手动创建销售记录产生。
+2. **RETURNED ≠ STOCKED**。必须显式 confirmRestocked 后才恢复 STOCKED。
+3. **入仓成功/上架 ≠ 已售出**。PLATFORM_IN_WAREHOUSE / PLATFORM_LISTED 都不是 SOLD。
+4. **confirmRestocked 后库存可再次加入新批次**。旧 line 保持 RETURNED 作为历史记录。
+5. **平台状态库存继续效期提醒**，但不进入本地压货提醒。
+6. **草稿批次占用库存但不改 itemStatus**。
+
+### 提醒规则
+
+继续效期提醒：STOCKED, PLATFORM_SHIPPED, PLATFORM_RECEIVED, PLATFORM_IN_WAREHOUSE, PLATFORM_LISTED
+
+不进入本地压货：PLATFORM_SHIPPED, PLATFORM_RECEIVED, PLATFORM_IN_WAREHOUSE, PLATFORM_LISTED, PLATFORM_REJECTED, RETURNING, RETURNED, SOLD, PROBLEM, REMOVED
+
+## 10. 统一数据来源
 
 所有统计卡片、待办中心、筛选列表必须基于同一套计算逻辑：
 
