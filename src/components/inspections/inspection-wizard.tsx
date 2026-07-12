@@ -183,12 +183,15 @@ export function InspectionWizard({ id }: { id: string }) {
             {form.isNew === false ? (
               <>
                 <BooleanField label="是否有使用痕迹" value={form.hasUsageTrace} onChange={(v) => set("hasUsageTrace", v)} />
-                {["capCondition", "paintCondition", "leakageCondition"].map((key) => (
-                  <div className="space-y-2" key={key}>
-                    <Label>{({ capCondition: "盖子状态", paintCondition: "掉漆情况", leakageCondition: "漏液情况" } as Record<string, string>)[key]}</Label>
-                    <Input value={String(form[key] ?? "")} onChange={(e) => set(key, e.target.value)} />
+                {form.hasUsageTrace === true ? (
+                  <div className="space-y-2 pl-2 border-l-2 border-muted">
+                    <Label className="text-xs">使用痕迹备注（可选）</Label>
+                    <Textarea value={String(form.usageTraceNotes ?? "")} onChange={(e) => set("usageTraceNotes", e.target.value)} placeholder="请简单描述使用痕迹" rows={2} />
                   </div>
-                ))}
+                ) : null}
+                <ConditionYesNo label="是否有盖子" yesLabel="有" noLabel="无" value={form.capCondition} remarkLabel="缺盖备注（可选）" remarkPlaceholder="请说明缺盖情况" form={form} onChange={set} />
+                <ConditionYesNo label="是否有掉漆" yesLabel="有" noLabel="无" value={form.paintCondition} remarkLabel="掉漆备注（可选）" remarkPlaceholder="请说明掉漆位置" form={form} onChange={set} reverseRemark />
+                <ConditionYesNo label="是否有漏液" yesLabel="有" noLabel="无" value={form.leakageCondition} remarkLabel="漏液备注（可选）" remarkPlaceholder="请说明漏液情况" form={form} onChange={set} reverseRemark />
               </>
             ) : null}
             {/* Batch / expiry / storage */}
@@ -284,12 +287,15 @@ export function InspectionWizard({ id }: { id: string }) {
                 <>
                   <p className="text-sm text-muted-foreground">商品不是全新，请补充瑕疵/使用情况：</p>
                   <BooleanField label="是否有使用痕迹" value={form.hasUsageTrace} onChange={(v) => set("hasUsageTrace", v)} />
-                  {["capCondition", "paintCondition", "leakageCondition"].map((key) => (
-                    <div className="space-y-2" key={key}>
-                      <Label>{({ capCondition: "盖子状态", paintCondition: "掉漆情况", leakageCondition: "漏液情况" } as Record<string,string>)[key]}</Label>
-                      <Input value={String(form[key] ?? "")} onChange={(e) => set(key, e.target.value)} />
+                  {form.hasUsageTrace === true ? (
+                    <div className="space-y-2 pl-2 border-l-2 border-muted">
+                      <Label className="text-xs">使用痕迹备注（可选）</Label>
+                      <Textarea value={String(form.usageTraceNotes ?? "")} onChange={(e) => set("usageTraceNotes", e.target.value)} placeholder="请简单描述使用痕迹" rows={2} />
                     </div>
-                  ))}
+                  ) : null}
+                  <ConditionYesNo label="是否有盖子" yesLabel="有" noLabel="无" value={form.capCondition} remarkLabel="缺盖备注（可选）" remarkPlaceholder="请说明缺盖情况" form={form} onChange={set} />
+                  <ConditionYesNo label="是否有掉漆" yesLabel="有" noLabel="无" value={form.paintCondition} remarkLabel="掉漆备注（可选）" remarkPlaceholder="请说明掉漆位置" form={form} onChange={set} reverseRemark />
+                  <ConditionYesNo label="是否有漏液" yesLabel="有" noLabel="无" value={form.leakageCondition} remarkLabel="漏液备注（可选）" remarkPlaceholder="请说明漏液情况" form={form} onChange={set} reverseRemark />
                 </>
               ) : (
                 <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -341,6 +347,45 @@ function BooleanField({ label, value, onChange }: { label: string; value: unknow
         <Button type="button" variant={value === true ? "default" : "outline"} onClick={() => onChange(true)}>是</Button>
         <Button type="button" variant={value === false ? "default" : "outline"} onClick={() => onChange(false)}>否</Button>
       </div>
+    </div>
+  );
+}
+
+function ConditionYesNo({
+  label, yesLabel, noLabel, value, remarkLabel, remarkPlaceholder, form, onChange, reverseRemark,
+}: {
+  label: string; yesLabel: string; noLabel: string;
+  value: unknown; remarkLabel: string; remarkPlaceholder: string;
+  form: Record<string, unknown>;
+  onChange: (key: string, value: unknown) => void;
+  reverseRemark?: boolean;
+}) {
+  const key = label.replace(/是否有/, "").replace(/是否/, "");
+  const remarkKey = key + "Remark";
+  // Detect current state from the stored string
+  const raw = String(value ?? "");
+  const isYes = raw === "有" || raw === "是" || raw === "true" || raw === "1";
+  const isNo = raw === "无" || raw === "否" || raw === "false" || raw === "0" || raw === "";
+  const selected = isYes ? "yes" : isNo ? "no" : null;
+  const showRemark = reverseRemark ? selected === "no" : selected === "yes";
+  const hasLegacyText = raw !== "" && !isYes && !isNo;
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="grid grid-cols-2 gap-2">
+        <Button type="button" variant={selected === "yes" ? "default" : "outline"} onClick={() => { onChange(key, "有"); onChange(remarkKey, form[remarkKey]); }}>{yesLabel}</Button>
+        <Button type="button" variant={selected === "no" ? "default" : "outline"} onClick={() => { onChange(key, "无"); onChange(remarkKey, form[remarkKey]); }}>{noLabel}</Button>
+      </div>
+      {hasLegacyText ? (
+        <p className="text-xs text-amber-600">原记录：{raw}（重新选择后将替换为标准值）</p>
+      ) : null}
+      {showRemark ? (
+        <div className="space-y-1 pl-2 border-l-2 border-muted">
+          <Label className="text-xs">{remarkLabel}</Label>
+          <Textarea value={String(form[remarkKey] ?? "")} onChange={(e) => onChange(remarkKey, e.target.value)} placeholder={remarkPlaceholder} rows={2} />
+        </div>
+      ) : null}
     </div>
   );
 }
