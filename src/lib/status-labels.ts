@@ -88,3 +88,26 @@ export function formatPlatform(platform: string): string {
   };
   return map[platform] || platform;
 }
+
+// SaleOrderStatus → Chinese
+export function formatSaleStatus(status: string): string {
+  const map: Record<string, string> = {
+    DRAFT: "草稿",
+    CONFIRMED: "已确认销售",
+    SETTLED: "已到账",
+    CANCELLED: "已取消",
+  };
+  return map[status] || status;
+}
+
+// SaleFeeType → Chinese
+export function formatFeeType(feeType: string): string {
+  const map: Record<string, string> = {
+    PLATFORM_COMMISSION: "平台佣金",
+    AUTHENTICATION: "鉴定费",
+    SHIPPING: "运费",
+    PACKAGING: "包材费",
+    OTHER: "其他",
+  };
+  return map[feeType] || feeType;
+}
