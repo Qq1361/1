@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { formatItemStatus, formatSaleMode } from "@/lib/status-labels";
+import { formatItemStatus, formatSaleMode, formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform } from "@/lib/status-labels";
 import { AttachmentUploader } from "@/components/purchases/attachment-uploader";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -52,7 +52,16 @@ type Detail = {
     purchaseOrder: { id: string; orderNo: string; sellerNickname: string | null };
   };
   attachments: AttachmentDto[];
+  shipmentLines?: ShipmentLineInfo[];
 };
+
+interface ShipmentLineInfo {
+  id: string; lineStatus: string; inventoryCodeSnapshot: string;
+  rejectedReason: string | null; returnCarrierCode: string | null;
+  returnTrackingNo: string | null; returnedAt: string | null; returnedStorageLocation: string | null;
+  batch: { id: string; batchNo: string; platform: string; defaultPurpose: string; status: string; carrierCode: string | null; trackingNo: string | null; shippedAt: string | null; receivedAt: string | null; };
+  group: { groupName: string | null; platformOrderNo: string | null; } | null;
+}
 
 function value(value: unknown) {
   if (value === true) return "是";
@@ -147,6 +156,7 @@ export function InventoryDetail({ id }: { id: string }) {
           ))}
         </CardContent>
       </Card>
+      <ShipmentTraceCard item={item} />
       <AttachmentUploader
         entityType="INSPECTION"
         entityId={item.inspectionId}
@@ -162,6 +172,58 @@ function Info({ label, text }: { label: string; text: string }) {
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 break-words">{text}</p>
     </div>
+  );
+}
+
+function ShipmentTraceCard({ item }: { item: { id: string; itemStatus: string; shipmentLines?: ShipmentLineInfo[] } }) {
+  // Find active line (not RETURNED/CANCELLED) or latest
+  const lines = item.shipmentLines || [];
+  const activeLine = lines.find(l => !["RETURNED", "CANCELLED", "SOLD"].includes(l.lineStatus));
+  const latestLine = activeLine || lines[0];
+
+  if (!latestLine) {
+    return (
+      <Card className="rounded-lg shadow-none">
+        <CardHeader><CardTitle className="text-base">平台寄送追溯</CardTitle></CardHeader>
+        <CardContent><p className="text-sm text-muted-foreground">暂无平台寄送记录</p></CardContent>
+      </Card>
+    );
+  }
+
+  const b = latestLine.batch;
+  const g = latestLine.group;
+  const isHistorical = !activeLine && !!latestLine;
+
+  return (
+    <Card className="rounded-lg shadow-none">
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle className="text-base">
+          平台寄送追溯{isHistorical ? "（历史记录）" : ""}
+        </CardTitle>
+        <Link href={`/shipments/${b.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          查看寄送批次
+        </Link>
+      </CardHeader>
+      <CardContent className="grid grid-cols-2 gap-3 text-sm">
+        <Info label="所属寄送批次" text={b.batchNo} />
+        <Info label="平台" text={formatPlatform(b.platform)} />
+        <Info label="寄送目的" text={formatPurpose(b.defaultPurpose)} />
+        <Info label="批次状态" text={formatBatchStatus(b.status)} />
+        <Info label="单件寄送状态" text={formatLineStatus(latestLine.lineStatus)} />
+        <Info label="当前库存状态" text={formatItemStatus(item.itemStatus)} />
+        <Info label="快递公司" text={b.carrierCode || "未填写"} />
+        <Info label="快递单号" text={b.trackingNo || "未填写"} />
+        <Info label="发货时间" text={b.shippedAt ? new Date(b.shippedAt).toLocaleString("zh-CN") : "未填写"} />
+        <Info label="签收时间" text={b.receivedAt ? new Date(b.receivedAt).toLocaleString("zh-CN") : "未签收"} />
+        {g?.platformOrderNo ? <Info label="平台订单号" text={g.platformOrderNo} /> : null}
+        {g?.groupName ? <Info label="平台订单组" text={g.groupName} /> : null}
+        {latestLine.rejectedReason ? <Info label="拒收原因" text={latestLine.rejectedReason} /> : null}
+        {latestLine.returnCarrierCode ? <Info label="退回快递公司" text={latestLine.returnCarrierCode} /> : null}
+        {latestLine.returnTrackingNo ? <Info label="退回快递单号" text={latestLine.returnTrackingNo} /> : null}
+        {latestLine.returnedAt ? <Info label="已退回时间" text={new Date(latestLine.returnedAt).toLocaleString("zh-CN")} /> : null}
+        {latestLine.returnedStorageLocation ? <Info label="退回库位" text={latestLine.returnedStorageLocation} /> : null}
+      </CardContent>
+    </Card>
   );
 }
 

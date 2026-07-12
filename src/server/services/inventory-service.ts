@@ -146,6 +146,13 @@ export class InventoryService {
       include: {
         inspection: true,
         purchaseOrderItem: { include: { purchaseOrder: true } },
+        shipmentLines: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            batch: true,
+            group: true,
+          },
+        },
       },
     });
     if (!item)
