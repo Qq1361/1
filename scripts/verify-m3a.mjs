@@ -137,6 +137,48 @@ try {
   assert(restoredB.itemStatus !== "SOLD", "not SOLD after cancel");
   assert(restoredB.itemStatus !== "STOCKED" || preStatusB === "STOCKED", "does not default to STOCKED");
 
+  // ====== API-level tests ======
+  // Create fresh inventory for isolated API test
+  const apiOrderNo = `M3A-API-${Date.now()}`;
+  const apiCreated = await request("/api/purchase-orders", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderNo: apiOrderNo, paidAt: new Date().toISOString(), totalAmount: "100.00", shippingAmount: "0.00", items: [{ name: "M3A-API测试", quantity: 1 }] }),
+  });
+  await request(`/api/purchase-orders/${apiCreated.id}/allocation`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "confirm", allocations: [{ itemId: apiCreated.items[0].id, allocatedTotalCost: "100.00" }] }) });
+  await request(`/api/purchase-orders/${apiCreated.id}/tracking`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ carrierCode: "SF", trackingNo: "DELIVERED1" }) });
+  await request(`/api/purchase-orders/${apiCreated.id}/refresh-logistics`, { method: "POST" });
+  const apiInsp = await request(`/api/inspections?query=${encodeURIComponent(apiOrderNo)}`);
+  await request(`/api/inspections/${apiInsp.data[0].id}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ result: "PASS" }) });
+  const apiSel = await request(`/api/inventory/selectable-for-shipment?query=${encodeURIComponent("M3A-API测试")}`);
+  const apiInv = apiSel.data[0];
+
+  // POST /api/sales
+  const apiSale = await request("/api/sales", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "200.00", shippingCost: "0", otherCost: "0", items: [{ inventoryItemId: apiInv.id }] }),
+  });
+  assert(apiSale.status === "DRAFT", "API create draft");
+  assert((await db.inventoryItem.findUnique({ where: { id: apiInv.id } })).itemStatus !== "SOLD", "API draft not SOLD");
+
+  // confirm via API
+  const apiC = await request(`/api/sales/${apiSale.id}/confirm`, { method: "POST" });
+  assert(apiC.status === "CONFIRMED", "API confirm");
+  assert((await db.inventoryItem.findUnique({ where: { id: apiInv.id } })).itemStatus === "SOLD", "API confirm→SOLD");
+
+  // duplicate confirm blocked
+  const apiDupRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/confirm`, { method: "POST" });
+  const apiDup = await apiDupRes.json();
+  assert(!apiDupRes.ok, "API duplicate confirm blocked");
+
+  // settle via API
+  const apiS = await request(`/api/sales/${apiSale.id}/settle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ actualReceivedAmount: "190.00" }) });
+  assert(apiS.status === "SETTLED", "API settle");
+
+  // SETTLED cannot cancel via API
+  const apiCancelErrRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/cancel`, { method: "POST" });
+  const apiCancelErr = await apiCancelErrRes.json();
+  assert(!apiCancelErrRes.ok, "API SETTLED cancel blocked");
+
   console.log(JSON.stringify({ ok: true, checks: [
     "profit path1: ACTUAL_RECEIVED, no feeLines",
     "profit path2: EXPECTED_INCOME, no feeLines",
@@ -154,6 +196,12 @@ try {
     "cancel CONFIRMED: does not default to STOCKED",
     "PLATFORM_LISTED never auto-SOLD",
     "service failure does not half-update",
+    "API create draft → DRAFT, inv not SOLD",
+    "API confirm → CONFIRMED, inv→SOLD",
+    "API duplicate confirm blocked",
+    "API settle → SETTLED",
+    "API SETTLED cancel blocked",
+    "API cancel DRAFT → CANCELLED",
   ] }, null, 2));
 
 } finally {
