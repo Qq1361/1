@@ -73,11 +73,13 @@ const reminderLabels: Record<string, string> = {
   STOCKED_OVER_3_DAYS: "入库满3天",
 };
 
-export function InventoryList() {
+export function InventoryList(_props: { showHeader?: boolean } = {}) {
+  void _props;
   const searchParams = useSearchParams();
   const reminderParam = searchParams.get("reminder") ?? "";
+  const queryParam = searchParams.get("query") ?? "";
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(queryParam);
   const [status, setStatus] = useState("ALL");
   const [result, setResult] = useState<{ data: InventoryRow[]; total: number } | null>(
     null,
@@ -96,6 +98,13 @@ export function InventoryList() {
     const timer = setTimeout(load, 200);
     return () => clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setQuery(queryParam);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [queryParam]);
 
   const title = reminderLabels[reminderParam] ? `库存 · ${reminderLabels[reminderParam]}` : "库存";
 

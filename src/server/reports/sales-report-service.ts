@@ -21,6 +21,11 @@ export type SalesReportFilters = {
   saleMode?: string;
 };
 
+export type SalesReportOrdersFilters = SalesReportFilters & {
+  page?: number;
+  pageSize?: number;
+};
+
 type SaleOrderForReport = Prisma.SaleOrderGetPayload<{
   include: {
     lines: true;
@@ -85,6 +90,24 @@ function actualReceivedForReport(order: SaleOrderForReport) {
     return decimal(order.actualReceivedAmount);
   }
   return zero;
+}
+
+function matchesKeyword(order: SaleOrderForReport, keyword?: string) {
+  const value = keyword?.trim().toLowerCase();
+  if (!value) return true;
+
+  const candidates = [
+    order.saleNo,
+    order.platformOrderNo,
+    order.platformTradeNo,
+    order.buyerName,
+    ...order.lines.flatMap((line) => [
+      line.productNameSnapshot,
+      line.skuSnapshot,
+    ]),
+  ];
+
+  return candidates.some((candidate) => candidate?.toLowerCase().includes(value));
 }
 
 function createMoneyBucket() {
@@ -154,12 +177,98 @@ function allocateOrderAmountByLineGross(
   return orderAmount.mul(lineGross).div(order.grossAmount);
 }
 
+function filterReportOrders(
+  orders: SaleOrderForReport[],
+  filters: SalesReportFilters,
+) {
+  const dateFrom = parseDate(filters.dateFrom);
+  const dateTo = parseDate(filters.dateTo);
+  const settlementStatus = filters.settlementStatus ?? "ALL";
+
+  return orders.filter((order) => {
+    if (settlementStatus === "SETTLED" && order.status !== "SETTLED") return false;
+    if (settlementStatus === "UNSETTLED" && !isUnsettled(order)) return false;
+    if (!matchesKeyword(order, filters.keyword)) return false;
+
+    const reportDate = effectiveReportDate(order);
+    if (dateFrom && reportDate < dateFrom) return false;
+    if (dateTo && reportDate > dateTo) return false;
+
+    // TODO(M3-B): purchaseOrderNo, sellerNickname, storageLocation and saleMode
+    // need joins against purchase/inventory data. Keep this read-only report layer
+    // limited to stable sales-order fields until those joins are designed.
+    void filters.purchaseOrderNo;
+    void filters.sellerNickname;
+    void filters.storageLocation;
+    void filters.saleMode;
+
+    return true;
+  });
+}
+
+function lineSummary(order: SaleOrderForReport) {
+  const grouped = new Map<string, { name: string; sku: string | null; count: number }>();
+
+  for (const line of order.lines) {
+    const key = `${line.productNameSnapshot}\u0000${line.skuSnapshot ?? ""}`;
+    const current = grouped.get(key) ?? {
+      name: line.productNameSnapshot,
+      sku: line.skuSnapshot,
+      count: 0,
+    };
+    current.count += 1;
+    grouped.set(key, current);
+  }
+
+  if (grouped.size === 0) return "未填写";
+
+  return [...grouped.values()]
+    .map((item) => `${item.name}${item.sku ? ` ${item.sku}` : ""} × ${item.count}`)
+    .join("，");
+}
+
+function serializeReportOrder(order: SaleOrderForReport, now = new Date()) {
+  const cost = inventoryCost(order);
+  const fees = feeTotal(order);
+  const profit = profitTotal(order);
+  const incomeBasis = actualReceivedForReport(order).isZero()
+    ? decimal(order.expectedIncome).isZero()
+      ? decimal(order.grossAmount)
+      : decimal(order.expectedIncome)
+    : actualReceivedForReport(order);
+  const unsettledSince = order.confirmedAt ?? order.soldAt;
+  const daysUnsettled = isUnsettled(order) ? daysBetween(unsettledSince, now) : 0;
+
+  return {
+    saleOrderId: order.id,
+    saleNo: order.saleNo,
+    platform: order.platform,
+    status: order.status,
+    platformOrderNo: order.platformOrderNo,
+    platformTradeNo: order.platformTradeNo,
+    buyerName: order.buyerName,
+    soldAt: order.soldAt.toISOString(),
+    confirmedAt: order.confirmedAt?.toISOString() ?? null,
+    settledAt: order.settledAt?.toISOString() ?? null,
+    grossAmount: money(order.grossAmount),
+    expectedIncome: order.expectedIncome ? money(order.expectedIncome) : null,
+    actualReceivedAmount: order.actualReceivedAmount ? money(order.actualReceivedAmount) : null,
+    inventoryCostTotal: money(cost),
+    feeTotal: money(fees),
+    shippingCost: money(order.shippingCost),
+    otherCost: money(order.otherCost),
+    profit: money(profit),
+    grossMarginRate: nullableRate(profit.mul(100), incomeBasis)?.toFixed(2) ?? null,
+    soldItemCount: soldItemCount(order),
+    isSettled: order.status === "SETTLED",
+    isUnsettled: isUnsettled(order),
+    isOverdueUnsettled: isUnsettled(order) && daysUnsettled > DEFAULT_OVERDUE_DAYS,
+    itemsSummary: lineSummary(order),
+  };
+}
+
 export class SalesReportService {
   async getSalesReportSummary(filters: SalesReportFilters) {
-    const dateFrom = parseDate(filters.dateFrom);
-    const dateTo = parseDate(filters.dateTo);
-    const settlementStatus = filters.settlementStatus ?? "ALL";
-
     const statuses: ReportStatus[] = filters.status
       ? [filters.status]
       : [...VALID_REPORT_STATUSES];
@@ -177,25 +286,7 @@ export class SalesReportService {
       orderBy: { soldAt: "desc" },
     });
 
-    const filteredOrders = orders.filter((order) => {
-      if (settlementStatus === "SETTLED" && order.status !== "SETTLED") return false;
-      if (settlementStatus === "UNSETTLED" && !isUnsettled(order)) return false;
-
-      const reportDate = effectiveReportDate(order);
-      if (dateFrom && reportDate < dateFrom) return false;
-      if (dateTo && reportDate > dateTo) return false;
-
-      // TODO(M3-B): keyword, purchaseOrderNo, sellerNickname, storageLocation and saleMode
-      // need joins against purchase/inventory data. Keep this first cut read-only and
-      // limited to core report filters.
-      void filters.keyword;
-      void filters.purchaseOrderNo;
-      void filters.sellerNickname;
-      void filters.storageLocation;
-      void filters.saleMode;
-
-      return true;
-    });
+    const filteredOrders = filterReportOrders(orders, filters);
 
     const summaryBucket = createMoneyBucket();
     const platformBuckets = new Map<string, ReturnType<typeof createMoneyBucket>>();
@@ -308,6 +399,42 @@ export class SalesReportService {
           : bucket.profitTotal.div(bucket.soldItemCount).toDecimalPlaces(2).toNumber(),
       })),
       unsettledOrders,
+    };
+  }
+
+  async getSalesReportOrders(filters: SalesReportOrdersFilters) {
+    const statuses: ReportStatus[] = filters.status
+      ? [filters.status]
+      : [...VALID_REPORT_STATUSES];
+    const page = Math.max(1, filters.page ?? 1);
+    const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
+
+    const orders = await db.saleOrder.findMany({
+      where: {
+        ownerId: filters.ownerId,
+        platform: filters.platform,
+        status: { in: statuses },
+      },
+      include: {
+        lines: true,
+        feeLines: true,
+      },
+    });
+
+    const filteredOrders = filterReportOrders(orders, filters)
+      .sort((a, b) => effectiveReportDate(b).getTime() - effectiveReportDate(a).getTime());
+    const total = filteredOrders.length;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+    const offset = (page - 1) * pageSize;
+
+    return {
+      items: filteredOrders.slice(offset, offset + pageSize).map((order) => serializeReportOrder(order)),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
     };
   }
 }

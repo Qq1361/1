@@ -1,13 +1,17 @@
 import "dotenv/config";
+import { chromium } from "@playwright/test";
 import fs from "node:fs/promises";
 import { Prisma } from "../src/generated/prisma/client.ts";
 import { db } from "../src/server/db.ts";
 import { salesReportService } from "../src/server/reports/sales-report-service.ts";
 
+const baseUrl = process.env.APP_BASE_URL ?? "http://127.0.0.1:3000";
 const runId = Date.now();
 const ownerId = `m3b-report-${runId}`;
+const apiOwnerId = "default-user";
 const createdOrderIds = [];
 const createdSaleOrderIds = [];
+let browser;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -18,6 +22,7 @@ function dec(value) {
 }
 
 async function createInventory({
+  itemOwnerId = ownerId,
   item,
   sequence,
   inventoryCode,
@@ -30,7 +35,7 @@ async function createInventory({
 }) {
   const inspection = await db.inspection.create({
     data: {
-      ownerId,
+      ownerId: itemOwnerId,
       purchaseOrderItemId: item.id,
       sequence,
       status: "PASSED",
@@ -42,7 +47,7 @@ async function createInventory({
 
   return db.inventoryItem.create({
     data: {
-      ownerId,
+      ownerId: itemOwnerId,
       purchaseOrderItemId: item.id,
       inspectionId: inspection.id,
       inventoryCode,
@@ -58,6 +63,7 @@ async function createInventory({
 }
 
 async function createSale({
+  saleOwnerId = ownerId,
   status,
   platform,
   saleNo,
@@ -75,7 +81,7 @@ async function createSale({
 }) {
   const saleOrder = await db.saleOrder.create({
     data: {
-      ownerId,
+      ownerId: saleOwnerId,
       saleNo,
       platform,
       soldAt,
@@ -90,7 +96,7 @@ async function createSale({
       status,
       lines: {
         create: lines.map((line) => ({
-          ownerId,
+          ownerId: saleOwnerId,
           inventoryItemId: line.inventoryItemId,
           inventoryCodeSnapshot: line.inventoryCodeSnapshot,
           productNameSnapshot: line.productNameSnapshot,
@@ -108,7 +114,7 @@ async function createSale({
       },
       feeLines: {
         create: feeLines.map((fee) => ({
-          ownerId,
+          ownerId: saleOwnerId,
           feeType: fee.feeType,
           amount: dec(fee.amount),
           note: fee.note ?? null,
@@ -120,11 +126,34 @@ async function createSale({
   return saleOrder;
 }
 
+async function request(path) {
+  const res = await fetch(`${baseUrl}${path}`);
+  const body = await res.json().catch(() => null);
+  return { res, body };
+}
+
+async function assertOkJson(path) {
+  const { res, body } = await request(path);
+  assert(res.ok, `GET ${path} should return 200, got ${res.status}: ${JSON.stringify(body)}`);
+  return body;
+}
+
+async function assertBadRequest(path) {
+  const { res, body } = await request(path);
+  assert(res.status === 400, `GET ${path} should return 400, got ${res.status}: ${JSON.stringify(body)}`);
+  assert(typeof body?.message === "string" && body.message.length > 0, `GET ${path} should return message`);
+}
+
 try {
   await db.user.upsert({
     where: { id: ownerId },
     update: {},
     create: { id: ownerId, name: "Default User" },
+  });
+  await db.user.upsert({
+    where: { id: apiOwnerId },
+    update: {},
+    create: { id: apiOwnerId, name: "Default User" },
   });
 
   const order = await db.purchaseOrder.create({
@@ -356,6 +385,260 @@ try {
   assert(!source.includes("salesService.cancel"), "report service must not call SalesService.cancel");
   assert(!source.includes("applyShipmentLineAction"), "report service must not call M3-0 state machine");
 
+  // ====== API-level read-only report tests ======
+  const apiOrder = await db.purchaseOrder.create({
+    data: {
+      ownerId: apiOwnerId,
+      orderNo: `M3B-API-PO-${runId}`,
+      paidAt: new Date("2099-01-01T00:00:00.000Z"),
+      totalAmount: dec("500.00"),
+      shippingAmount: dec("0.00"),
+      sellerNickname: `M3B-API-${runId}`,
+      items: {
+        create: [{
+          name: "M3B API 商品",
+          skuText: "API-SKU",
+          quantity: 5,
+          allocatedTotalCost: dec("500.00"),
+        }],
+      },
+    },
+    include: { items: true },
+  });
+  createdOrderIds.push(apiOrder.id);
+  const apiItem = apiOrder.items[0];
+  const apiDraftInv = await createInventory({ itemOwnerId: apiOwnerId, item: apiItem, sequence: 1, inventoryCode: `M3B-API-DRAFT-${runId}`, name: "API草稿", skuText: "DRAFT", unitCost: "10.00" });
+  const apiCancelInv = await createInventory({ itemOwnerId: apiOwnerId, item: apiItem, sequence: 2, inventoryCode: `M3B-API-CANCEL-${runId}`, name: "API取消", skuText: "CANCEL", unitCost: "20.00" });
+  const apiConfirmedInv = await createInventory({ itemOwnerId: apiOwnerId, item: apiItem, sequence: 3, inventoryCode: `M3B-API-CONFIRM-${runId}`, name: "API未到账", skuText: "C1", unitCost: "40.00" });
+  const apiSettledInv = await createInventory({ itemOwnerId: apiOwnerId, item: apiItem, sequence: 4, inventoryCode: `M3B-API-SETTLED-${runId}`, name: "API已到账", skuText: "S1", unitCost: "60.00" });
+  await createInventory({ itemOwnerId: apiOwnerId, item: apiItem, sequence: 5, inventoryCode: `M3B-API-LISTED-${runId}`, name: "API平台上架", skuText: "L1", unitCost: "70.00", itemStatus: "PLATFORM_LISTED" });
+
+  await createSale({
+    saleOwnerId: apiOwnerId,
+    status: "DRAFT",
+    platform: "OTHER",
+    saleNo: `M3B-API-CAOGAO-${runId}`,
+    soldAt: new Date("2099-01-10T00:00:00.000Z"),
+    grossAmount: "999.00",
+    expectedIncome: "900.00",
+    lines: [{
+      inventoryItemId: apiDraftInv.id,
+      inventoryCodeSnapshot: apiDraftInv.inventoryCode,
+      productNameSnapshot: apiDraftInv.name,
+      skuSnapshot: apiDraftInv.skuText,
+      unitCostSnapshot: "10.00",
+      costAmount: "10.00",
+      saleAmount: "999.00",
+      profitAmount: "890.00",
+      sourcePurchaseOrderId: apiOrder.id,
+      sourcePurchaseOrderItemId: apiItem.id,
+    }],
+  });
+  await createSale({
+    saleOwnerId: apiOwnerId,
+    status: "CANCELLED",
+    platform: "OTHER",
+    saleNo: `M3B-API-CLOSED-${runId}`,
+    soldAt: new Date("2099-01-10T00:00:00.000Z"),
+    cancelledAt: new Date("2099-01-10T00:00:00.000Z"),
+    grossAmount: "888.00",
+    expectedIncome: "800.00",
+    lines: [{
+      inventoryItemId: apiCancelInv.id,
+      inventoryCodeSnapshot: apiCancelInv.inventoryCode,
+      productNameSnapshot: apiCancelInv.name,
+      skuSnapshot: apiCancelInv.skuText,
+      unitCostSnapshot: "20.00",
+      costAmount: "20.00",
+      saleAmount: "888.00",
+      profitAmount: "780.00",
+      sourcePurchaseOrderId: apiOrder.id,
+      sourcePurchaseOrderItemId: apiItem.id,
+    }],
+  });
+  await createSale({
+    saleOwnerId: apiOwnerId,
+    status: "CONFIRMED",
+    platform: "OTHER",
+    saleNo: `M3B-API-UNPAID-${runId}`,
+    soldAt: new Date("2099-01-10T00:00:00.000Z"),
+    confirmedAt: new Date("2099-01-10T00:00:00.000Z"),
+    grossAmount: "120.00",
+    expectedIncome: "100.00",
+    actualReceivedAmount: null,
+    lines: [{
+      inventoryItemId: apiConfirmedInv.id,
+      inventoryCodeSnapshot: apiConfirmedInv.inventoryCode,
+      productNameSnapshot: apiConfirmedInv.name,
+      skuSnapshot: apiConfirmedInv.skuText,
+      unitCostSnapshot: "40.00",
+      costAmount: "40.00",
+      saleAmount: "120.00",
+      profitAmount: "60.00",
+      sourcePurchaseOrderId: apiOrder.id,
+      sourcePurchaseOrderItemId: apiItem.id,
+    }],
+  });
+  await createSale({
+    saleOwnerId: apiOwnerId,
+    status: "SETTLED",
+    platform: "DEWU",
+    saleNo: `M3B-API-PAID-${runId}`,
+    soldAt: new Date("2099-01-20T00:00:00.000Z"),
+    confirmedAt: new Date("2099-01-20T00:00:00.000Z"),
+    settledAt: new Date("2099-01-21T00:00:00.000Z"),
+    grossAmount: "220.00",
+    expectedIncome: "200.00",
+    actualReceivedAmount: "190.00",
+    lines: [{
+      inventoryItemId: apiSettledInv.id,
+      inventoryCodeSnapshot: apiSettledInv.inventoryCode,
+      productNameSnapshot: apiSettledInv.name,
+      skuSnapshot: apiSettledInv.skuText,
+      unitCostSnapshot: "60.00",
+      costAmount: "60.00",
+      saleAmount: "220.00",
+      profitAmount: "130.00",
+      sourcePurchaseOrderId: apiOrder.id,
+      sourcePurchaseOrderItemId: apiItem.id,
+    }],
+  });
+
+  const apiRange = `dateFrom=2099-01-01T00%3A00%3A00.000Z&dateTo=2099-01-31T23%3A59%3A59.999Z`;
+  const apiReport = await assertOkJson(`/api/reports/sales?${apiRange}`);
+  assert(apiReport.summary && Array.isArray(apiReport.platformBreakdown) && Array.isArray(apiReport.productBreakdown) && Array.isArray(apiReport.unsettledOrders), "API returns report shape");
+  assert(apiReport.summary.totalOrderCount === 2, `API excludes DRAFT/CANCELLED, got ${apiReport.summary.totalOrderCount}`);
+  assert(apiReport.summary.grossAmountTotal === "340.00", `API gross 340, got ${apiReport.summary.grossAmountTotal}`);
+  assert(apiReport.summary.actualReceivedAmountTotal === "190.00", `API actual 190, got ${apiReport.summary.actualReceivedAmountTotal}`);
+  assert(apiReport.summary.unsettledOrderCount === 1, "API unsettled count");
+  assert(typeof apiReport.summary.grossAmountTotal === "string", "API money fields are JSON-safe strings");
+  assert(apiReport.unsettledOrders.every((order) => typeof order.soldAt === "string" && (order.confirmedAt === null || typeof order.confirmedAt === "string")), "API dates are ISO strings/null");
+
+  const apiConfirmed = await assertOkJson(`/api/reports/sales?${apiRange}&status=CONFIRMED`);
+  assert(apiConfirmed.summary.totalOrderCount === 1 && apiConfirmed.summary.actualReceivedAmountTotal === "0.00", "API status=CONFIRMED");
+  const apiSettled = await assertOkJson(`/api/reports/sales?${apiRange}&status=SETTLED`);
+  assert(apiSettled.summary.totalOrderCount === 1 && apiSettled.summary.actualReceivedAmountTotal === "190.00", "API status=SETTLED");
+  const apiUnsettled = await assertOkJson(`/api/reports/sales?${apiRange}&settlementStatus=UNSETTLED`);
+  assert(apiUnsettled.summary.totalOrderCount === 1 && apiUnsettled.summary.unsettledOrderCount === 1, "API settlementStatus=UNSETTLED");
+  const apiSettledOnly = await assertOkJson(`/api/reports/sales?${apiRange}&settlementStatus=SETTLED`);
+  assert(apiSettledOnly.summary.totalOrderCount === 1 && apiSettledOnly.summary.unsettledOrderCount === 0, "API settlementStatus=SETTLED");
+  const apiPlatform = await assertOkJson(`/api/reports/sales?${apiRange}&platform=OTHER`);
+  assert(apiPlatform.summary.totalOrderCount === 1 && apiPlatform.platformBreakdown[0]?.platform === "OTHER", "API platform filter");
+  const apiDate = await assertOkJson("/api/reports/sales?dateFrom=2099-01-15T00%3A00%3A00.000Z&dateTo=2099-01-31T23%3A59%3A59.999Z");
+  assert(apiDate.summary.totalOrderCount === 1 && apiDate.summary.grossAmountTotal === "220.00", "API dateFrom/dateTo filter");
+
+  const apiOrders = await assertOkJson(`/api/reports/sales/orders?${apiRange}`);
+  assert(Array.isArray(apiOrders.items) && apiOrders.pagination, "detail API returns items and pagination");
+  assert(apiOrders.items.length === 2, `detail API returns 2 effective sales, got ${apiOrders.items.length}`);
+  assert(apiOrders.items.every((order) => ["CONFIRMED", "SETTLED"].includes(order.status)), "detail API only returns effective sales");
+  assert(!apiOrders.items.some((order) => order.saleNo.includes("CAOGAO")), "detail API excludes DRAFT");
+  assert(!apiOrders.items.some((order) => order.saleNo.includes("CLOSED")), "detail API excludes CANCELLED");
+  assert(apiOrders.items.every((order) => typeof order.grossAmount === "string" && typeof order.profit === "string"), "detail API money fields are JSON-safe strings");
+  assert(apiOrders.items.every((order) => typeof order.soldAt === "string" && (order.settledAt === null || typeof order.settledAt === "string")), "detail API dates are ISO strings/null");
+
+  const apiOrdersConfirmed = await assertOkJson(`/api/reports/sales/orders?${apiRange}&status=CONFIRMED`);
+  assert(apiOrdersConfirmed.items.length === 1 && apiOrdersConfirmed.items[0].saleNo === `M3B-API-UNPAID-${runId}`, "detail API status=CONFIRMED");
+  const apiOrdersSettled = await assertOkJson(`/api/reports/sales/orders?${apiRange}&status=SETTLED`);
+  assert(apiOrdersSettled.items.length === 1 && apiOrdersSettled.items[0].saleNo === `M3B-API-PAID-${runId}`, "detail API status=SETTLED");
+  const apiOrdersUnsettled = await assertOkJson(`/api/reports/sales/orders?${apiRange}&settlementStatus=UNSETTLED`);
+  assert(apiOrdersUnsettled.items.length === 1 && apiOrdersUnsettled.items[0].isUnsettled === true, "detail API settlementStatus=UNSETTLED");
+  const apiOrdersSettledOnly = await assertOkJson(`/api/reports/sales/orders?${apiRange}&settlementStatus=SETTLED`);
+  assert(apiOrdersSettledOnly.items.length === 1 && apiOrdersSettledOnly.items[0].isSettled === true, "detail API settlementStatus=SETTLED");
+  const apiOrdersPlatform = await assertOkJson(`/api/reports/sales/orders?${apiRange}&platform=DEWU`);
+  assert(apiOrdersPlatform.items.length === 1 && apiOrdersPlatform.items[0].platform === "DEWU", "detail API platform filter");
+  const apiOrdersKeywordSaleNo = await assertOkJson(`/api/reports/sales/orders?${apiRange}&keyword=${encodeURIComponent(`M3B-API-UNPAID-${runId}`)}`);
+  assert(apiOrdersKeywordSaleNo.items.length === 1 && apiOrdersKeywordSaleNo.items[0].saleNo === `M3B-API-UNPAID-${runId}`, "detail API keyword searches saleNo");
+  const apiOrdersKeywordSku = await assertOkJson(`/api/reports/sales/orders?${apiRange}&keyword=C1`);
+  assert(apiOrdersKeywordSku.items.length === 1 && apiOrdersKeywordSku.items[0].itemsSummary.includes("C1"), "detail API keyword searches SKU");
+  const apiOrdersPaged = await assertOkJson(`/api/reports/sales/orders?${apiRange}&page=2&pageSize=1`);
+  assert(apiOrdersPaged.items.length === 1 && apiOrdersPaged.pagination.total === 2 && apiOrdersPaged.pagination.totalPages === 2, "detail API pagination");
+
+  await assertBadRequest("/api/reports/sales?status=DRAFT");
+  await assertBadRequest("/api/reports/sales?settlementStatus=BAD");
+  await assertBadRequest("/api/reports/sales?dateFrom=not-a-date");
+  await assertBadRequest("/api/reports/sales?dateFrom=2099-02-01T00%3A00%3A00.000Z&dateTo=2099-01-01T00%3A00%3A00.000Z");
+  await assertBadRequest("/api/reports/sales/orders?status=DRAFT");
+  await assertBadRequest("/api/reports/sales/orders?settlementStatus=BAD");
+  await assertBadRequest("/api/reports/sales/orders?dateFrom=not-a-date");
+  await assertBadRequest("/api/reports/sales/orders?dateFrom=2099-02-01T00%3A00%3A00.000Z&dateTo=2099-01-01T00%3A00%3A00.000Z");
+  await assertBadRequest("/api/reports/sales/orders?page=0");
+  await assertBadRequest("/api/reports/sales/orders?pageSize=101");
+
+  const routeSource = await fs.readFile("src/app/api/reports/sales/route.ts", "utf8");
+  assert(!routeSource.includes("inventoryItem.update"), "report API must not update InventoryItem");
+  assert(!routeSource.includes('itemStatus: "SOLD"'), "report API must not write SOLD");
+  assert(!routeSource.includes("salesService.confirm"), "report API must not call SalesService.confirm");
+  assert(!routeSource.includes("salesService.cancel"), "report API must not call SalesService.cancel");
+  assert(!routeSource.includes("salesService.settle"), "report API must not call SalesService.settle");
+  assert(!routeSource.includes("applyShipmentLineAction"), "report API must not call M3-0 state machine");
+  assert(!routeSource.includes("export async function POST"), "report API must not expose POST");
+  assert(!routeSource.includes("export async function PATCH"), "report API must not expose PATCH");
+  assert(!routeSource.includes("export async function DELETE"), "report API must not expose DELETE");
+
+  const detailRouteSource = await fs.readFile("src/app/api/reports/sales/orders/route.ts", "utf8");
+  assert(!detailRouteSource.includes("inventoryItem.update"), "detail report API must not update InventoryItem");
+  assert(!detailRouteSource.includes('itemStatus: "SOLD"'), "detail report API must not write SOLD");
+  assert(!detailRouteSource.includes("salesService.confirm"), "detail report API must not call SalesService.confirm");
+  assert(!detailRouteSource.includes("salesService.cancel"), "detail report API must not call SalesService.cancel");
+  assert(!detailRouteSource.includes("salesService.settle"), "detail report API must not call SalesService.settle");
+  assert(!detailRouteSource.includes("applyShipmentLineAction"), "detail report API must not call M3-0 state machine");
+  assert(!detailRouteSource.includes("export async function POST"), "detail report API must not expose POST");
+  assert(!detailRouteSource.includes("export async function PATCH"), "detail report API must not expose PATCH");
+  assert(!detailRouteSource.includes("export async function DELETE"), "detail report API must not expose DELETE");
+
+  const pageResponse = await fetch(`${baseUrl}/reports/sales`);
+  assert(pageResponse.ok, `/reports/sales should return 200, got ${pageResponse.status}`);
+  const detailPageResponse = await fetch(`${baseUrl}/reports/sales/orders`);
+  assert(detailPageResponse.ok, `/reports/sales/orders should return 200, got ${detailPageResponse.status}`);
+
+  browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  await page.goto(`${baseUrl}/reports/sales`, { waitUntil: "networkidle" });
+  await page.getByText("销售报表").first().waitFor({ timeout: 10_000 });
+  await page.getByText("成交价合计").first().waitFor({ timeout: 10_000 });
+  const pageText = await page.locator("body").innerText();
+  assert(pageText.includes("销售报表"), "reports page should show title");
+  assert(pageText.includes("成交价"), "reports page should show gross amount label");
+  assert(pageText.includes("预计收入"), "reports page should show expected income label");
+  assert(pageText.includes("实际到账"), "reports page should show actual received label");
+  assert(pageText.includes("未到账订单"), "reports page should show unsettled orders section");
+  assert(!pageText.includes("CONFIRMED"), "reports page should not display CONFIRMED");
+  assert(!pageText.includes("SETTLED"), "reports page should not display SETTLED");
+  assert(!pageText.includes("SOLD"), "reports page should not display SOLD");
+  assert(!pageText.includes("PLATFORM_LISTED"), "reports page should not display PLATFORM_LISTED");
+
+  const detailPage = await context.newPage();
+  await detailPage.goto(`${baseUrl}/reports/sales/orders`, { waitUntil: "networkidle" });
+  await detailPage.getByText("销售明细").first().waitFor({ timeout: 10_000 });
+  await detailPage.getByText("成交价").first().waitFor({ timeout: 10_000 });
+  const detailPageText = await detailPage.locator("body").innerText();
+  assert(detailPageText.includes("销售明细"), "detail page should show title");
+  assert(detailPageText.includes("成交价"), "detail page should show gross amount label");
+  assert(detailPageText.includes("预计收入"), "detail page should show expected income label");
+  assert(detailPageText.includes("实际到账"), "detail page should show actual received label");
+  assert(detailPageText.includes("利润"), "detail page should show profit label");
+  assert(!detailPageText.includes("CONFIRMED"), "detail page should not display CONFIRMED");
+  assert(!detailPageText.includes("SETTLED"), "detail page should not display SETTLED");
+  assert(!detailPageText.includes("SOLD"), "detail page should not display SOLD");
+  assert(!detailPageText.includes("PLATFORM_LISTED"), "detail page should not display PLATFORM_LISTED");
+  await context.close();
+
+  const pageSource = await fs.readFile("src/app/reports/sales/page.tsx", "utf8");
+  const componentSource = await fs.readFile("src/components/reports/sales-report-overview.tsx", "utf8");
+  const detailPageSource = await fs.readFile("src/app/reports/sales/orders/page.tsx", "utf8");
+  const detailComponentSource = await fs.readFile("src/components/reports/sales-orders-report.tsx", "utf8");
+  const combinedPageSource = `${pageSource}\n${componentSource}\n${detailPageSource}\n${detailComponentSource}`;
+  assert(!combinedPageSource.includes("itemStatus"), "report page must not touch itemStatus");
+  assert(!combinedPageSource.includes('itemStatus: "SOLD"'), "report page must not write SOLD");
+  assert(!combinedPageSource.includes("salesService.confirm"), "report page must not call SalesService.confirm");
+  assert(!combinedPageSource.includes("salesService.cancel"), "report page must not call SalesService.cancel");
+  assert(!combinedPageSource.includes("salesService.settle"), "report page must not call SalesService.settle");
+  assert(!combinedPageSource.includes("applyShipmentLineAction"), "report page must not call M3-0 state machine");
+  assert(!combinedPageSource.includes("method: \"POST\""), "report page must not use POST");
+  assert(!combinedPageSource.includes("method: \"PATCH\""), "report page must not use PATCH");
+  assert(!combinedPageSource.includes("method: \"DELETE\""), "report page must not use DELETE");
+
   console.log(JSON.stringify({
     ok: true,
     checks: [
@@ -377,9 +660,57 @@ try {
       "settlementStatus filters",
       "platform filter",
       "date filter uses report date",
+      "API GET /api/reports/sales returns 200",
+      "API returns summary/platformBreakdown/productBreakdown/unsettledOrders",
+      "API status=CONFIRMED filters confirmed sales",
+      "API status=SETTLED filters settled sales",
+      "API settlementStatus=UNSETTLED filters unsettled sales",
+      "API settlementStatus=SETTLED filters settled sales",
+      "API platform filter",
+      "API dateFrom/dateTo filter",
+      "detail API GET /api/reports/sales/orders returns 200",
+      "detail API returns only CONFIRMED/SETTLED",
+      "detail API excludes DRAFT",
+      "detail API excludes CANCELLED",
+      "detail API settlementStatus=UNSETTLED filters unsettled sales",
+      "detail API settlementStatus=SETTLED filters settled sales",
+      "detail API platform filter",
+      "detail API keyword searches saleNo",
+      "detail API keyword searches product SKU",
+      "detail API page/pageSize pagination",
+      "detail API money fields are JSON-safe strings",
+      "detail API dates are ISO strings/null",
+      "detail API invalid params return 400",
+      "detail API has no SOLD write path or mutation method",
+      "API excludes DRAFT/CANCELLED",
+      "API does not count PLATFORM_LISTED as sale",
+      "API invalid status returns 400",
+      "API invalid settlementStatus returns 400",
+      "API invalid date returns 400",
+      "API dateFrom > dateTo returns 400",
+      "API money fields are JSON-safe strings",
+      "API dates are ISO strings/null",
+      "API has no SOLD write path or mutation method",
+      "page /reports/sales returns 200",
+      "page shows sales report title",
+      "page shows gross amount label",
+      "page shows expected income label",
+      "page shows actual received label",
+      "page shows unsettled orders section",
+      "page does not display raw English sale/inventory statuses",
+      "page does not show PLATFORM_LISTED as sold",
+      "detail page /reports/sales/orders returns 200",
+      "detail page shows sales detail title",
+      "detail page shows gross amount/expected income/actual received/profit labels",
+      "detail page does not display raw English sale/inventory statuses",
+      "detail page has no POST/PATCH/DELETE write path",
+      "detail page has no SOLD write logic",
+      "page has no POST/PATCH/DELETE write path",
+      "page has no SOLD write logic",
     ],
   }, null, 2));
 } finally {
+  if (browser) await browser.close().catch(() => {});
   if (createdSaleOrderIds.length) {
     await db.saleActionLog.deleteMany({ where: { saleOrderId: { in: createdSaleOrderIds } } }).catch(() => {});
     await db.saleFeeLine.deleteMany({ where: { saleOrderId: { in: createdSaleOrderIds } } }).catch(() => {});

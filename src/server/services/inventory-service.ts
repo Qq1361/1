@@ -3,6 +3,26 @@ import { db } from "@/server/db";
 import { ServiceError } from "@/server/errors";
 import { getReminderType } from "@/server/services/todo-service";
 
+const LOCAL_AVAILABLE_STATUSES = ["STOCKED"];
+const PLATFORM_STATUSES = [
+  "PLATFORM_SHIPPED",
+  "PLATFORM_RECEIVED",
+  "PLATFORM_IN_WAREHOUSE",
+  "PLATFORM_LISTED",
+];
+const SOLD_STATUSES = ["SOLD"];
+const UNAVAILABLE_STATUSES = [
+  "PROBLEM",
+  "REMOVED",
+  "RETURNING",
+  "RETURNED",
+  "PLATFORM_REJECTED",
+];
+
+function money(value: Prisma.Decimal) {
+  return value.toDecimalPlaces(2).toFixed(2);
+}
+
 export class InventoryService {
   async list(
     ownerId: string,
@@ -107,6 +127,109 @@ export class InventoryService {
       db.inventoryItem.count({ where }),
     ]);
     return { data, total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+  }
+
+  async skuSummary(
+    ownerId: string,
+    query: {
+      query?: string;
+      filter?: "ALL" | "LOCAL_AVAILABLE" | "PLATFORM" | "SOLD" | "UNAVAILABLE";
+    },
+  ) {
+    const items = await db.inventoryItem.findMany({
+      where: {
+        ownerId,
+        ...(query.query
+          ? {
+              OR: [
+                { name: { contains: query.query, mode: "insensitive" } },
+                { skuText: { contains: query.query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        name: true,
+        skuText: true,
+        itemStatus: true,
+        unitCost: true,
+      },
+      orderBy: [{ name: "asc" }, { skuText: "asc" }],
+    });
+
+    const buckets = new Map<
+      string,
+      {
+        productName: string;
+        sku: string | null;
+        localAvailableCount: number;
+        platformCount: number;
+        soldCount: number;
+        unavailableCount: number;
+        totalCount: number;
+        totalCost: Prisma.Decimal;
+        minCost: Prisma.Decimal | null;
+        maxCost: Prisma.Decimal | null;
+      }
+    >();
+
+    for (const item of items) {
+      const key = `${item.name}\u0000${item.skuText ?? ""}`;
+      const bucket = buckets.get(key) ?? {
+        productName: item.name,
+        sku: item.skuText,
+        localAvailableCount: 0,
+        platformCount: 0,
+        soldCount: 0,
+        unavailableCount: 0,
+        totalCount: 0,
+        totalCost: new Prisma.Decimal(0),
+        minCost: null,
+        maxCost: null,
+      };
+
+      if (LOCAL_AVAILABLE_STATUSES.includes(item.itemStatus)) bucket.localAvailableCount += 1;
+      if (PLATFORM_STATUSES.includes(item.itemStatus)) bucket.platformCount += 1;
+      if (SOLD_STATUSES.includes(item.itemStatus)) bucket.soldCount += 1;
+      if (UNAVAILABLE_STATUSES.includes(item.itemStatus)) bucket.unavailableCount += 1;
+
+      bucket.totalCount += 1;
+      bucket.totalCost = bucket.totalCost.plus(item.unitCost);
+      bucket.minCost = bucket.minCost == null || item.unitCost.lessThan(bucket.minCost)
+        ? item.unitCost
+        : bucket.minCost;
+      bucket.maxCost = bucket.maxCost == null || item.unitCost.greaterThan(bucket.maxCost)
+        ? item.unitCost
+        : bucket.maxCost;
+      buckets.set(key, bucket);
+    }
+
+    const filter = query.filter ?? "ALL";
+    const filtered = [...buckets.values()].filter((bucket) => {
+      if (filter === "LOCAL_AVAILABLE") return bucket.localAvailableCount > 0;
+      if (filter === "PLATFORM") return bucket.platformCount > 0;
+      if (filter === "SOLD") return bucket.soldCount > 0;
+      if (filter === "UNAVAILABLE") return bucket.unavailableCount > 0;
+      return true;
+    });
+
+    const data = filtered.map((bucket) => ({
+      productName: bucket.productName,
+      sku: bucket.sku,
+      localAvailableCount: bucket.localAvailableCount,
+      platformCount: bucket.platformCount,
+      soldCount: bucket.soldCount,
+      unavailableCount: bucket.unavailableCount,
+      totalCount: bucket.totalCount,
+      averageCost: bucket.totalCount > 0
+        ? money(bucket.totalCost.div(bucket.totalCount))
+        : "0.00",
+      minCost: money(bucket.minCost ?? new Prisma.Decimal(0)),
+      maxCost: money(bucket.maxCost ?? new Prisma.Decimal(0)),
+      totalCost: money(bucket.totalCost),
+    }));
+
+    return { items: data, total: data.length };
   }
 
   async update(

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, ClipboardCheck, LayoutDashboard, Menu, Package, ReceiptText, ShoppingBag } from "lucide-react";
+import { BarChart3, Boxes, ClipboardCheck, LayoutDashboard, Menu, Package, ReceiptText, ShoppingBag } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
@@ -19,6 +19,7 @@ const navItems = [
   { label: "库存", href: "/inventory", icon: Boxes },
   { label: "寄送批次", href: "/shipments", icon: Package },
   { label: "销售订单", href: "/sales", icon: ShoppingBag },
+  { label: "销售报表", href: "/reports/sales", icon: BarChart3 },
 ];
 
 function Brand() {
