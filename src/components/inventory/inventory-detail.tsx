@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { formatItemStatus, formatSaleMode, formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform } from "@/lib/status-labels";
+import { formatItemStatus, formatSaleMode, formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform, formatSaleStatus } from "@/lib/status-labels";
 import { AttachmentUploader } from "@/components/purchases/attachment-uploader";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -53,6 +53,7 @@ type Detail = {
   };
   attachments: AttachmentDto[];
   shipmentLines?: ShipmentLineInfo[];
+  saleLines?: SaleLineInfo[];
 };
 
 interface ShipmentLineInfo {
@@ -61,6 +62,30 @@ interface ShipmentLineInfo {
   returnTrackingNo: string | null; returnedAt: string | null; returnedStorageLocation: string | null;
   batch: { id: string; batchNo: string; platform: string; defaultPurpose: string; status: string; carrierCode: string | null; trackingNo: string | null; shippedAt: string | null; receivedAt: string | null; };
   group: { groupName: string | null; platformOrderNo: string | null; } | null;
+}
+
+interface SaleLineInfo {
+  id: string;
+  unitCostSnapshot: string;
+  saleAmount: string;
+  costAmount: string;
+  profitAmount: string;
+  saleOrder: {
+    id: string;
+    saleNo: string;
+    platform: string;
+    platformOrderNo: string | null;
+    platformTradeNo: string | null;
+    soldAt: string;
+    grossAmount: string;
+    expectedIncome: string | null;
+    actualReceivedAmount: string | null;
+    shippingCost: string;
+    otherCost: string;
+    status: string;
+    cancelledAt: string | null;
+    feeLines: { amount: string }[];
+  };
 }
 
 function value(value: unknown) {
@@ -157,6 +182,7 @@ export function InventoryDetail({ id }: { id: string }) {
         </CardContent>
       </Card>
       <ShipmentTraceCard item={item} />
+      <SalesTraceCard item={item} />
       <AttachmentUploader
         entityType="INSPECTION"
         entityId={item.inspectionId}
@@ -172,6 +198,97 @@ function Info({ label, text }: { label: string; text: string }) {
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 break-words">{text}</p>
     </div>
+  );
+}
+
+function money(value: string | null | undefined) {
+  return value ? `¥${Number(value).toFixed(2)}` : "未填写";
+}
+
+function incomeBasis(sale: SaleLineInfo["saleOrder"]) {
+  if (sale.actualReceivedAmount) return "实际到账";
+  if (sale.expectedIncome) return "预计收入";
+  return "成交价扣费用";
+}
+
+function SalesTraceCard({ item }: { item: Detail }) {
+  const lines = item.saleLines || [];
+  const effectiveLines = lines.filter((line) => ["CONFIRMED", "SETTLED"].includes(line.saleOrder.status));
+  const cancelledLine = lines.find((line) => line.saleOrder.status === "CANCELLED");
+
+  if (effectiveLines.length > 1) {
+    return (
+      <Card className="rounded-lg shadow-none">
+        <CardHeader><CardTitle className="text-base">销售结果</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-destructive">数据异常：该库存存在多个有效销售记录，请检查数据。</p>
+          {effectiveLines.map((line) => (
+            <Link key={line.id} href={`/sales/${line.saleOrder.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              查看销售订单 {line.saleOrder.saleNo}
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const line = effectiveLines[0];
+  if (line) {
+    const sale = line.saleOrder;
+    const feeTotal = sale.feeLines.reduce((sum, fee) => sum + Number(fee.amount), 0);
+    return (
+      <Card className="rounded-lg shadow-none">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-base">销售结果</CardTitle>
+          <Link href={`/sales/${sale.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            查看销售订单
+          </Link>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-3">
+          <Info label="销售单号" text={sale.saleNo} />
+          <Info label="销售状态" text={formatSaleStatus(sale.status)} />
+          <Info label="销售平台" text={formatPlatform(sale.platform)} />
+          <Info label="平台订单号" text={sale.platformOrderNo || "未填写"} />
+          <Info label="平台交易号" text={sale.platformTradeNo || "未填写"} />
+          <Info label="销售时间" text={new Date(sale.soldAt).toLocaleString("zh-CN")} />
+          <Info label="成交价" text={money(sale.grossAmount)} />
+          <Info label="预计收入" text={money(sale.expectedIncome)} />
+          <Info label="实际到账" text={money(sale.actualReceivedAmount)} />
+          <Info label="销售侧运费" text={money(sale.shippingCost)} />
+          <Info label="其他成本" text={money(sale.otherCost)} />
+          <Info label="费用合计" text={`¥${feeTotal.toFixed(2)}`} />
+          <Info label="库存成本快照" text={money(line.unitCostSnapshot)} />
+          <Info label="销售行成本" text={money(line.costAmount)} />
+          <Info label="利润" text={money(line.profitAmount)} />
+          <Info label="收入口径" text={incomeBasis(sale)} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="rounded-lg shadow-none">
+      <CardHeader><CardTitle className="text-base">销售结果</CardTitle></CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        {item.itemStatus === "SOLD" ? (
+          <p className="text-destructive">销售记录缺失，请检查数据。</p>
+        ) : (
+          <p className="text-muted-foreground">暂无销售记录</p>
+        )}
+        {cancelledLine ? (
+          <div className="rounded-lg border p-3">
+            <p className="font-medium">曾取消销售</p>
+            <p className="mt-1 text-muted-foreground">
+              {cancelledLine.saleOrder.saleNo}
+              {cancelledLine.saleOrder.cancelledAt ? ` · ${new Date(cancelledLine.saleOrder.cancelledAt).toLocaleString("zh-CN")}` : ""}
+            </p>
+            <Link href={`/sales/${cancelledLine.saleOrder.id}`} className={buttonVariants({ variant: "outline", size: "sm", className: "mt-3" })}>
+              查看销售订单
+            </Link>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

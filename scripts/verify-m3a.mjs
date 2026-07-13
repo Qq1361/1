@@ -5,7 +5,7 @@ import { calculateSaleProfit } from "../src/server/sales/calculateSaleProfit.ts"
 import { Prisma } from "../src/generated/prisma/client.ts";
 
 const baseUrl = process.env.APP_BASE_URL ?? "http://127.0.0.1:3000";
-let orderId, saleOrderId;
+let orderId, apiOrderId, saleOrderId, draftTraceSaleId, listedSaleId;
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
 async function request(path, options = {}) {
@@ -35,8 +35,6 @@ try {
   const sel = await request(`/api/inventory/selectable-for-shipment?query=${encodeURIComponent("M3A服务层测试")}`);
   assert(sel.total >= 2, `need 2+ STOCKED items, got ${sel.total}`);
   const invA = sel.data[0], invB = sel.data[1];
-
-  const zero = new Prisma.Decimal(0);
 
   // ====== 1. Profit calculation unit tests ======
   const r1 = calculateSaleProfit({ grossAmount: new Prisma.Decimal(200), expectedIncome: null, actualReceivedAmount: new Prisma.Decimal(180), shippingCost: new Prisma.Decimal(10), otherCost: new Prisma.Decimal(5), inventoryCostTotal: new Prisma.Decimal(100), feeLinesTotal: new Prisma.Decimal(20) });
@@ -98,7 +96,7 @@ try {
 
   // ====== 5. Duplicate confirm blocked ======
   try {
-    const s3 = await salesService.createDraft("default-user", { platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "100.00", items: [{ inventoryItemId: invA.id }] });
+    await salesService.createDraft("default-user", { platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "100.00", items: [{ inventoryItemId: invA.id }] });
     throw new Error("createDraft should reject SOLD item");
   } catch (e) {
     assert(e.message.includes("不能销售") || e.message.includes("SOLD"), "SOLD rejected at createDraft: " + e.message);
@@ -108,6 +106,17 @@ try {
   const settled = await salesService.settle("default-user", saleOrderId, { actualReceivedAmount: "280.00" });
   assert(settled.status === "SETTLED", "SETTLED");
   assert((await db.inventoryItem.findUnique({ where: { id: invA.id } })).itemStatus === "SOLD", "still SOLD after settle");
+
+  const soldTodos = await request("/api/todos");
+  assert(!soldTodos.data.some((todo) => todo.inventoryId === invA.id), "SOLD item should not appear in todos/reminders");
+  const soldInventoryList = await request(`/api/inventory?itemStatus=SOLD&query=${encodeURIComponent(invA.inventoryCode)}`);
+  assert(soldInventoryList.data.some((item) => item.id === invA.id && item.itemStatus === "SOLD"), "SOLD item should remain queryable in inventory list");
+  const inventoryTrace = await request(`/api/inventory/${invA.id}`);
+  const inventoryEffectiveSales = inventoryTrace.saleLines.filter((line) => ["CONFIRMED", "SETTLED"].includes(line.saleOrder.status));
+  const inventoryCancelledSales = inventoryTrace.saleLines.filter((line) => line.saleOrder.status === "CANCELLED");
+  assert(inventoryEffectiveSales.length === 1, `inventory trace effective sales count ${inventoryEffectiveSales.length}`);
+  assert(inventoryEffectiveSales[0].saleOrder.status === "SETTLED", "inventory trace should prefer SETTLED effective sale");
+  assert(inventoryCancelledSales.length >= 1, "inventory trace should keep cancelled sale history");
 
   // SETTLED cannot cancel
   try {
@@ -127,7 +136,7 @@ try {
     platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "150.00",
     items: [{ inventoryItemId: invB.id }],
   });
-  const c4 = await salesService.confirm("default-user", s4.id);
+  await salesService.confirm("default-user", s4.id);
   assert((await db.inventoryItem.findUnique({ where: { id: invB.id } })).itemStatus === "SOLD", "confirm→SOLD for cancel test");
 
   const cancelled = await salesService.cancel("default-user", s4.id);
@@ -137,6 +146,28 @@ try {
   assert(restoredB.itemStatus !== "SOLD", "not SOLD after cancel");
   assert(restoredB.itemStatus !== "STOCKED" || preStatusB === "STOCKED", "does not default to STOCKED");
 
+  draftTraceSaleId = (await salesService.createDraft("default-user", {
+    platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "88.00",
+    items: [{ inventoryItemId: invB.id }],
+  })).id;
+  const purchaseTraceWithDraft = await request(`/api/purchase-orders/${orderId}`);
+  const invBTraceDraft = purchaseTraceWithDraft.items.flatMap((item) => item.inventoryItems ?? []).find((item) => item.id === invB.id);
+  assert(invBTraceDraft.saleLines.some((line) => line.saleOrder.status === "DRAFT"), "purchase trace should expose draft history");
+  assert(!invBTraceDraft.saleLines.some((line) => ["CONFIRMED", "SETTLED"].includes(line.saleOrder.status)), "DRAFT/CANCELLED should not count as active sold trace");
+
+  await db.inventoryItem.update({ where: { id: invB.id }, data: { itemStatus: "PLATFORM_LISTED" } });
+  const listedPre = await db.inventoryItem.findUnique({ where: { id: invB.id } });
+  assert(listedPre.itemStatus === "PLATFORM_LISTED", "setup PLATFORM_LISTED");
+  const listedDraft = await salesService.createDraft("default-user", {
+    platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "188.00",
+    items: [{ inventoryItemId: invB.id }],
+  });
+  listedSaleId = listedDraft.id;
+  await salesService.confirm("default-user", listedDraft.id);
+  assert((await db.inventoryItem.findUnique({ where: { id: invB.id } })).itemStatus === "SOLD", "PLATFORM_LISTED confirm -> SOLD");
+  await salesService.cancel("default-user", listedDraft.id);
+  assert((await db.inventoryItem.findUnique({ where: { id: invB.id } })).itemStatus === "PLATFORM_LISTED", "cancel restores PLATFORM_LISTED snapshot");
+
   // ====== API-level tests ======
   // Create fresh inventory for isolated API test
   const apiOrderNo = `M3A-API-${Date.now()}`;
@@ -144,6 +175,7 @@ try {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ orderNo: apiOrderNo, paidAt: new Date().toISOString(), totalAmount: "100.00", shippingAmount: "0.00", items: [{ name: "M3A-API测试", quantity: 1 }] }),
   });
+  apiOrderId = apiCreated.id;
   await request(`/api/purchase-orders/${apiCreated.id}/allocation`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "confirm", allocations: [{ itemId: apiCreated.items[0].id, allocatedTotalCost: "100.00" }] }) });
   await request(`/api/purchase-orders/${apiCreated.id}/tracking`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ carrierCode: "SF", trackingNo: "DELIVERED1" }) });
   await request(`/api/purchase-orders/${apiCreated.id}/refresh-logistics`, { method: "POST" });
@@ -167,7 +199,7 @@ try {
 
   // duplicate confirm blocked
   const apiDupRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/confirm`, { method: "POST" });
-  const apiDup = await apiDupRes.json();
+  await apiDupRes.json();
   assert(!apiDupRes.ok, "API duplicate confirm blocked");
 
   // settle via API
@@ -176,8 +208,15 @@ try {
 
   // SETTLED cannot cancel via API
   const apiCancelErrRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/cancel`, { method: "POST" });
-  const apiCancelErr = await apiCancelErrRes.json();
+  await apiCancelErrRes.json();
   assert(!apiCancelErrRes.ok, "API SETTLED cancel blocked");
+
+  const purchaseTrace = await request(`/api/purchase-orders/${apiCreated.id}`);
+  const traceInventoryItems = purchaseTrace.items.flatMap((item) => item.inventoryItems ?? []);
+  const activeTraceLines = traceInventoryItems.flatMap((item) => (item.saleLines ?? []).filter((line) => ["CONFIRMED", "SETTLED"].includes(line.saleOrder.status)));
+  const inactiveTraceLines = traceInventoryItems.flatMap((item) => (item.saleLines ?? []).filter((line) => ["DRAFT", "CANCELLED"].includes(line.saleOrder.status)));
+  assert(activeTraceLines.length === 1 && activeTraceLines[0].saleOrder.status === "SETTLED", "purchase trace counts CONFIRMED/SETTLED only");
+  assert(inactiveTraceLines.length === 0, "purchase trace for sold API item should not include inactive sale lines");
 
   console.log(JSON.stringify({ ok: true, checks: [
     "profit path1: ACTUAL_RECEIVED, no feeLines",
@@ -192,8 +231,14 @@ try {
     "createDraft rejects SOLD item (post-confirm)",
     "settle: SETTLED, inventory still SOLD",
     "SETTLED cannot cancel",
+    "SOLD does not appear in todos/reminders",
+    "SOLD remains queryable in inventory list",
+    "inventory trace counts SETTLED/CONFIRMED and keeps CANCELLED history",
     "cancel CONFIRMED: restores preSaleItemStatus",
     "cancel CONFIRMED: does not default to STOCKED",
+    "DRAFT/CANCELLED do not count as active sold trace",
+    "PLATFORM_LISTED confirm can become SOLD only through SalesService.confirm",
+    "cancel CONFIRMED restores PLATFORM_LISTED snapshot",
     "PLATFORM_LISTED never auto-SOLD",
     "service failure does not half-update",
     "API create draft → DRAFT, inv not SOLD",
@@ -201,10 +246,23 @@ try {
     "API duplicate confirm blocked",
     "API settle → SETTLED",
     "API SETTLED cancel blocked",
+    "purchase trace counts CONFIRMED/SETTLED only",
     "API cancel DRAFT → CANCELLED",
   ] }, null, 2));
 
 } finally {
+  if (listedSaleId) {
+    await db.saleLine.deleteMany({ where: { saleOrderId: listedSaleId } }).catch(() => {});
+    await db.saleFeeLine.deleteMany({ where: { saleOrderId: listedSaleId } }).catch(() => {});
+    await db.saleActionLog.deleteMany({ where: { saleOrderId: listedSaleId } }).catch(() => {});
+    await db.saleOrder.deleteMany({ where: { id: listedSaleId } }).catch(() => {});
+  }
+  if (draftTraceSaleId) {
+    await db.saleLine.deleteMany({ where: { saleOrderId: draftTraceSaleId } }).catch(() => {});
+    await db.saleFeeLine.deleteMany({ where: { saleOrderId: draftTraceSaleId } }).catch(() => {});
+    await db.saleActionLog.deleteMany({ where: { saleOrderId: draftTraceSaleId } }).catch(() => {});
+    await db.saleOrder.deleteMany({ where: { id: draftTraceSaleId } }).catch(() => {});
+  }
   if (saleOrderId) {
     await db.saleLine.deleteMany({ where: { saleOrderId } }).catch(() => {});
     await db.saleFeeLine.deleteMany({ where: { saleOrderId } }).catch(() => {});
@@ -212,6 +270,7 @@ try {
     await db.saleOrder.deleteMany({ where: { id: saleOrderId } }).catch(() => {});
   }
   await db.saleOrder.deleteMany({ where: { ownerId: "default-user", status: "DRAFT" } }).catch(() => {});
+  if (apiOrderId) await db.purchaseOrder.deleteMany({ where: { id: apiOrderId } }).catch(() => {});
   if (orderId) await db.purchaseOrder.deleteMany({ where: { id: orderId } }).catch(() => {});
   await db.$disconnect();
 }

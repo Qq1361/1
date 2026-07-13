@@ -12,7 +12,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { OrderDto } from "@/types/purchase";
+import { formatItemStatus, formatPlatform, formatSaleStatus } from "@/lib/status-labels";
+import type { OrderDto, PurchaseInventoryItemDto } from "@/types/purchase";
 
 export function OrderDetail({ orderId }: { orderId: string }) {
   const searchParams = useSearchParams();
@@ -32,6 +33,8 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const paidTotal = (
     Number(order.totalAmount) + Number(order.shippingAmount)
   ).toFixed(2);
+  const inventoryItems = order.items.flatMap((item) => item.inventoryItems ?? []);
+  const salesSummary = buildSalesSummary(inventoryItems);
 
   return (
     <div className="space-y-5">
@@ -104,6 +107,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                       {item.notes}
                     </p>
                   ) : null}
+                  <InventorySalesList inventoryItems={item.inventoryItems ?? []} />
                   <div>
                     <div className="mb-2 flex items-center gap-2 text-xs font-medium">
                       <ImageIcon className="size-3.5" />
@@ -138,6 +142,22 @@ export function OrderDetail({ orderId }: { orderId: string }) {
         <div className="space-y-4">
           <Card className="rounded-lg shadow-none">
             <CardHeader>
+              <CardTitle className="text-base">销售汇总</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <SummaryRow label="库存总件数" value={`${salesSummary.totalCount} 件`} />
+              <SummaryRow label="已售件数" value={`${salesSummary.soldCount} 件`} />
+              <SummaryRow label="未售件数" value={`${salesSummary.unsoldCount} 件`} />
+              <Separator />
+              <SummaryRow label="已售库存成本合计" value={money(salesSummary.costTotal)} />
+              <SummaryRow label="已售成交价合计" value={money(salesSummary.grossTotal)} />
+              <SummaryRow label="已售实际到账合计" value={money(salesSummary.receivedTotal)} />
+              <SummaryRow label="已售利润合计" value={money(salesSummary.profitTotal)} strong />
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-lg shadow-none">
+            <CardHeader>
               <CardTitle className="text-base">金额摘要</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
@@ -167,6 +187,146 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+function effectiveSaleLine(item: PurchaseInventoryItemDto) {
+  const lines = item.saleLines ?? [];
+  return lines.find((line) => ["CONFIRMED", "SETTLED"].includes(line.saleOrder.status)) ?? null;
+}
+
+function cancelledSaleLine(item: PurchaseInventoryItemDto) {
+  const lines = item.saleLines ?? [];
+  return lines.find((line) => line.saleOrder.status === "CANCELLED") ?? null;
+}
+
+function money(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return "未填写";
+  return `¥ ${Number(value).toFixed(2)}`;
+}
+
+function buildSalesSummary(items: PurchaseInventoryItemDto[]) {
+  let soldCount = 0;
+  let costTotal = 0;
+  let grossTotal = 0;
+  let receivedTotal = 0;
+  let profitTotal = 0;
+
+  for (const item of items) {
+    const line = effectiveSaleLine(item);
+    if (!line) continue;
+    soldCount += 1;
+    costTotal += Number(line.costAmount);
+    grossTotal += Number(line.saleOrder.grossAmount);
+    receivedTotal += Number(line.saleOrder.actualReceivedAmount ?? 0);
+    profitTotal += Number(line.profitAmount);
+  }
+
+  return {
+    totalCount: items.length,
+    soldCount,
+    unsoldCount: Math.max(0, items.length - soldCount),
+    costTotal,
+    grossTotal,
+    receivedTotal,
+    profitTotal,
+  };
+}
+
+function SummaryRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className={`flex justify-between gap-3 ${strong ? "font-semibold" : ""}`}>
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right">{value}</span>
+    </div>
+  );
+}
+
+function InventorySalesList({ inventoryItems }: { inventoryItems: PurchaseInventoryItemDto[] }) {
+  if (!inventoryItems.length) {
+    return (
+      <div className="rounded-lg border p-3 text-xs text-muted-foreground">
+        暂无库存记录
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium">库存销售追溯</p>
+      <div className="space-y-2">
+        {inventoryItems.map((inventoryItem) => (
+          <InventorySaleCard key={inventoryItem.id} item={inventoryItem} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InventorySaleCard({ item }: { item: PurchaseInventoryItemDto }) {
+  const effectiveLines = (item.saleLines ?? []).filter((line) => ["CONFIRMED", "SETTLED"].includes(line.saleOrder.status));
+  const currentLine = effectiveLines[0] ?? null;
+  const cancelledLine = cancelledSaleLine(item);
+  const hasDataIssue = effectiveLines.length > 1;
+
+  return (
+    <div className="rounded-lg border p-3 text-xs">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="font-medium">{item.inventoryCode}</p>
+          <p className="text-muted-foreground">
+            {formatItemStatus(item.itemStatus)}
+            {item.storageLocation ? ` · ${item.storageLocation}` : ""}
+          </p>
+        </div>
+        <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          查看库存
+        </Link>
+      </div>
+
+      {hasDataIssue ? (
+        <p className="mt-3 text-destructive">数据异常：存在多个有效销售记录。</p>
+      ) : currentLine ? (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <TraceField label="是否已售出" value="已售出" />
+          <TraceField label="销售单号" value={currentLine.saleOrder.saleNo} />
+          <TraceField label="销售平台" value={formatPlatform(currentLine.saleOrder.platform)} />
+          <TraceField label="销售状态" value={formatSaleStatus(currentLine.saleOrder.status)} />
+          <TraceField label="成交价" value={money(currentLine.saleOrder.grossAmount)} />
+          <TraceField label="实际到账" value={money(currentLine.saleOrder.actualReceivedAmount)} />
+          <TraceField label="利润" value={money(currentLine.profitAmount)} />
+          <Link href={`/sales/${currentLine.saleOrder.id}`} className={buttonVariants({ variant: "outline", size: "sm", className: "w-fit" })}>
+            查看销售订单
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <p className="text-muted-foreground">未售出</p>
+          {item.itemStatus === "SOLD" ? <p className="text-destructive">销售记录缺失，请检查数据。</p> : null}
+          {cancelledLine ? (
+            <div className="rounded-md bg-muted/50 p-2">
+              <p className="font-medium">曾取消销售</p>
+              <p className="mt-1 text-muted-foreground">
+                {cancelledLine.saleOrder.saleNo}
+                {cancelledLine.saleOrder.cancelledAt ? ` · ${new Date(cancelledLine.saleOrder.cancelledAt).toLocaleString("zh-CN")}` : ""}
+              </p>
+              <Link href={`/sales/${cancelledLine.saleOrder.id}`} className={buttonVariants({ variant: "outline", size: "sm", className: "mt-2" })}>
+                查看销售订单
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TraceField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-muted-foreground">{label}</p>
+      <p className="mt-0.5 break-words">{value}</p>
     </div>
   );
 }

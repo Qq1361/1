@@ -16,6 +16,7 @@ function serializeOrder<T>(value: T): T {
 }
 
 const storage = new LocalStorageAdapter();
+const purchaseOrderItemOrderBy = [{ createdAt: "asc" as const }, { id: "asc" as const }];
 
 export function canDeleteOrder(order: {
   status: string;
@@ -51,7 +52,7 @@ export class PurchaseOrderService {
               })),
             },
           },
-          include: { items: { orderBy: { createdAt: "asc" } } },
+          include: { items: { orderBy: purchaseOrderItemOrderBy } },
         }),
       );
       return serializeOrder(order);
@@ -75,7 +76,26 @@ export class PurchaseOrderService {
     const order = await db.purchaseOrder.findFirst({
       where: { id: orderId, ownerId },
       include: {
-        items: { orderBy: { createdAt: "asc" } },
+        items: {
+          orderBy: purchaseOrderItemOrderBy,
+          include: {
+            inventoryItems: {
+              orderBy: { createdAt: "asc" },
+              include: {
+                saleLines: {
+                  orderBy: { createdAt: "desc" },
+                  include: {
+                    saleOrder: {
+                      include: {
+                        feeLines: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
     if (!order) {
@@ -269,7 +289,7 @@ export class PurchaseOrderService {
       }
       return tx.purchaseOrder.findUniqueOrThrow({
         where: { id: orderId },
-        include: { items: { orderBy: { createdAt: "asc" } } },
+        include: { items: { orderBy: purchaseOrderItemOrderBy } },
       });
     });
     await Promise.allSettled(

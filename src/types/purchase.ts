@@ -5,6 +5,43 @@ export type OrderItemDto = {
   quantity: number;
   allocatedTotalCost: string | null;
   notes: string | null;
+  inventoryItems?: PurchaseInventoryItemDto[];
+};
+
+export type PurchaseInventoryItemDto = {
+  id: string;
+  inventoryCode: string;
+  name: string;
+  skuText: string | null;
+  unitCost: string;
+  itemStatus: string;
+  saleMode: string;
+  storageLocation: string | null;
+  saleLines?: PurchaseSaleLineDto[];
+};
+
+export type PurchaseSaleLineDto = {
+  id: string;
+  unitCostSnapshot: string;
+  saleAmount: string;
+  costAmount: string;
+  profitAmount: string;
+  saleOrder: {
+    id: string;
+    saleNo: string;
+    platform: string;
+    platformOrderNo: string | null;
+    platformTradeNo: string | null;
+    soldAt: string;
+    grossAmount: string;
+    expectedIncome: string | null;
+    actualReceivedAmount: string | null;
+    shippingCost: string;
+    otherCost: string;
+    status: string;
+    cancelledAt: string | null;
+    feeLines: { amount: string }[];
+  };
 };
 
 export type OrderDto = {

@@ -84,6 +84,7 @@ export function formatPlatform(platform: string): string {
   const map: Record<string, string> = {
     DEWU: "得物",
     NINETY_FIVE: "95分",
+    XIANYU: "闲鱼",
     OTHER: "其他",
   };
   return map[platform] || platform;

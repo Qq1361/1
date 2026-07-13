@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { formatSaleStatus, formatPlatform } from "@/lib/status-labels";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -42,7 +41,13 @@ export function SaleList() {
 
   return (
     <div className="space-y-5">
-      <div><p className="text-sm text-muted-foreground">销售管理</p><h1 className="text-2xl font-semibold">销售订单</h1></div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div><p className="text-sm text-muted-foreground">销售管理</p><h1 className="text-2xl font-semibold">销售订单</h1></div>
+        <Link href="/sales/new" className={buttonVariants()}>
+          <Plus />
+          新建销售订单
+        </Link>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-[1fr_140px_120px]">
         <div className="relative">

@@ -1,6 +1,6 @@
 # 业务规则
 
-> 当前阶段：M2-B 稳定期
+> 当前阶段：M3-A V1 已完成并冻结
 > 修改任何逻辑前请先读此文件。
 
 ---
@@ -63,7 +63,7 @@ PAID → WAITING_SHIPMENT → IN_TRANSIT → PENDING_INSPECTION → PARTIALLY_ST
 ### 关键字段
 - `locationStatus`：LOCAL / DEWU_WAREHOUSE / RETURNING / SOLD
 - `saleMode`：NONE / DEWU_LIGHTNING / DEWU_STANDARD / NINETY_FIVE / XIANYU / OTHER
-- `itemStatus`：STOCKED / PROBLEM
+- `itemStatus`：STOCKED / PLATFORM_SHIPPED / PLATFORM_RECEIVED / PLATFORM_IN_WAREHOUSE / PLATFORM_LISTED / SOLD / PROBLEM / REMOVED / RETURNING / RETURNED / PLATFORM_REJECTED
 - `storageLocation`：用户填写的实际库位
 
 ### saleMode 修改
@@ -147,10 +147,10 @@ PAID → WAITING_SHIPMENT → IN_TRANSIT → PENDING_INSPECTION → PARTIALLY_ST
 
 ## 8. 限制
 
-- 不做 M3
-- 不做销售订单
-- 不做销售结算
+- 不做 M3-B 退款退货自动流程
+- 不做销售报表
 - 不接真实物流
+- 不接真实平台接口
 - 不做 OCR
 - 不自动推荐平台
 
@@ -189,13 +189,27 @@ PAID → WAITING_SHIPMENT → IN_TRANSIT → PENDING_INSPECTION → PARTIALLY_ST
 
 ## 10. M3-A 销售规则（V1 冻结）
 
-详见 `docs/M3A_V1_SPEC.md`。核心规则：
+详见 `docs/M3A_V1_SPEC.md`。V1 已完成并冻结。核心规则：
 
 1. SOLD 只能由 M3-A 确认销售产生。
 2. PLATFORM_LISTED / PLATFORM_IN_WAREHOUSE / PLATFORM_RECEIVED ≠ SOLD。
 3. 销售取消恢复 preSaleItemStatus 快照，不默认回 STOCKED。
 4. 利润三条路径互斥：actualReceivedAmount > expectedIncome > grossAmount + feeLines。
 5. 销售草稿不占用库存，确认时 transaction 防重复销售。
+6. DRAFT / CANCELLED 不计入已售汇总，不作为当前销售结果。
+7. CONFIRMED / SETTLED 才是有效销售，采购订单销售汇总只统计这两类。
+8. SETTLED V1 禁止取消；退款/退货留到 M3-B。
+9. SOLD 库存不进入效期提醒、本地压货提醒、待寄送、待验货、待填物流等无关待办。
+10. SOLD 库存在库存列表仍可查询，状态显示为“已售出”。
+
+### M3-A 页面和只读追溯
+
+- `/sales/new` 只创建 DRAFT 草稿，不改变库存状态。
+- `/sales/[id]` 操作按钮只调用 sales API，不直接修改库存。
+- `/inventory/[id]` 销售结果只读展示，当前有效销售只认 CONFIRMED / SETTLED。
+- `/purchases/[id]` 每件库存展示销售追溯，订单级销售汇总只统计 CONFIRMED / SETTLED。
+- 如果库存 `itemStatus=SOLD` 但找不到有效销售记录，页面显示“销售记录缺失，请检查数据”。
+- 如果存在多个有效销售记录，页面显示数据异常提示。
 
 ## 11. 统一数据来源
 
@@ -219,4 +233,6 @@ pnpm build
 pnpm verify:m1
 pnpm verify:m2a
 pnpm verify:m2b
+pnpm verify:m30
+pnpm verify:m3a
 ```

@@ -153,6 +153,16 @@ export class InventoryService {
             group: true,
           },
         },
+        saleLines: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            saleOrder: {
+              include: {
+                feeLines: true,
+              },
+            },
+          },
+        },
       },
     });
     if (!item)

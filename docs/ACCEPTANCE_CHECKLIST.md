@@ -15,6 +15,8 @@ pnpm build                # Next.js build
 pnpm verify:m1            # M1 采购验证（9 checks）
 pnpm verify:m2a           # M2-A 物流验证（7 checks）
 pnpm verify:m2b           # M2-B 验货库存验证（9 checks）
+pnpm verify:m30           # M3-0 平台寄送验证（15 checks）
+pnpm verify:m3a           # M3-A 销售验证
 ```
 
 ---
@@ -93,6 +95,11 @@ pnpm verify:m2b           # M2-B 验货库存验证（9 checks）
 - [ ] 出售方式列显示
 - [ ] 搜索支持库存编号、商品名、SKU、库位
 - [ ] `?reminder=xxx` 筛选正确
+- [ ] 可筛选“已售出”
+- [ ] SOLD 显示“已售出”
+- [ ] PLATFORM_LISTED 显示“平台已上架 / 可售”，不能显示成已售出
+- [ ] RETURNED 显示“已退回，待重新入库”，不能显示成已入库
+- [ ] 库存列表不暴露英文枚举
 
 ### 库存详情 `/inventory/[id]`
 
@@ -100,6 +107,12 @@ pnpm verify:m2b           # M2-B 验货库存验证（9 checks）
 - [ ] 出售方式可修改
 - [ ] 编辑验货信息按钮可跳转
 - [ ] 查看采购订单携带 returnTo
+- [ ] 销售结果卡片只读展示
+- [ ] SOLD 库存显示销售单号、平台、成交价、实际到账、利润
+- [ ] 未售库存显示“暂无销售记录”
+- [ ] CANCELLED 销售只显示为历史，不作为当前已售
+- [ ] DRAFT 销售不显示为当前已售
+- [ ] SOLD 但无有效销售记录显示“销售记录缺失”
 
 ---
 
@@ -181,11 +194,12 @@ pnpm verify:m2b           # M2-B 验货库存验证（9 checks）
 - [ ] 平台状态库存不进入本地压货提醒
 - [ ] 统计卡片和筛选列表数量一致
 
-## M3-A V1 销售出库验收（设计冻结，待实现）
+## M3-A V1 销售出库验收（已完成并冻结）
 
 详见 `docs/M3A_V1_SPEC.md`。
 
 - [ ] 创建销售草稿不改变库存状态
+- [ ] DRAFT 不占用库存，多个草稿可选择同一库存
 - [ ] 确认销售后库存变 SOLD（唯一入口）
 - [ ] 一件库存不能重复确认销售
 - [ ] 取消 CONFIRMED 恢复 preSaleItemStatus
@@ -196,5 +210,11 @@ pnpm verify:m2b           # M2-B 验货库存验证（9 checks）
 - [ ] SOLD 不进效期提醒
 - [ ] SOLD 不进压货提醒
 - [ ] PLATFORM_LISTED 不会自动变 SOLD
+- [ ] /sales/new 中 PLATFORM_LISTED 可选择，但明确“不等于已售出”
+- [ ] /sales/[id] 操作区只调用 sales API，不直接写库存状态
+- [ ] /inventory/[id] 销售追溯只把 CONFIRMED / SETTLED 当有效销售
+- [ ] /purchases/[id] 销售汇总只统计 CONFIRMED / SETTLED
+- [ ] DRAFT / CANCELLED 不计入已售汇总
+- [ ] 采购订单详情每件库存显示是否已售、销售单号、利润和销售订单链接
 - [ ] API 失败不半更新
 - [ ] 利润刷新后仍正确

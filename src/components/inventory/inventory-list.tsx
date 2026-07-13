@@ -40,10 +40,19 @@ type InventoryRow = {
   saleMode: string;
 };
 
-const statusLabels: Record<string, string> = {
-  STOCKED: "已入库",
-  PROBLEM: "问题件",
-};
+const inventoryStatusOptions = [
+  "STOCKED",
+  "PLATFORM_SHIPPED",
+  "PLATFORM_RECEIVED",
+  "PLATFORM_IN_WAREHOUSE",
+  "PLATFORM_LISTED",
+  "SOLD",
+  "PROBLEM",
+  "PLATFORM_REJECTED",
+  "RETURNING",
+  "RETURNED",
+  "REMOVED",
+] as const;
 
 function daysUntil(date: string | null) {
   if (!date) return "未填写";
@@ -119,8 +128,11 @@ export function InventoryList() {
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">全部状态</SelectItem>
-            <SelectItem value="STOCKED">已入库</SelectItem>
-            <SelectItem value="PROBLEM">问题件</SelectItem>
+            {inventoryStatusOptions.map((value) => (
+              <SelectItem key={value} value={value}>
+                {formatItemStatus(value)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
