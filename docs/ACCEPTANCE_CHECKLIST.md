@@ -1,8 +1,91 @@
 # 验收清单
 
+## M4-A0 行情与采购决策设计冻结（未实施）
+
+- [x] 审计确认当前不存在 `Product` / `Sku` 主数据和稳定产品外键；名称 + 标准化 SKU 仅是当前汇总键与精确筛选键。
+- [x] 冻结使用独立 `MarketItem + MarketQuote` 作为行情领域稳定键，不重构 M1～M3 商品与 SKU 生命周期。
+- [x] 冻结展示价格、预计收入、成交价和实际到账四种独立金额语义；采购试算只使用用户确认的 `EXPECTED_INCOME`。
+- [x] 冻结利润和最高采购价为只读参考计算，不创建采购单、不修改采购成本、库存、销售、售后或 `SOLD`。
+- [x] 冻结 Quote 历史优先、失效而非硬删除、来源/时间/确认状态可见，以及未来自动适配器不得覆盖人工确认数据。
+- [ ] M4-A1：行情商品与行情记录模型、纯加法 migration、数据约束与 `verify:m4-market` 骨架。
+- [ ] M4-A2：行情 Service、owner 隔离、当前有效 Quote 查询、失效与修正。
+- [ ] M4-A3：目标利润和最高采购价 Decimal 计算、多平台比较与风险提示。
+- [ ] M4-A4：人工录入、行情列表/详情、历史图表和只读采购参考计算器。
+- [ ] M4-A5：真实 UI 验收、跨页面口径复核与模块封板。
+
+## M3-D3-2 平台退回验货 Service
+
+- [x] `PlatformReturnInspectionService.inspectReturn` 对 owner、ShipmentLine、InventoryItem、`OWNED` 和 `RETURNED` 当前事实执行 transaction 内校验。
+- [x] `PENDING_DECISION` 保持库存与寄送明细为 `RETURNED`；`RESTOCKED` 原子恢复 `STOCKED`；`PROBLEM` 原子转为问题件，ShipmentLine 始终保留 `RETURNED`。
+- [x] 终态不可普通修改；同一终态请求幂等；并发最终请求只能留下一个有效结论、一次库存更新和一条专用 ActionLog。
+- [x] 旧 `confirmRestocked` 的两个入口均已委托专用 Service，不再直接写入平台退回库存。
+- [x] `RETURNING`、`RETURNED` 已有服务端待办口径，并持续排除在销售、平台寄送和正常可售候选外。
+- [x] `pnpm verify:m3d-platform-return` 覆盖 89 项模型、Service、待办、候选与精确夹具清理检查。
+- [ ] M3-D3-3：正式 API、DTO 与稳定错误契约。
+- [ ] M3-D3-4：寄送详情、库存追溯与待办 UI。
+
+## M3-D3 平台退回验货（设计冻结，未实施）
+
+- [x] 平台退回与采购售后、销售售后、全部退款流水隔离；不使用 `RETURNING_TO_UPSTREAM_SELLER`。
+- [x] 审计确认当前 M3-0 可从 SHIPPED / RECEIVED / IN_WAREHOUSE / LISTED / REJECTED 进入 RETURNING，再进入 RETURNED。
+- [x] 审计确认当前 `confirmRestocked` 可绕过验货直接恢复 STOCKED，且 line 保留 RETURNED；后续 M3-D3-2 必须收口，当前未修改。
+- [x] 冻结采用 `PlatformShipmentLine + PlatformReturnInspection + PlatformReturnActionLog`，不新增 `PlatformReturnCase` 或 ItemStatus。
+- [x] M3-D3-1：`PlatformReturnInspectionResult`、`PlatformReturnInspection`、`PlatformReturnActionLog`、纯加法 migration、CHECK/索引/外键和 44 项模型验证已完成；新模型不自动改库存。
+- [ ] M3-D3-2：验货 service、事务保护、旧 confirmRestocked 收口、待办与候选保护。
+- [ ] M3-D3-3：API、DTO 与错误契约。
+- [ ] M3-D3-4：批次详情/库存追溯/待办 UI。
+- [ ] M3-D3-5：跨页面统计一致性和 `verify:m3d-platform-return` 封板。
+
+## M3-D2-1 销售售后数据模型验收
+
+- [x] 销售售后与采购售后使用独立模型、退款流水和验货记录；不存在统一售后主表或共用退款流水。
+- [x] `SaleAfterSaleType` 仅包含 `REFUND_ONLY`、`RETURN_AND_REFUND`；领域差异由 enum 类型和模型表达，不在值中增加前缀。
+- [x] 售后行精确关联 `SaleLine` 和 `InventoryItem`，且同一售后单内禁止重复销售行或库存。
+- [x] 销售退款流水使用独立的全局唯一幂等键；退款分配不能重复关联同一退款流水和售后明细。
+- [x] 申请退款、批准退款、实际退款和退款分配的正金额/非负约束由数据库 CHECK 保护。
+- [x] 买家退货验货使用独立 `SaleAfterSaleInspection`，不复用采购 `Inspection`；本刀只保存结论，不改变库存。
+- [x] 模型创建不会改变 `SaleOrder.status`、`actualReceivedAmount`、`settledAt`、销售行历史快照或 `InventoryItem` 状态。
+- [x] `pnpm verify:m3d-sales` 使用唯一 runId 和精确 ID 清理；销售售后 service、API、页面、状态机、退款动作和库存恢复尚未实现。
+
+## M3-D1 采购售后封板验收
+
+- [x] `InventoryOwnershipStatus` 仅有 `OWNED`、`RETURNING_TO_UPSTREAM_SELLER`、`RETURNED_TO_UPSTREAM_SELLER`，现有库存默认 `OWNED`。
+- [x] 采购售后模型与销售售后模型隔离；不存在统一售后主表或共用退款流水。
+- [x] 采购售后行精确关联采购明细、验货和库存，并约束同一售后单内重复实物。
+- [x] 请求退款、真实退款、退款分配的正金额约束由数据库 CHECK 保护。
+- [x] 退款幂等键全局唯一；退款分配不能重复关联同一退款流水和售后明细。
+- [x] 采购售后 service、API、页面、状态机、退款动作和资产归属写入均已完成；销售售后与平台退回验货未实现。
+- [x] `pnpm verify:m3d-purchase` 使用唯一 runId 并精确清理测试数据，覆盖退款净口径和跨页 DTO。
+
+## M3-D1-2 Purchase After-Sales Service Acceptance
+
+- [x] Draft creation and editing validate the purchase item, inspection, inventory and owner chain without changing inventory or paid total.
+- [x] Submitted cases occupy the selected inventory; duplicate active cases are rejected.
+- [x] Approval, refund allocation, idempotency and order-level refund ceilings are transaction-protected.
+- [x] Return shipment and seller receipt transition ownership while preserving `PROBLEM`.
+- [x] Non-owned inventory is blocked from sales, shipment, reminders and unsold SKU costs.
+- [x] 采购售后 API、列表、发起页和详情页已完成；失败操作保留弹窗输入并显示服务端错误。
+
+## ItemStatus retirement acceptance
+
+- [ ] Prisma `ItemStatus` contains only the eleven formal V1 values.
+- [ ] Retired InventoryItem values are rejected by UI/API filters and are not writable.
+- [ ] `PENDING_INSPECTION` remains supported.
+- [ ] `SaleOrder.SETTLED` and `PlatformShipmentLine.LISTED` remain unchanged.
+- [ ] `REMOVED` remains unimplemented and is absent from the schema.
+
 > 每次修改后必须逐项验证。全部通过才能提交。
 
 ---
+
+## InventoryItem 状态写入收口验收
+
+- [ ] 通用库存 PATCH 不能写入 `itemStatus`，包括嵌套或别名绕过。
+- [ ] 库存列表/API 仅接受当前正式状态；旧状态筛选返回 400。
+- [ ] 销售草稿、销售确认、销售取消恢复和寄送批次均拒绝旧状态。
+- [ ] 旧状态不进入效期、压货提醒和 SKU 未售/成本指标。
+- [ ] 历史旧状态详情显示待迁移提示且不提供基于该状态的操作。
+- [ ] `pnpm verify:item-status-contract` 使用唯一 runId 创建并精确清理测试数据。
 
 ## 自动化验证（必须全部通过）
 
@@ -182,7 +265,7 @@ pnpm verify:m3a           # M3-A 销售验证
 - [ ] 全流程不产生 SOLD
 - [ ] RECEIVED→SHIPPED 非法跳转被拦截
 - [ ] LISTED→IN_WAREHOUSE 非法跳转被拦截
-- [ ] SOLD/PROBLEM/REMOVED 库存不能执行寄送操作
+- [ ] SOLD/PROBLEM 库存不能执行寄送操作
 - [ ] batch.status 自动汇总
 - [ ] API 失败不半更新
 
@@ -218,3 +301,118 @@ pnpm verify:m3a           # M3-A 销售验证
 - [ ] 采购订单详情每件库存显示是否已售、销售单号、利润和销售订单链接
 - [ ] API 失败不半更新
 - [ ] 利润刷新后仍正确
+
+## SKU 生命周期与 ItemStatus 契约验证映射
+
+`pnpm verify:inventory-summary` 以精确创建 ID 的测试数据覆盖以下业务要求：
+
+1. `normalizeSku` 的空值、空格、大小写与内部字符规则由单元测试覆盖。
+2. 采购 SKU 会预填到验货，并在验货完成后写入库存。
+3. 单件 SKU-only 修正不会修改成本、状态、出售方式或库位。
+4. 批量补录默认仅补空 SKU；跨商品请求被拒绝，不产生半更新。
+5. DRAFT 销售确认时按 `inventoryItemId` 刷新 SKU 快照。
+6. CONFIRMED / SETTLED 后库存 SKU 修正不回写销售历史快照。
+7. 标准化后的 SKU 聚合、精确商品 + SKU 查询、空 SKU 查询与分页总数均在服务端断言。
+8. STOCKED 与 PLATFORM_LISTED 不等于 SOLD；SOLD 不进入未售数量与未售成本。
+9. 当前 Prisma `ItemStatus` 不含 REMOVED；页面、API、Zod、标签和汇总均不暴露该状态。
+10. `includeHistorical` 在 V1 仅包含 SOLD 库存档案。
+11. SKU 汇总 API / 页面保持只读，测试数据在 finally 中按精确 ID 清理。
+
+## M3-C V1 销售到账管理验收
+
+- [ ] CONFIRMED 销售可登记实际到账、到账时间和到账备注。
+- [ ] SETTLED 销售可修改实际到账金额，但不覆盖首次到账时间。
+- [ ] DRAFT / CANCELLED 登记到账返回 409。
+- [ ] 负数到账金额和非法到账时间返回 400。
+- [ ] 每次到账登记均保留 SaleActionLog 备注。
+- [ ] 登记到账后 SaleLine.profitAmount 已按既有利润规则持久化。
+- [ ] 登记到账前后库存状态不变，且没有新增 SOLD 写入路径。
+- [ ] SETTLED 仍没有取消入口，后端取消请求返回 409。
+- [ ] 销售列表显示最新实际到账与中文“已到账”状态。
+- [ ] 销售报表、库存详情、采购订单追溯同步显示最新实际到账与已持久化利润。
+- [ ] expectedIncome 不显示为实际到账，grossAmount 不显示为到账。
+- [ ] 组合销售的采购订单汇总按 SaleOrder 去重，不重复累计订单级成交价、实际到账或费用。
+
+## M3-D1-3 采购售后 API 验收
+
+- [x] 创建、更新、提交、审核、退回、退款、完成和取消均通过 `PurchaseAfterSalesService`。
+- [x] 列表、详情和可发起项查询按 owner 隔离；跨 owner 或不存在记录返回 404。
+- [x] 金额为 Decimal 字符串，时间为 ISO 字符串或 `null`，不向客户端暴露 Prisma Decimal。
+- [x] DRAFT 不占用问题件；进行中的采购售后不允许重复选中相同库存。
+- [x] 退款流水支持幂等重试，额度/状态冲突返回 409，非法输入返回 400。
+- [x] API route 不直接修改采购订单实付、库存状态或库存归属；页面已实现，销售售后未扩展。
+
+## M3-D1-4/5 采购售后页面与净口径验收
+
+- [x] 采购售后列表支持关键词、状态、类型、采购订单筛选和分页。
+- [x] 发起页只从 eligible-items 选择问题件，逐件填写申请退款金额。
+- [x] 详情页显示 totals、历史快照、当前资产归属、物流、退款流水、分配和操作日志。
+- [x] 详情页仅按 API `availableActions` 显示操作，成功后重新读取详情；失败保留表单输入。
+- [x] 采购订单和 OWNED 问题库存详情均可进入采购售后；销售售后和平台退回验货仍未实现。
+- [x] 订单页显示原采购实付、累计采购退款、净采购实付和案件计数；退款记录只在订单级累计一次。
+- [x] 库存页显示行级退款分配、原成本快照、净现金成本与资产归属；净现金成本不含退货运费或其他售后费用。
+## M3-D2-3 销售售后 API 验收
+
+- [x] 列表、详情与可发起销售行均按 owner 隔离，支持稳定分页和 JSON-safe DTO。
+- [x] 草稿、提交、批准、拒绝、买家退货、退款、完成和取消路由均通过 `SalesAfterSalesService` 写入。
+- [x] 非法参数返回 400；缺失或跨 owner 返回 404；状态、库存占用和退款额度冲突返回 409。
+- [x] 退款支持显式分配与幂等重试：首次 201、相同重试 200、冲突重试 409。
+- [x] `verify:m3d-sales` 已覆盖路由生命周期、DTO 和服务边界；M3-B/M3-C 真实浏览器会话验证通过。
+
+## M3-D2-4 销售售后页面验收
+
+- [x] 销售售后列表支持关键词、状态、类型、原销售单和分页筛选，筛选保留在 URL。
+- [x] 发起页只使用 `eligible-lines` 返回的销售行，逐行人工填写申请退款，缺少可靠行成交金额时明确提示。
+- [x] 草稿详情复用创建表单；提交、批准、退货物流、验货、退款、完成和取消只显示服务端 `availableActions`。
+- [x] 详情分区显示原始销售事实、案件/订单退款总额、历史销售快照、当前库存事实、物流、验货、退款流水和操作日志。
+- [x] 销售详情显示售后摘要与入口；库存详情显示销售售后追溯，历史售后不会因库存恢复而丢失。
+- [x] 页面不直接写库存状态、原实际到账、SaleLine 快照或利润，也不新增 SOLD 写入路径。
+
+## M3-D2-2 销售售后 service 验收
+
+- [x] `SalesAfterSalesService` 状态机覆盖草稿、提交、批准、拒绝、仅退款、退货、验货、退款、完成和取消。
+- [x] 销售售后使用 owner 隔离、Serializable + FOR UPDATE、P2034 有界重试和幂等退款记录。
+- [x] 订单级和行级退款上限使用 Decimal；多行退款必须显式分配且合计一致。
+- [x] 退货运输/收货/待验货阶段库存保持 `SOLD`，验货后只恢复选中库存。
+- [x] `RESTOCKED` 恢复为 `STOCKED`，`PROBLEM` 恢复为 `PROBLEM`，`PENDING_DECISION` 阻止完成。
+- [x] 仅退款完成不恢复库存；销售订单、销售快照、到账和利润不被售后覆盖。
+- [x] `SalesService.settle` 拒绝低于已退款和锁定售后金额的实际到账。
+- [x] `pnpm verify:m3d-sales` 真实 service 流程通过 66 项检查。
+
+## M3-D2-5 销售售后财务与报表验收（已完成）
+
+- [x] 订单退款按 `SaleRefundRecord` 去重，行退款按显式 `SaleRefundAllocation` 聚合。
+- [x] 仅完成且 `RESTOCKED` 的买家退货才冲回一次冻结成本；`PROBLEM` 和仅退款不冲回。
+- [x] 销售详情、售后详情、库存/采购追溯和报表展示同一套原值、退款、净到账和售后净利润。
+- [x] 报表图表只消费共享只读聚合结果，支持筛选联动、URL 保留和中文状态展示。
+- [x] 不新增 Prisma migration、SOLD 写入或 M3-0 状态机路径。
+# M3-D3-3 Platform Return Inspection API
+
+## M3-FINAL-0 冻结验收（2026-07-16）
+
+- [x] Prisma schema 有效，日常开发库全部 19 个 migration 已应用。
+- [x] 旧 InventoryItem 枚举退役审计通过；11 个正式状态与状态契约一致。
+- [x] 采购、物流、验货、库存、平台寄送、销售、到账、售后和平台退回均已有代码与验证证据。
+- [x] 销售报表只统计 `CONFIRMED / SETTLED`；`PLATFORM_LISTED` 不等于已售。
+- [x] 采购退款、销售退款和平台退回保持独立模型与金额边界。
+- [x] 销售与售后相关金融派生口径复用共享只读聚合，不改写原始销售事实。
+- [x] M1～M3 维持 FROZEN；M4 尚未实施。
+- [ ] M4-E 多用户认证、角色权限、真实 owner 上下文与跨用户验证。
+- [ ] 平台寄送/退回费用分摊进入完整经营利润前的独立规则与验收。
+
+- [x] Strict inspection payload validation and stable platform-return error responses.
+- [x] Owner-scoped history, pending, and detail DTOs.
+- [x] Inspection write route delegates all authoritative writes to `PlatformReturnInspectionService`.
+- [x] Legacy confirm-restocked endpoint is compatibility-only, deprecated, and cannot bypass inspection records.
+- [x] M3-D3-4 platform-return inspection UI workbench: 平台退回列表、详情验货工作台、导航、待办入口、寄送批次入口和库存多周期追溯。
+- [x] 平台退回途中、已退回待验货、待进一步判断三类入口均跳转到带 `category` 的平台退回列表。
+- [x] ShipmentLine 历史 `RETURNED` 与 InventoryItem 当前 `STOCKED` / `PROBLEM` 分开显示；最终验货后页面不提供普通修改入口。
+- [x] 旧版直接入库记录只显示提示，页面不调用 deprecated confirm-restocked；所有页面写入均经平台退回验货 API。
+
+## M3-D3-5 平台退回统计与最终封板
+
+- [x] 平台退回统计按当前库存去重、按寄送明细保留多周期历史；成本仅来自 `InventoryItem.unitCost`，金额 JSON-safe。
+- [x] `RETURNING`、首次待验货、待进一步判断、历史重新入库、历史问题件和旧版直接入库记录具有清晰且不重复的口径。
+- [x] `PENDING_DECISION` 是已退回待处理资产子集；`RESTOCKED + STOCKED` 回归本地资产，平台退回问题件不进入可售/候选。
+- [x] 平台退回页、库存资产口径、首页三项入口、待办、寄送批次详情和库存详情保持一致，并使用中文业务文案。
+- [x] `verify:m3d-platform-return` 覆盖真实正常寄送前置、拒收/仓内/上架退回、多周期、旧版记录、并发冲突、刷新和跨页面验收；M3-D3 已 FROZEN。
