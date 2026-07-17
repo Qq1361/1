@@ -1,4 +1,5 @@
 import { DEFAULT_OWNER_ID } from "@/server/constants";
+import { normalizeSku } from "@/lib/normalize-sku";
 import { salesReportService } from "@/server/reports/sales-report-service";
 
 const PLATFORMS = ["DEWU", "NINETY_FIVE", "XIANYU", "OTHER"] as const;
@@ -81,6 +82,13 @@ export async function GET(request: Request) {
       return badRequest("pageSize 不能大于 100。");
     }
 
+    const productNameExact = searchParams.get("productNameExact")?.trim() || undefined;
+    const skuEmpty = searchParams.get("skuEmpty") === "true";
+    const rawSkuExact = searchParams.get("skuExact");
+    if (skuEmpty && rawSkuExact) return badRequest("skuEmpty 与 skuExact 不能同时使用。");
+    const skuExact = rawSkuExact == null ? undefined : normalizeSku(rawSkuExact) ?? undefined;
+    if (rawSkuExact != null && !skuExact) return badRequest("skuExact 不能为空。");
+
     const report = await salesReportService.getSalesReportOrders({
       ownerId: DEFAULT_OWNER_ID,
       dateFrom,
@@ -89,6 +97,9 @@ export async function GET(request: Request) {
       status,
       settlementStatus: settlementStatus ?? "ALL",
       keyword: searchParams.get("keyword")?.trim() || undefined,
+      productNameExact,
+      skuExact,
+      skuEmpty,
       page,
       pageSize,
     });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SUPPORTED_INVENTORY_ITEM_STATUSES } from "@/lib/inventory-item-status-contract";
 
 export const inspectionPatchSchema = z.object({
   currentStep: z.number().int().min(1).max(6).optional(),
@@ -9,6 +10,7 @@ export const inspectionPatchSchema = z.object({
   isNew: z.boolean().nullable().optional(),
   hasUsageTrace: z.boolean().nullable().optional(),
   batchCode: z.string().trim().max(100).nullable().optional(),
+  skuText: z.string().max(200).nullable().optional(),
   expiryDate: z.coerce.date().nullable().optional(),
   storageLocation: z.string().trim().max(100).nullable().optional(),
   appearanceNotes: z.string().trim().max(2000).nullable().optional(),
@@ -26,27 +28,7 @@ export const inspectionListSchema = z.object({
 export const inventoryListSchema = z.object({
   query: z.string().trim().max(100).optional(),
   itemStatus: z
-    .enum([
-      "PENDING_INSPECTION",
-      "STOCKED",
-      "PLATFORM_SHIPPED",
-      "PLATFORM_RECEIVED",
-      "PLATFORM_IN_WAREHOUSE",
-      "PLATFORM_LISTED",
-      "PLATFORM_REJECTED",
-      "RETURNING",
-      "RETURNED",
-      "SOLD",
-      "LISTED",
-      "IN_BATCH",
-      "SHIPPED_TO_WAREHOUSE",
-      "WAREHOUSE_RECEIVED",
-      "INBOUND_SUCCESS",
-      "INBOUND_FAILED",
-      "PENDING_SETTLEMENT",
-      "SETTLED",
-      "PROBLEM",
-    ])
+    .enum(SUPPORTED_INVENTORY_ITEM_STATUSES)
     .optional(),
   saleMode: z
     .enum([
@@ -72,6 +54,9 @@ export const inventoryListSchema = z.object({
       "STOCKED_OVER_3_DAYS",
     ])
     .optional(),
+  productNameExact: z.string().trim().min(1).max(200).optional(),
+  skuExact: z.string().max(200).optional(),
+  skuEmpty: z.enum(["true"]).transform(() => true).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });

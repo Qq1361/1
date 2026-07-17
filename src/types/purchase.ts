@@ -3,6 +3,7 @@ export type OrderItemDto = {
   name: string;
   skuText: string | null;
   quantity: number;
+  referenceAmount: string | null;
   allocatedTotalCost: string | null;
   notes: string | null;
   inventoryItems?: PurchaseInventoryItemDto[];
@@ -42,6 +43,11 @@ export type PurchaseSaleLineDto = {
     cancelledAt: string | null;
     feeLines: { amount: string }[];
   };
+  salesAfterSaleFinancials?: {
+    refundedAmount: string;
+    restockedCostReversal: string;
+    afterSaleNetProfit: string;
+  } | null;
 };
 
 export type OrderDto = {
@@ -77,7 +83,19 @@ export type OrderDto = {
   createdAt: string;
   updatedAt: string;
   items: OrderItemDto[];
+  purchaseItemsEditability: {
+    editable: boolean;
+    reasonCode: string | null;
+    reason: string | null;
+  };
   logisticsEvents: LogisticsEventDto[];
+  purchaseAfterSalesSummary: {
+    totalPurchaseRefundedAmount: string;
+    netPurchasePaidAmount: string;
+    totalCaseCount: number;
+    inProgressCaseCount: number;
+    completedCaseCount: number;
+  };
 };
 
 export type LogisticsEventDto = {

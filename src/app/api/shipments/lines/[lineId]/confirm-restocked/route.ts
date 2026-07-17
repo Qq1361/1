@@ -1,8 +1,22 @@
 import { DEFAULT_OWNER_ID } from "@/server/constants";
-import { toErrorResponse } from "@/server/errors";
-import { applyShipmentLineAction } from "@/server/shipments/applyShipmentLineAction";
+import { parsePlatformReturnJson, toPlatformReturnErrorResponse } from "@/server/platform-return-inspection/platform-return-inspection-api";
+import { legacyConfirmRestockedSchema, platformReturnShipmentLineIdSchema } from "@/server/platform-return-inspection/platform-return-inspection-validation";
+import { shipmentService } from "@/server/services/shipment-service";
+
 type C = { params: Promise<{ lineId: string }> };
+
 export async function POST(r: Request, c: C) {
-  try { const input = await r.json(); return Response.json(await applyShipmentLineAction(DEFAULT_OWNER_ID, (await c.params).lineId, "confirmRestocked", input)); }
-  catch (e) { return toErrorResponse(e); }
+  try {
+    const lineId = platformReturnShipmentLineIdSchema.parse((await c.params).lineId);
+    const input = legacyConfirmRestockedSchema.parse(await parsePlatformReturnJson(r));
+    const line = await shipmentService.confirmRestocked(DEFAULT_OWNER_ID, lineId, input);
+    return Response.json(line, {
+      headers: {
+        Deprecation: "true",
+        Link: `</api/platform-returns/${lineId}/inspection>; rel=\"successor-version\"`,
+      },
+    });
+  } catch (error) {
+    return toPlatformReturnErrorResponse(error);
+  }
 }

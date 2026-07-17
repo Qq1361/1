@@ -1,0 +1,32 @@
+export type DailyReportPriority = "P0" | "P1" | "P2" | "P3";
+
+export type DailyReportTodo = {
+  code: string;
+  priority: DailyReportPriority;
+  count: number;
+  href: string;
+  samples: { id: string; label: string; at: string | null }[];
+};
+
+export type DailyReportRisk = {
+  code: string;
+  severity: DailyReportPriority;
+  count: number;
+  href: string;
+  oldestAt: string | null;
+  samples: { id: string; label: string; at: string | null }[];
+};
+
+export type DailyBusinessReportDto = {
+  reportDate: string;
+  timezone: "Asia/Shanghai";
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+  sales: Record<string, string | number>;
+  purchases: Record<string, string | number>;
+  inventory: Record<string, string | number>;
+  todos: { items: DailyReportTodo[]; totalCount: number; priorityCounts: Record<DailyReportPriority, number> };
+  risks: { items: DailyReportRisk[]; totalCount: number; severityCounts: Record<DailyReportPriority, number> };
+  market: Record<string, string | number>;
+};

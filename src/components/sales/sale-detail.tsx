@@ -29,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SalesAfterSaleOrderSummary } from "@/components/sales-after-sales/sales-after-sales-trace";
 
 interface SaleDetail {
   id: string; saleNo: string; platform: string; platformOrderNo: string | null;
@@ -37,9 +38,10 @@ interface SaleDetail {
   shippingCost: string; otherCost: string; status: string; note: string | null;
   confirmedAt: string | null; settledAt: string | null; cancelledAt: string | null;
   createdAt: string;
-  lines: { id: string; inventoryCodeSnapshot: string; productNameSnapshot: string; skuSnapshot: string | null; unitCostSnapshot: string; saleAmount: string; costAmount: string; profitAmount: string; preSaleItemStatus: string; sourceShipmentBatchId: string | null; sourceShipmentLineId: string | null; sourcePurchaseOrderId: string | null; inventoryItem: { id: string; itemStatus: string } | null }[];
+  lines: { id: string; inventoryCodeSnapshot: string; productNameSnapshot: string; skuSnapshot: string | null; unitCostSnapshot: string; saleAmount: string; costAmount: string; profitAmount: string; preSaleItemStatus: string; sourceShipmentBatchId: string | null; sourceShipmentLineId: string | null; sourcePurchaseOrderId: string | null; inventoryItem: { id: string; itemStatus: string } | null; afterSaleFinancials: { refundedAmount: string; restockedCostReversal: string; afterSaleNetProfit: string } | null }[];
   feeLines: { id: string; feeType: string; amount: string; note: string | null }[];
   actionLogs: { id: string; actionType: string; note: string | null; createdAt: string }[];
+  afterSaleFinancials: { originalProfit: string; totalSalesRefundedAmount: string; netReceivedAmount: string; restockedCostReversal: string; afterSaleNetProfit: string; afterSaleCaseCount: number; activeAfterSaleCaseCount: number; afterSaleStatusSummary: { status: string; count: number }[] };
 }
 
 export function SaleDetail({ id }: { id: string }) {
@@ -49,6 +51,8 @@ export function SaleDetail({ id }: { id: string }) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
   const [settleAmount, setSettleAmount] = useState("");
+  const [settleAt, setSettleAt] = useState("");
+  const [settleNote, setSettleNote] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmingSale, setConfirmingSale] = useState(false);
   const [settlingSale, setSettlingSale] = useState(false);
@@ -82,10 +86,9 @@ export function SaleDetail({ id }: { id: string }) {
   if (!sale) return <Skeleton className="h-96 w-full" />;
 
   const feeTotal = sale.feeLines.reduce((s, fl) => s + parseFloat(fl.amount), 0);
-  const inventoryCostTotal = sale.lines.reduce((s, l) => s + parseFloat(l.unitCostSnapshot), 0);
-  const incomeAmount = parseFloat(sale.actualReceivedAmount || sale.expectedIncome || sale.grossAmount);
-  const feeDeducted = sale.actualReceivedAmount || sale.expectedIncome ? 0 : feeTotal;
-  const profit = incomeAmount - feeDeducted - parseFloat(sale.shippingCost) - parseFloat(sale.otherCost) - inventoryCostTotal;
+  const persistedProfitTotal = sale.lines.reduce((s, l) => s + parseFloat(l.profitAmount), 0);
+  const feeDeducted = 0;
+  const profit = persistedProfitTotal;
   const isBusy = confirmingSale || settlingSale || cancellingSale;
 
   async function readError(response: Response) {
@@ -114,7 +117,7 @@ export function SaleDetail({ id }: { id: string }) {
 
   async function settleSale() {
     if (!sale) return;
-    if (!/^\d{1,10}(\.\d{1,2})?$/.test(settleAmount.trim())) {
+    if (!/^-?\d{1,10}(\.\d{1,2})?$/.test(settleAmount.trim())) {
       const message = "请输入有效到账金额";
       setActionError(message);
       toast.error(message);
@@ -126,12 +129,18 @@ export function SaleDetail({ id }: { id: string }) {
       const response = await fetch(`/api/sales/${sale.id}/settle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actualReceivedAmount: settleAmount.trim() }),
+        body: JSON.stringify({
+          actualReceivedAmount: settleAmount.trim(),
+          settledAt: settleAt || undefined,
+          note: settleNote.trim() || undefined,
+        }),
       });
       if (!response.ok) throw new Error(await readError(response));
       toast.success("已登记到账");
       setSettleOpen(false);
       setSettleAmount("");
+      setSettleAt("");
+      setSettleNote("");
       await load();
     } catch (e) {
       const message = e instanceof Error ? e.message : "登记到账失败";
@@ -161,6 +170,15 @@ export function SaleDetail({ id }: { id: string }) {
     }
   }
 
+  function openSettleDialog() {
+    if (!sale) return;
+    setActionError(null);
+    setSettleAmount(sale.actualReceivedAmount ?? sale.expectedIncome ?? "");
+    setSettleAt(toDateTimeLocalValue(sale.settledAt));
+    setSettleNote("");
+    setSettleOpen(true);
+  }
+
   return (
     <div className="space-y-5">
       <Link href="/sales" className={buttonVariants({ variant: "ghost", size: "sm" })}><ArrowLeft />返回销售订单</Link>
@@ -181,8 +199,10 @@ export function SaleDetail({ id }: { id: string }) {
       <Card><CardHeader><CardTitle className="text-base">金额</CardTitle></CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
           <Info label="成交价" text={`¥${sale.grossAmount}`} />
-          <Info label="预计收入" text={sale.expectedIncome ? `¥${sale.expectedIncome}` : "未填写"} />
+          <Info label="应收金额" text={sale.expectedIncome ? `¥${sale.expectedIncome}` : "未填写"} />
+          <Info label="结算状态" text={sale.status === "SETTLED" ? "已到账" : "未到账"} />
           <Info label="实际到账" text={sale.actualReceivedAmount ? `¥${sale.actualReceivedAmount}` : "未到账"} />
+          <Info label="结算时间" text={sale.settledAt ? new Date(sale.settledAt).toLocaleString("zh-CN") : "未填写"} />
           <Info label="销售侧运费" text={`¥${sale.shippingCost}`} />
           <Info label="其他成本" text={`¥${sale.otherCost}`} />
           <Info label="费用合计" text={`¥${feeTotal.toFixed(2)}`} />
@@ -201,11 +221,26 @@ export function SaleDetail({ id }: { id: string }) {
             cancellingSale={cancellingSale}
             actionError={actionError}
             onOpenConfirm={() => { setActionError(null); setConfirmOpen(true); }}
-            onOpenSettle={() => { setActionError(null); setSettleOpen(true); }}
+            onOpenSettle={openSettleDialog}
             onOpenCancel={() => { setActionError(null); setCancelOpen(true); }}
           />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">售后净口径</CardTitle></CardHeader>
+        <CardContent className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <Info label="原销售利润" text={`¥${sale.afterSaleFinancials.originalProfit}`} />
+          <Info label="累计销售退款" text={`¥${sale.afterSaleFinancials.totalSalesRefundedAmount}`} />
+          <Info label="净到账" text={`¥${sale.afterSaleFinancials.netReceivedAmount}`} />
+          <Info label="恢复库存成本" text={`¥${sale.afterSaleFinancials.restockedCostReversal}`} />
+          <Info label="售后净利润" text={`¥${sale.afterSaleFinancials.afterSaleNetProfit}`} />
+          <Info label="销售售后单" text={`${sale.afterSaleFinancials.afterSaleCaseCount} 单`} />
+          <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-3">售后净利润仅考虑已登记退款和符合条件的已恢复库存成本，不含未建模的退货运费、平台额外费用或人工售后成本。</p>
+        </CardContent>
+      </Card>
+
+      <SalesAfterSaleOrderSummary saleOrderId={sale.id} saleStatus={sale.status} actualReceivedAmount={sale.actualReceivedAmount} afterSaleFinancials={sale.afterSaleFinancials} />
 
       <Card><CardHeader><CardTitle className="text-base">销售明细（{sale.lines.length} 件）</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -224,6 +259,11 @@ export function SaleDetail({ id }: { id: string }) {
                 <div>
                   <Info label="成本" text={`¥${l.costAmount}`} />
                   <Info label="利润" text={`¥${l.profitAmount}`} />
+                  {l.afterSaleFinancials ? <>
+                    <Info label="行退款分配" text={`¥${l.afterSaleFinancials.refundedAmount}`} />
+                    <Info label="成本冲回" text={`¥${l.afterSaleFinancials.restockedCostReversal}`} />
+                    <Info label="售后净利润" text={`¥${l.afterSaleFinancials.afterSaleNetProfit}`} />
+                  </> : null}
                   {l.inventoryItem ? (
                     <Link href={`/inventory/${l.inventoryItem.id}`} className={buttonVariants({ variant: "outline", size: "sm", className: "mt-1" })}>查看库存</Link>
                   ) : null}
@@ -243,6 +283,31 @@ export function SaleDetail({ id }: { id: string }) {
           </CardContent>
         </Card>
       ) : null}
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">操作日志 / 到账日志</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Info label="到账状态" text={sale.status === "SETTLED" ? "已到账" : "未到账"} />
+            <Info label="到账时间" text={sale.settledAt ? new Date(sale.settledAt).toLocaleString("zh-CN") : "未填写"} />
+          </div>
+          {sale.actionLogs.length === 0 ? (
+            <p className="text-muted-foreground">暂无操作日志</p>
+          ) : (
+            <div className="space-y-2">
+              {sale.actionLogs.map((log) => (
+                <div key={log.id} className="rounded-lg border p-3">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="font-medium">{formatActionType(log.actionType)}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleString("zh-CN")}</p>
+                  </div>
+                  <p className="mt-1 text-muted-foreground">{log.note || "无备注"}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
@@ -266,9 +331,11 @@ export function SaleDetail({ id }: { id: string }) {
       <Dialog open={settleOpen} onOpenChange={setSettleOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>登记到账</DialogTitle>
+            <DialogTitle>{sale.status === "SETTLED" ? "修改到账信息" : "登记到账"}</DialogTitle>
             <DialogDescription>
-              登记实际到账金额后，销售订单将变为已到账，库存保持已售出。
+              {sale.status === "SETTLED"
+                ? "修改到账金额不会改变首次登记的结算时间，库存保持已售出。"
+                : "登记实际到账金额后，销售订单将变为已到账，库存保持已售出。"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -282,12 +349,32 @@ export function SaleDetail({ id }: { id: string }) {
               disabled={settlingSale}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="settledAt">到账时间（可选）</Label>
+            <Input
+              id="settledAt"
+              type="datetime-local"
+              value={settleAt}
+              onChange={(event) => setSettleAt(event.target.value)}
+              disabled={settlingSale}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settleNote">备注（可选）</Label>
+            <Input
+              id="settleNote"
+              value={settleNote}
+              onChange={(event) => setSettleNote(event.target.value)}
+              disabled={settlingSale}
+              placeholder="到账流水、差异说明等"
+            />
+          </div>
           {actionError ? <p className="text-sm text-destructive">{actionError}</p> : null}
           <DialogFooter>
             <button type="button" className={buttonVariants({ variant: "outline" })} disabled={settlingSale} onClick={() => setSettleOpen(false)}>取消</button>
             <button type="button" className={buttonVariants()} disabled={settlingSale} onClick={() => void settleSale()}>
               {settlingSale ? <Loader2 className="animate-spin" /> : null}
-              确认到账
+              {sale.status === "SETTLED" ? "保存到账信息" : "确认到账"}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -376,11 +463,39 @@ function SaleActions({
     );
   }
   if (sale.status === "SETTLED") {
-    return <p className="text-sm text-muted-foreground">已到账销售暂不支持直接取消。如发生退款/退货，后续走退款/退货流程。</p>;
+    return (
+      <div className="space-y-3">
+        <button type="button" className={buttonVariants()} disabled={disabled} onClick={onOpenSettle}>
+          {settlingSale ? <Loader2 className="animate-spin" /> : null}
+          修改到账信息
+        </button>
+        <p className="text-sm text-muted-foreground">已到账销售暂不支持直接取消。如发生退款/退货，后续走退款/退货流程。</p>
+        {actionError ? <p className="text-sm text-destructive">{actionError}</p> : null}
+      </div>
+    );
   }
   return <p className="text-sm text-muted-foreground">该销售订单已取消。</p>;
 }
 
 function Info({ label, text }: { label: string; text: string }) {
   return <div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1">{text}</p></div>;
+}
+
+function toDateTimeLocalValue(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function formatActionType(actionType: string) {
+  const labels: Record<string, string> = {
+    CREATED: "创建草稿",
+    CONFIRMED: "确认销售",
+    SETTLED: "登记到账",
+    RESETTLED: "修改到账信息",
+    CANCELLED: "取消销售",
+  };
+  return labels[actionType] ?? actionType;
 }

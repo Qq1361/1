@@ -177,6 +177,17 @@ M3-B V1 只做基于手动录入销售数据的销售分析和利润看板。报
 
 聚合维度优先使用 `SaleLine.productNameSnapshot + skuSnapshot`，保证历史销售不受后续库存字段修改影响。
 
+#### 已落地的 SKU 口径
+
+1. 页面和 `GET /api/reports/sales/products` 仅查询 `CONFIRMED`、`SETTLED` 销售订单。
+2. 聚合键为 `productNameSnapshot + normalizeSku(skuSnapshot)`；空 SKU 单独显示为“未填写”。
+3. 销售单数按不同 `SaleOrder.id` 计数，已售件数按 `SaleLine` 计数；同一张组合销售单的两件同 SKU 商品只算一张销售单、两件已售。
+4. 成本、利润均读取销售时保存的 `SaleLine.costAmount`、`unitCostSnapshot`、`profitAmount`，不读取当前库存成本，也不重算费用或利润。
+5. 只有组内每一条 `SaleLine.saleAmount` 都大于零时，才展示 SKU 行级成交价、平均单件成交价和毛利率；任一行缺失可靠行级成交价时，上述字段显示“暂无可靠行级成交金额”。
+6. `actualReceivedAmount` 是订单级金额。组合销售尚无可靠 SKU 分摊口径，因此 SKU 分析页不展示 SKU 实际到账，也不以任何比例自行分摊。
+7. 每行可精确跳转销售明细（商品快照 + 标准化 SKU）及当前库存筛选；销售快照不因后续库存 SKU 修正而回写。
+8. 页面与 API 均为只读，不写入 `InventoryItem`、不写入 `SOLD`，不调用销售或寄送状态机。
+
 ## 六、未到账提醒规则
 
 M3-B V1 只设计，不实现提醒。
@@ -229,6 +240,8 @@ M3-B V1 只设计，不实现提醒。
 14. `DRAFT / CANCELLED` 销售历史不影响商品利润排行。
 15. 同一库存多次取消销售历史不重复统计。
 16. 平台寄送状态 `PLATFORM_LISTED` 不会被报表当成已售。
+17. 商品 / SKU 分析按标准化 SKU 合并，并且不把订单级实际到账自动分摊到 SKU。
+18. 缺失可靠 `SaleLine.saleAmount` 的商品组不展示伪造的 SKU 成交价或毛利率。
 
 ## 九、实现边界
 
@@ -256,3 +269,9 @@ M3-B V1 实现时应遵守：
 6. 实现 `/reports/sales/products` 商品利润分析页。
 7. 回归 `verify:m1 / verify:m2a / verify:m2b / verify:m30 / verify:m3a / verify:m3b`。
 
+## 十一、M3-D2-5 售后净口径与可视化（已完成）
+
+- 总览新增原实际到账、累计销售退款、净到账、原利润、恢复库存成本与售后净利润；原口径与净口径并列展示。
+- 销售事实使用既有报表日期，退款趋势按 `refundedAt` 归属，不回填销售日期。
+- 平台金额按 `SaleOrder.id` 去重，退款按 `SaleRefundRecord.id` 去重；SKU 退款只读显式 `SaleRefundAllocation`，不分摊订单实际到账。
+- `/reports/sales` 使用 Recharts 展示趋势、平台、SKU Top 10、售后单状态与退货验货结果。图表复用只读 API 聚合并与 URL 筛选同步。

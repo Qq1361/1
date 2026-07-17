@@ -3,13 +3,16 @@ import { db } from "../src/server/db.ts";
 import { salesService } from "../src/server/sales/sales-service.ts";
 import { calculateSaleProfit } from "../src/server/sales/calculateSaleProfit.ts";
 import { Prisma } from "../src/generated/prisma/client.ts";
+import { ACCESS_COOKIE_NAME, createAccessToken } from "../src/lib/access-protection.ts";
 
 const baseUrl = process.env.APP_BASE_URL ?? "http://127.0.0.1:3000";
 let orderId, apiOrderId, saleOrderId, draftTraceSaleId, listedSaleId;
+const createdSaleOrderIds = new Set();
+const accessCookie = process.env.APP_PASSWORD ? `${ACCESS_COOKIE_NAME}=${await createAccessToken(process.env.APP_PASSWORD)}` : null;
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
 async function request(path, options = {}) {
-  const res = await fetch(`${baseUrl}${path}`, options);
+  const res = await fetch(`${baseUrl}${path}`, { ...options, headers: { ...(options.headers ?? {}), ...(accessCookie ? { Cookie: accessCookie } : {}) } });
   const body = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) throw new Error(`${options.method ?? "GET"} ${path} failed (${res.status}): ${JSON.stringify(body)}`);
   return body;
@@ -59,6 +62,7 @@ try {
     feeLines: [{ feeType: "PLATFORM_COMMISSION", amount: "30.00" }],
   });
   saleOrderId = sale.id;
+  createdSaleOrderIds.add(sale.id);
   assert(sale.status === "DRAFT", "DRAFT status");
   assert(sale.lines.length === 1, "1 line");
   assert(sale.feeLines.length === 1, "1 fee");
@@ -71,6 +75,7 @@ try {
     platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "100.00",
     items: [{ inventoryItemId: invA.id }],
   });
+  createdSaleOrderIds.add(sale2.id);
   await salesService.cancel("default-user", sale2.id);
   assert((await db.inventoryItem.findUnique({ where: { id: invA.id } })).itemStatus === "STOCKED", "DRAFT cancel does not affect inv");
 
@@ -136,6 +141,7 @@ try {
     platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "150.00",
     items: [{ inventoryItemId: invB.id }],
   });
+  createdSaleOrderIds.add(s4.id);
   await salesService.confirm("default-user", s4.id);
   assert((await db.inventoryItem.findUnique({ where: { id: invB.id } })).itemStatus === "SOLD", "confirm→SOLD for cancel test");
 
@@ -150,6 +156,7 @@ try {
     platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "88.00",
     items: [{ inventoryItemId: invB.id }],
   })).id;
+  createdSaleOrderIds.add(draftTraceSaleId);
   const purchaseTraceWithDraft = await request(`/api/purchase-orders/${orderId}`);
   const invBTraceDraft = purchaseTraceWithDraft.items.flatMap((item) => item.inventoryItems ?? []).find((item) => item.id === invB.id);
   assert(invBTraceDraft.saleLines.some((line) => line.saleOrder.status === "DRAFT"), "purchase trace should expose draft history");
@@ -163,6 +170,7 @@ try {
     items: [{ inventoryItemId: invB.id }],
   });
   listedSaleId = listedDraft.id;
+  createdSaleOrderIds.add(listedSaleId);
   await salesService.confirm("default-user", listedDraft.id);
   assert((await db.inventoryItem.findUnique({ where: { id: invB.id } })).itemStatus === "SOLD", "PLATFORM_LISTED confirm -> SOLD");
   await salesService.cancel("default-user", listedDraft.id);
@@ -189,6 +197,7 @@ try {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ platform: "DEWU", soldAt: new Date().toISOString(), grossAmount: "200.00", shippingCost: "0", otherCost: "0", items: [{ inventoryItemId: apiInv.id }] }),
   });
+  createdSaleOrderIds.add(apiSale.id);
   assert(apiSale.status === "DRAFT", "API create draft");
   assert((await db.inventoryItem.findUnique({ where: { id: apiInv.id } })).itemStatus !== "SOLD", "API draft not SOLD");
 
@@ -198,7 +207,7 @@ try {
   assert((await db.inventoryItem.findUnique({ where: { id: apiInv.id } })).itemStatus === "SOLD", "API confirm→SOLD");
 
   // duplicate confirm blocked
-  const apiDupRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/confirm`, { method: "POST" });
+  const apiDupRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/confirm`, { method: "POST", headers: accessCookie ? { Cookie: accessCookie } : {} });
   await apiDupRes.json();
   assert(!apiDupRes.ok, "API duplicate confirm blocked");
 
@@ -207,7 +216,7 @@ try {
   assert(apiS.status === "SETTLED", "API settle");
 
   // SETTLED cannot cancel via API
-  const apiCancelErrRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/cancel`, { method: "POST" });
+  const apiCancelErrRes = await fetch(`${baseUrl}/api/sales/${apiSale.id}/cancel`, { method: "POST", headers: accessCookie ? { Cookie: accessCookie } : {} });
   await apiCancelErrRes.json();
   assert(!apiCancelErrRes.ok, "API SETTLED cancel blocked");
 
@@ -251,26 +260,17 @@ try {
   ] }, null, 2));
 
 } finally {
-  if (listedSaleId) {
-    await db.saleLine.deleteMany({ where: { saleOrderId: listedSaleId } }).catch(() => {});
-    await db.saleFeeLine.deleteMany({ where: { saleOrderId: listedSaleId } }).catch(() => {});
-    await db.saleActionLog.deleteMany({ where: { saleOrderId: listedSaleId } }).catch(() => {});
-    await db.saleOrder.deleteMany({ where: { id: listedSaleId } }).catch(() => {});
+  try {
+    const saleIds = [...createdSaleOrderIds];
+    if (saleIds.length) {
+      await db.saleActionLog.deleteMany({ where: { saleOrderId: { in: saleIds } } });
+      await db.saleFeeLine.deleteMany({ where: { saleOrderId: { in: saleIds } } });
+      await db.saleLine.deleteMany({ where: { saleOrderId: { in: saleIds } } });
+      await db.saleOrder.deleteMany({ where: { id: { in: saleIds } } });
+    }
+    if (apiOrderId) await db.purchaseOrder.delete({ where: { id: apiOrderId } });
+    if (orderId) await db.purchaseOrder.delete({ where: { id: orderId } });
+  } finally {
+    await db.$disconnect();
   }
-  if (draftTraceSaleId) {
-    await db.saleLine.deleteMany({ where: { saleOrderId: draftTraceSaleId } }).catch(() => {});
-    await db.saleFeeLine.deleteMany({ where: { saleOrderId: draftTraceSaleId } }).catch(() => {});
-    await db.saleActionLog.deleteMany({ where: { saleOrderId: draftTraceSaleId } }).catch(() => {});
-    await db.saleOrder.deleteMany({ where: { id: draftTraceSaleId } }).catch(() => {});
-  }
-  if (saleOrderId) {
-    await db.saleLine.deleteMany({ where: { saleOrderId } }).catch(() => {});
-    await db.saleFeeLine.deleteMany({ where: { saleOrderId } }).catch(() => {});
-    await db.saleActionLog.deleteMany({ where: { saleOrderId } }).catch(() => {});
-    await db.saleOrder.deleteMany({ where: { id: saleOrderId } }).catch(() => {});
-  }
-  await db.saleOrder.deleteMany({ where: { ownerId: "default-user", status: "DRAFT" } }).catch(() => {});
-  if (apiOrderId) await db.purchaseOrder.deleteMany({ where: { id: apiOrderId } }).catch(() => {});
-  if (orderId) await db.purchaseOrder.deleteMany({ where: { id: orderId } }).catch(() => {});
-  await db.$disconnect();
 }

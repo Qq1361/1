@@ -1,6 +1,8 @@
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
+import { isLegacyInventoryItemStatus, LEGACY_INVENTORY_STATUS_MESSAGE } from "@/lib/inventory-item-status-contract";
 import { ServiceError } from "@/server/errors";
+import { platformReturnInspectionService } from "@/server/platform-return-inspection/platform-return-inspection-service";
 
 const purposeSaleMode: Record<string, string> = {
   DEWU_LIGHTNING_INBOUND: "DEWU_LIGHTNING",
@@ -30,6 +32,18 @@ function computeBatchStatus(statuses: string[]): string {
   const terminal = new Set(["LISTED", "RETURNED", "REJECTED", "SOLD", "CANCELLED"]);
   if (statuses.every(s => terminal.has(s))) return "COMPLETED";
   return "SHIPPED";
+}
+
+function assertNoLegacyShipmentInventory(item: { itemStatus: string; inventoryCode?: string } | null | undefined) {
+  if (item && isLegacyInventoryItemStatus(item.itemStatus)) {
+    throw new ServiceError("LEGACY_INVENTORY_STATUS", LEGACY_INVENTORY_STATUS_MESSAGE, 409);
+  }
+}
+
+function assertOwnedShipmentInventory(item: { ownershipStatus: string; inventoryCode?: string } | null | undefined) {
+  if (!item || item.ownershipStatus !== "OWNED") {
+    throw new ServiceError("INVENTORY_NOT_OWNED", "非自有库存不能进入平台寄送流程。", 409);
+  }
 }
 
 async function logAction(
@@ -89,6 +103,7 @@ export class ShipmentService {
           include: {
             inventoryItem: { select: { id: true, inventoryCode: true, name: true, skuText: true, unitCost: true, expiryDate: true, itemStatus: true, saleMode: true, storageLocation: true, purchaseOrderItem: { select: { purchaseOrder: { select: { id: true, orderNo: true } } } } } },
             group: true,
+            returnInspection: { select: { result: true, storageLocation: true, problemReason: true, note: true, inspectedAt: true } },
           },
         },
         attachments: { orderBy: { createdAt: "desc" } },
@@ -117,6 +132,10 @@ export class ShipmentService {
     });
     if (items.length !== input.itemIds.length) throw new ServiceError("ITEMS_NOT_FOUND", "部分库存不存在。", 404);
     for (const item of items) {
+      assertOwnedShipmentInventory(item);
+      if (isLegacyInventoryItemStatus(item.itemStatus)) {
+        throw new ServiceError("LEGACY_INVENTORY_STATUS", LEGACY_INVENTORY_STATUS_MESSAGE, 409);
+      }
       if (item.itemStatus !== "STOCKED")
         throw new ServiceError("ITEM_NOT_AVAILABLE", `库存 ${item.inventoryCode} 状态为 ${item.itemStatus}，不能加入寄送批次。`, 409);
       if (item.shipmentLines.length > 0)
@@ -197,6 +216,10 @@ export class ShipmentService {
     if (uncheckedLines.length > 0) {
       throw new ServiceError("PACKING_NOT_CHECKED", `还有 ${uncheckedLines.length} 件库存未核对装箱。`, 422);
     }
+    batch.lines.forEach((line) => {
+      assertNoLegacyShipmentInventory(line.inventoryItem);
+      assertOwnedShipmentInventory(line.inventoryItem);
+    });
 
     await db.$transaction(async (tx) => {
       const now = new Date();
@@ -233,6 +256,7 @@ export class ShipmentService {
   async markReceived(ownerId: string, id: string) {
     const batch = await this.get(ownerId, id);
     if (batch.status === "CANCELLED") throw new ServiceError("BATCH_CANCELLED", "已取消的批次不能签收。", 409);
+    batch.lines.forEach((line) => assertNoLegacyShipmentInventory(line.inventoryItem));
     await db.$transaction(async (tx) => {
       await tx.platformShipmentBatch.update({ where: { id }, data: { status: "RECEIVED", receivedAt: new Date() } });
       for (const line of batch.lines) {
@@ -254,6 +278,7 @@ export class ShipmentService {
   async cancel(ownerId: string, id: string) {
     const batch = await this.get(ownerId, id);
     if (!["DRAFT", "SHIPPED"].includes(batch.status)) throw new ServiceError("BATCH_CANNOT_CANCEL", "只有未签收的批次才能取消。", 409);
+    batch.lines.forEach((line) => assertNoLegacyShipmentInventory(line.inventoryItem));
     await db.$transaction(async (tx) => {
       await tx.platformShipmentBatch.update({ where: { id }, data: { status: "CANCELLED" } });
       for (const line of batch.lines) {
@@ -276,6 +301,7 @@ export class ShipmentService {
   async updateLine(ownerId: string, lineId: string, input: { lineStatus?: string; packedChecked?: boolean; rejectedReason?: string; returnCarrierCode?: string; returnTrackingNo?: string; returnedStorageLocation?: string; note?: string }) {
     const line = await db.platformShipmentLine.findFirst({ where: { id: lineId, ownerId }, include: { batch: true, inventoryItem: true } });
     if (!line) throw new ServiceError("LINE_NOT_FOUND", "寄送明细不存在。", 404);
+    assertNoLegacyShipmentInventory(line.inventoryItem);
 
     const itemStatusMap: Record<string, string> = {
       RECEIVED: "PLATFORM_RECEIVED", IN_WAREHOUSE: "PLATFORM_IN_WAREHOUSE",
@@ -325,17 +351,19 @@ export class ShipmentService {
     return db.platformShipmentLine.findUniqueOrThrow({ where: { id: lineId }, include: { inventoryItem: true, batch: true } });
   }
 
-  async confirmRestocked(ownerId: string, lineId: string) {
-    const line = await db.platformShipmentLine.findFirst({ where: { id: lineId, ownerId }, include: { batch: true, inventoryItem: true } });
-    if (!line) throw new ServiceError("LINE_NOT_FOUND", "寄送明细不存在。", 404);
-    if (line.lineStatus !== "RETURNED") throw new ServiceError("LINE_NOT_RETURNED", "只有已退回的库存才能重新入库。", 409);
-
-    await db.$transaction(async (tx) => {
-      const storageLoc = line.returnedStorageLocation ?? line.inventoryItem?.storageLocation ?? "";
-      await tx.inventoryItem.update({ where: { id: line.inventoryItemId }, data: { itemStatus: "STOCKED", storageLocation: storageLoc } });
-      await logAction(tx, ownerId, line.batchId, { actionType: "CONFIRMED_RESTOCKED", lineId, inventoryItemId: line.inventoryItemId, oldItemStatus: "RETURNED", newItemStatus: "STOCKED" });
+  async confirmRestocked(
+    ownerId: string,
+    lineId: string,
+    input: { storageLocation?: string; note?: string } = {},
+  ) {
+    const result = await platformReturnInspectionService.inspectReturn({
+      ownerId,
+      shipmentLineId: lineId,
+      result: "RESTOCKED",
+      storageLocation: input.storageLocation,
+      note: input.note,
     });
-    return db.platformShipmentLine.findUniqueOrThrow({ where: { id: lineId }, include: { inventoryItem: true, batch: true } });
+    return result.line;
   }
 
   async removeLineFromDraft(ownerId: string, lineId: string) {
@@ -360,6 +388,7 @@ export class ShipmentService {
     const where: Prisma.InventoryItemWhereInput = {
       ownerId,
       itemStatus: "STOCKED",
+      ownershipStatus: "OWNED",
       // Exclude items with active shipment lines
       shipmentLines: { none: { lineStatus: { in: [...activeLineStatuses] as ("DRAFT" | "SHIPPED" | "RECEIVED" | "IN_WAREHOUSE" | "LISTED")[] } } },
       ...(query ? {

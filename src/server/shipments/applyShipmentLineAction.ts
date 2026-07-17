@@ -4,6 +4,8 @@ import {
   getAction, canTransition, computeBatchStatus, LINE_TO_INVENTORY_STATUS,
   type ShipmentLineActionKey,
 } from "@/lib/shipment-status-machine";
+import { isLegacyInventoryItemStatus, LEGACY_INVENTORY_STATUS_MESSAGE } from "@/lib/inventory-item-status-contract";
+import { platformReturnInspectionService } from "@/server/platform-return-inspection/platform-return-inspection-service";
 
 export async function applyShipmentLineAction(
   ownerId: string,
@@ -11,6 +13,18 @@ export async function applyShipmentLineAction(
   actionKey: ShipmentLineActionKey,
   input?: Record<string, string>,
 ) {
+  // Platform-return restocking is deliberately outside the M3-0 state machine.
+  // It must create a return inspection and its dedicated audit log atomically.
+  if (actionKey === "confirmRestocked") {
+    return platformReturnInspectionService.inspectReturn({
+      ownerId,
+      shipmentLineId: lineId,
+      result: "RESTOCKED",
+      storageLocation: input?.storageLocation,
+      note: input?.note,
+    });
+  }
+
   const action = getAction(actionKey);
   if (!action) throw new ServiceError("INVALID_ACTION", `未知操作：${actionKey}。`, 400);
 
@@ -19,6 +33,9 @@ export async function applyShipmentLineAction(
     include: { batch: true, group: true, inventoryItem: true },
   });
   if (!line) throw new ServiceError("LINE_NOT_FOUND", "寄送明细不存在。", 404);
+  if (!line.inventoryItem || line.inventoryItem.ownershipStatus !== "OWNED") {
+    throw new ServiceError("INVENTORY_NOT_OWNED", "非自有库存不能执行平台寄送操作。", 409);
+  }
 
   // Validate current state
   if (!action.allowedFrom.includes(line.lineStatus)) {
@@ -29,15 +46,12 @@ export async function applyShipmentLineAction(
     );
   }
 
-  // For state-changing actions (not confirmRestocked which is special)
-  if (actionKey !== "confirmRestocked") {
-    if (!canTransition(line.lineStatus, action.nextLineStatus)) {
-      throw new ServiceError(
-        "INVALID_TRANSITION",
-        `不允许从 ${line.lineStatus} 转换到 ${action.nextLineStatus}。`,
-        409,
-      );
-    }
+  if (!canTransition(line.lineStatus, action.nextLineStatus)) {
+    throw new ServiceError(
+      "INVALID_TRANSITION",
+      `不允许从 ${line.lineStatus} 转换到 ${action.nextLineStatus}。`,
+      409,
+    );
   }
 
   // Validate required input
@@ -58,33 +72,22 @@ export async function applyShipmentLineAction(
     throw new ServiceError("SOLD_FORBIDDEN", "M3-0 不允许将库存标记为已售出。", 403);
   }
 
-  // Guard: inventory must not be SOLD/PROBLEM/REMOVED for shipment actions
-  if (line.inventoryItem && ["SOLD", "PROBLEM", "REMOVED"].includes(line.inventoryItem.itemStatus)) {
+  // Guard: inventory must not be SOLD or PROBLEM for shipment actions.
+  if (line.inventoryItem && ["SOLD", "PROBLEM"].includes(line.inventoryItem.itemStatus)) {
     throw new ServiceError(
       "ITEM_STATUS_BLOCKED",
       `库存 ${line.inventoryCodeSnapshot} 状态为 ${line.inventoryItem.itemStatus}，不能执行寄送操作。`,
       409,
     );
   }
+  if (line.inventoryItem && isLegacyInventoryItemStatus(line.inventoryItem.itemStatus)) {
+    throw new ServiceError("LEGACY_INVENTORY_STATUS", LEGACY_INVENTORY_STATUS_MESSAGE, 409);
+  }
 
   const purpose = line.group?.purpose ?? line.batch.defaultPurpose;
   const result = await db.$transaction(async (tx) => {
     const now = new Date();
     const lineData: Record<string, unknown> = {};
-
-    if (actionKey === "confirmRestocked") {
-      // Special: keep line RETURNED, restore inventory to STOCKED
-      const newLoc = input?.storageLocation?.trim() || line.returnedStorageLocation || line.inventoryItem?.storageLocation || "";
-      await tx.inventoryItem.update({
-        where: { id: line.inventoryItemId },
-        data: { itemStatus: "STOCKED" as const, storageLocation: newLoc },
-      });
-      await tx.platformShipmentActionLog.create({
-        data: { ownerId, batchId: line.batchId, lineId, inventoryItemId: line.inventoryItemId,
-          actionType: "CONFIRMED_RESTOCKED", oldItemStatus: "RETURNED", newItemStatus: "STOCKED", note: `库位：${newLoc}` },
-      });
-      return { line, batch: line.batch, inventoryItem: await tx.inventoryItem.findUnique({ where: { id: line.inventoryItemId } }) };
-    }
 
     // Normal state transition
     lineData.lineStatus = action.nextLineStatus;

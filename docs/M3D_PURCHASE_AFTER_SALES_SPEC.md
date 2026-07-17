@@ -1,13 +1,19 @@
 # M3-D1 采购售后规格冻结
 
+## 当前实施状态
+
+M3-D1 已完成数据模型、加法 migration、`PurchaseAfterSalesService`、状态机、API、采购售后列表/发起/详情页面，以及采购订单与库存详情追溯。
+
+退款与原始采购事实分离：退款流水不覆盖 `PurchaseOrder.paidTotal`、原始成本分摊、库存成本或 `PurchaseAfterSaleLine.costAmountSnapshot`。订单级真实退款只读汇总 `PurchaseRefundRecord`；行级退款只读汇总 `PurchaseRefundAllocation`。
+
 ## 1. 业务边界
 
 采购售后描述用户从闲鱼上游卖家购入商品后的纠纷与退款：上游卖家向用户退款。它只关联采购对象，不关联 `SaleOrder`、`SaleLine` 或销售退款流水。
 
 支持类型：
 
-- `PURCHASE_REFUND_ONLY`：上游卖家退款，用户保留商品。
-- `PURCHASE_RETURN_AND_REFUND`：用户将商品退回上游卖家，卖家退款。
+- `REFUND_ONLY`：上游卖家退款，用户保留商品。
+- `RETURN_AND_REFUND`：用户将商品退回上游卖家，卖家退款。
 
 支持整单或部分 `PurchaseOrderItem`、一张采购单多次售后、每行独立申请/批准/实际退款、卖家同意或拒绝、退回物流、卖家签收和实际退款。
 
@@ -131,11 +137,14 @@ REQUESTED -> SELLER_REJECTED
 新增派生口径：
 
 ```text
-totalPurchaseRefundedAmount = 已完成 PurchaseRefundRecord.refundAmount 合计
+totalPurchaseRefundedAmount = 该采购订单全部 PurchaseRefundRecord.refundAmount 合计
 netPurchasePaidAmount = paidTotal - totalPurchaseRefundedAmount
+
+allocatedRefundAmount = 该 PurchaseAfterSaleLine 的 PurchaseRefundAllocation.amount 合计
+netCashCost = costAmountSnapshot - allocatedRefundAmount
 ```
 
-组合采购必须由用户手工填写每个 `PurchaseAfterSaleLine` 的退款分配：行级批准/实际退款合计必须等于本次退款总额；不得自动平均或按成本比例分摊。累计完成退款不得超过原 `paidTotal`，并发提交时必须在 serializable transaction 内重新计算，超额返回 409。
+组合采购必须由用户手工填写每个 `PurchaseAfterSaleLine` 的退款分配：行级批准/实际退款合计必须等于本次退款总额；不得自动平均或按成本比例分摊。订单级汇总不得把同一退款记录重复到每条商品。累计完成退款不得超过原 `paidTotal`，并发提交时必须在 serializable transaction 内重新计算，超额返回 409。`netCashCost` 是可为负的只读现金口径，当前不包含退货运费或其他售后费用。
 
 未来报表同时展示原采购成本、采购退款和净采购成本。不同资产结果不得用同一成本公式掩盖：退回上游、仅退款但可售、仅退款仍问题件、部分补偿均分别呈现，不覆盖原快照。
 
@@ -163,3 +172,35 @@ netPurchasePaidAmount = paidTotal - totalPurchaseRefundedAmount
 4. M3-D1-4：采购订单/验货问题件发起与详情页面。
 5. M3-D1-5：退回物流、卖家签收、实际退款。
 6. M3-D1-6：采购成本与报表派生口径。
+
+## M3-D1-2 实施状态
+
+- `PurchaseAfterSalesService` 已成为采购售后所有写操作的唯一入口；采购售后 API 和页面现已完成。
+- DRAFT 不占用库存；REQUESTED 起占用同一件库存，进行中的采购售后不得重复选择该库存。
+- 退款批准和真实退款在 serializable transaction 中锁定采购订单后重读额度。所有退款与分配均使用 Decimal，退款流水与分配不修改 `paidTotal`、原成本快照或库存 `itemStatus`。
+- 仅 `markReturnShipped` 和 `markSellerReceived` 可以变更 `ownershipStatus`；二者始终保持 `itemStatus=PROBLEM`。
+- 非 `OWNED` 库存不进入销售、寄送、提醒和未售 SKU 统计；库存档案仍可只读查看，并以中文资产归属文案显示。
+
+## M3-D1-3 API 和查询 DTO
+
+- 已提供采购售后列表、详情、可发起问题件查询，以及草稿、提交、卖家审核、寄回、退款、完成和取消 API。
+- 所有写入路由只调用 `PurchaseAfterSalesService`；路由不直接写采购订单、库存归属、库存状态或退款流水。
+- 查询 DTO 将金额序列化为 Decimal 字符串、时间序列化为 ISO 字符串或 `null`，并从共享规则返回只读 `availableActions`。
+- 列表与可发起项查询均按当前 owner 隔离并限制分页；草稿不占用问题件，进行中的采购售后才占用。
+- 采购售后输入使用严格 Zod schema。无效结构、金额、枚举和客户端越权字段返回稳定的 400；不存在或跨 owner 返回 404；状态和额度冲突返回 409。
+- 退款 API 对相同 `idempotencyKey` 和相同请求返回原记录（200）；新流水返回 201；不同内容复用同一键返回 409。
+
+## M3-D1-4 页面工作台
+
+- 已增加 `/purchase-after-sales`、`/purchase-after-sales/new` 和 `/purchase-after-sales/[id]`，并在导航、采购订单详情、问题库存详情提供入口。
+- 页面仅通过采购售后 API 读取和写入；`availableActions` 仅控制按钮展示，所有状态与资产归属仍由服务端校验。
+- 草稿可复用发起表单编辑；退款审批和实际退款均要求逐行输入金额，不提供自动分摊。
+- 页面显示原始快照、当前库存状态/资产归属、物流、退款流水与操作日志，但不覆盖原采购实付或成本快照。
+
+## M3-D1-5 最终封板
+
+- 真实浏览器验收已覆盖一笔仅退款和一笔退货退款，均从采购订单入口创建，并验证页面刷新后的状态、退款流水、资产归属和跨页数据一致性。
+- `REFUND_ONLY` 完成后库存保持 `OWNED + PROBLEM`；`RETURN_AND_REFUND` 在寄回时变为 `RETURNING_TO_UPSTREAM_SELLER`，卖家签收后变为 `RETURNED_TO_UPSTREAM_SELLER`，并保持 `PROBLEM` 作为历史质量状态。
+- 采购订单详情显示原采购实付、累计采购退款、净采购实付、全部/进行中/完成案件数。库存详情显示关联案件、退款申请/批准/实际分配、成本快照、净现金成本及当前资产归属。
+- 当前已完成的采购退款口径不包含退货运费或其他售后费用；它们没有数据模型，不应被伪造计入净现金成本。
+- 销售售后与平台退回验货均不属于 M3-D1，尚未实施。

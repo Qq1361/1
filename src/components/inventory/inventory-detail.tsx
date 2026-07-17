@@ -4,12 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { formatItemStatus, formatSaleMode, formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform, formatSaleStatus } from "@/lib/status-labels";
+import { formatInventoryOwnershipStatus, formatItemStatus, formatSaleMode, formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform, formatSaleStatus } from "@/lib/status-labels";
+import { isLegacyInventoryItemStatus } from "@/lib/inventory-item-status-contract";
 import { AttachmentUploader } from "@/components/purchases/attachment-uploader";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { InventorySalesAfterSaleTrace } from "@/components/sales-after-sales/sales-after-sales-trace";
 import type { AttachmentDto } from "@/types/purchase";
 
 const locationStatusLabels: Record<string, string> = {
@@ -31,6 +36,7 @@ type Detail = {
   storageLocation: string | null;
   saleMode: string;
   itemStatus: string;
+  ownershipStatus: string;
   inspectionId: string;
   inspection: {
     sequence: number;
@@ -54,12 +60,26 @@ type Detail = {
   attachments: AttachmentDto[];
   shipmentLines?: ShipmentLineInfo[];
   saleLines?: SaleLineInfo[];
+  purchaseAfterSales?: PurchaseAfterSaleInfo[];
 };
+
+interface PurchaseAfterSaleInfo {
+  id: string;
+  afterSaleCase: { id: string; caseNo: string; type: string; status: string; purchaseOrderId: string };
+  requestedRefundAmount: string;
+  approvedRefundAmount: string | null;
+  allocatedRefundAmount: string;
+  costAmountSnapshot: string;
+  netCashCost: string;
+  returnRequired: boolean;
+  returnedToSeller: boolean;
+}
 
 interface ShipmentLineInfo {
   id: string; lineStatus: string; inventoryCodeSnapshot: string;
   rejectedReason: string | null; returnCarrierCode: string | null;
   returnTrackingNo: string | null; returnedAt: string | null; returnedStorageLocation: string | null;
+  returnInspection?: { result: string; storageLocation: string | null; problemReason: string | null; note: string | null; inspectedAt: string | null; updatedAt: string | null } | null;
   batch: { id: string; batchNo: string; platform: string; defaultPurpose: string; status: string; carrierCode: string | null; trackingNo: string | null; shippedAt: string | null; receivedAt: string | null; };
   group: { groupName: string | null; platformOrderNo: string | null; } | null;
 }
@@ -96,11 +116,31 @@ function value(value: unknown) {
 
 export function InventoryDetail({ id }: { id: string }) {
   const [item, setItem] = useState<Detail | null>(null);
+  const [skuDialogOpen, setSkuDialogOpen] = useState(false);
+  const [skuText, setSkuText] = useState("");
+  const [savingSku, setSavingSku] = useState(false);
   useEffect(() => {
     fetch(`/api/inventory/${id}`).then((response) => response.json()).then(setItem);
   }, [id]);
 
   if (!item) return <Skeleton className="h-[30rem]" />;
+  const isLegacyStatus = isLegacyInventoryItemStatus(item.itemStatus);
+  async function saveSku() {
+    setSavingSku(true);
+    try {
+      const response = await fetch(`/api/inventory/${id}/sku`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skuText }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) { toast.error(body?.message ?? "SKU 保存失败。"); return; }
+      setItem((current) => current ? { ...current, skuText: body.skuText } : current);
+      setSkuDialogOpen(false);
+      toast.success("SKU / 色号已更新。");
+    } catch { toast.error("网络异常，SKU 未保存。"); }
+    finally { setSavingSku(false); }
+  }
   const fields: [string, unknown][] = [
     ["是否有盒", item.inspection.hasBox],
     ["是否全新", item.inspection.isNew],
@@ -134,16 +174,25 @@ export function InventoryDetail({ id }: { id: string }) {
           {formatItemStatus(item.itemStatus)}
         </Badge>
       </div>
+      {isLegacyStatus ? <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">旧库存状态：已废弃，请迁移数据</p> : null}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="rounded-lg shadow-none">
           <CardHeader><CardTitle className="text-base">库存信息</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">SKU / 色号</p>
+              <div className="mt-1 flex items-center gap-2">
+                <p className="break-words">{item.skuText || "未填写"}</p>
+                {!isLegacyStatus ? <button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} onClick={() => { setSkuText(item.skuText ?? ""); setSkuDialogOpen(true); }}>修改</button> : null}
+              </div>
+            </div>
             <Info label="单件成本" text={`¥${item.unitCost}`} />
             <Info label="入库时间" text={new Date(item.stockedAt).toLocaleString("zh-CN")} />
             <Info label="效期" text={item.expiryDate ? new Date(item.expiryDate).toLocaleDateString("zh-CN") : "未填写"} />
             <Info label="位置大类" text={locationStatusLabels[item.locationStatus] ?? item.locationStatus} />
+            <Info label="资产归属" text={formatInventoryOwnershipStatus(item.ownershipStatus)} />
             <Info label="具体库位" text={item.storageLocation || "未填写"} />
-            <SaleModeField itemId={id} currentMode={item.saleMode} onUpdate={(mode) => setItem({ ...item, saleMode: mode })} />
+            {isLegacyStatus || item.ownershipStatus !== "OWNED" ? <Info label="出售方式" text={formatSaleMode(item.saleMode)} /> : <SaleModeField itemId={id} currentMode={item.saleMode} onUpdate={(mode) => setItem({ ...item, saleMode: mode })} />}
             <Info label="验货结果" text={item.inspection.result} />
           </CardContent>
         </Card>
@@ -161,9 +210,15 @@ export function InventoryDetail({ id }: { id: string }) {
             <Link href={`/purchases/${item.purchaseOrderItem.purchaseOrder.id}?returnTo=/inventory/${item.id}`} className={buttonVariants({ variant: "outline" })}>
               查看采购订单
             </Link>
+            {item.itemStatus === "PROBLEM" && item.ownershipStatus === "OWNED" ? (
+              <Link href={`/purchase-after-sales/new?purchaseOrderId=${item.purchaseOrderItem.purchaseOrder.id}&inventoryItemId=${item.id}&inspectionId=${item.inspectionId}`} className={buttonVariants({ variant: "outline" })}>
+                发起采购售后
+              </Link>
+            ) : null}
           </CardContent>
         </Card>
       </div>
+      <PurchaseAfterSalesCard item={item} />
       <Card className="rounded-lg shadow-none">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">验货记录</CardTitle>
@@ -183,12 +238,62 @@ export function InventoryDetail({ id }: { id: string }) {
       </Card>
       <ShipmentTraceCard item={item} />
       <SalesTraceCard item={item} />
+      <InventorySalesAfterSaleTrace inventoryItemId={item.id} itemStatus={item.itemStatus} ownershipStatus={item.ownershipStatus} saleLines={item.saleLines ?? []} />
       <AttachmentUploader
         entityType="INSPECTION"
         entityId={item.inspectionId}
         initialAttachments={item.attachments}
       />
+      <Dialog open={skuDialogOpen} onOpenChange={setSkuDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>修改 SKU / 色号</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{item.name} · {item.inventoryCode}</p>
+            {item.itemStatus === "SOLD" ? <p className="rounded-md bg-amber-50 p-2 text-xs text-amber-800">本次仅修正库存档案 SKU，不会修改已确认销售的 SKU 快照或历史报表。</p> : null}
+            <div className="space-y-2"><Label htmlFor="skuText">新 SKU / 色号</Label><Input id="skuText" value={skuText} onChange={(event) => setSkuText(event.target.value)} placeholder="例如 2C0、1W1" /></div>
+          </div>
+          <DialogFooter>
+            <button type="button" className={buttonVariants({ variant: "outline" })} disabled={savingSku} onClick={() => setSkuDialogOpen(false)}>取消</button>
+            <button type="button" className={buttonVariants()} disabled={savingSku} onClick={saveSku}>{savingSku ? "保存中..." : "保存"}</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function PurchaseAfterSalesCard({ item }: { item: Detail }) {
+  const lines = item.purchaseAfterSales ?? [];
+  if (!lines.length) return null;
+
+  const statusLabels: Record<string, string> = {
+    DRAFT: "草稿", REQUESTED: "已申请", SELLER_APPROVED: "卖家已同意", SELLER_REJECTED: "卖家已拒绝",
+    RETURN_PENDING: "待寄回卖家", RETURNING_TO_SELLER: "退回卖家途中", SELLER_RECEIVED: "卖家已签收",
+    REFUND_PENDING: "待退款", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款", COMPLETED: "已完成", CANCELLED: "已取消",
+  };
+  const typeLabels: Record<string, string> = { REFUND_ONLY: "仅退款", RETURN_AND_REFUND: "退货退款" };
+
+  return (
+    <Card className="rounded-lg shadow-none" data-testid="inventory-purchase-after-sales-summary">
+      <CardHeader><CardTitle className="text-base">采购售后摘要</CardTitle></CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        {lines.map((line) => (
+          <div key={line.id} className="grid gap-3 rounded-md border p-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="font-medium">{line.afterSaleCase.caseNo}</p>
+              <p className="text-xs text-muted-foreground">{typeLabels[line.afterSaleCase.type] ?? line.afterSaleCase.type} · {statusLabels[line.afterSaleCase.status] ?? line.afterSaleCase.status}</p>
+            </div>
+            <Info label="申请 / 批准退款" text={`${money(line.requestedRefundAmount)} / ${money(line.approvedRefundAmount)}`} />
+            <Info label="已分配实际退款" text={money(line.allocatedRefundAmount)} />
+            <Info label="原成本快照 / 净现金成本" text={`${money(line.costAmountSnapshot)} / ${money(line.netCashCost)}`} />
+            <Link href={`/purchase-after-sales/${line.afterSaleCase.id}`} className={buttonVariants({ variant: "outline", size: "sm", className: "w-fit" })}>
+              查看采购售后
+            </Link>
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground">净现金成本仅扣减已登记采购退款，不包含退货运费或其他售后费用。</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -293,12 +398,8 @@ function SalesTraceCard({ item }: { item: Detail }) {
 }
 
 function ShipmentTraceCard({ item }: { item: { id: string; itemStatus: string; shipmentLines?: ShipmentLineInfo[] } }) {
-  // Find active line (not RETURNED/CANCELLED) or latest
   const lines = item.shipmentLines || [];
-  const activeLine = lines.find(l => !["RETURNED", "CANCELLED", "SOLD"].includes(l.lineStatus));
-  const latestLine = activeLine || lines[0];
-
-  if (!latestLine) {
+  if (!lines.length) {
     return (
       <Card className="rounded-lg shadow-none">
         <CardHeader><CardTitle className="text-base">平台寄送追溯</CardTitle></CardHeader>
@@ -307,38 +408,18 @@ function ShipmentTraceCard({ item }: { item: { id: string; itemStatus: string; s
     );
   }
 
-  const b = latestLine.batch;
-  const g = latestLine.group;
-  const isHistorical = !activeLine && !!latestLine;
-
   return (
     <Card className="rounded-lg shadow-none">
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-base">
-          平台寄送追溯{isHistorical ? "（历史记录）" : ""}
-        </CardTitle>
-        <Link href={`/shipments/${b.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-          查看寄送批次
-        </Link>
-      </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3 text-sm">
-        <Info label="所属寄送批次" text={b.batchNo} />
-        <Info label="平台" text={formatPlatform(b.platform)} />
-        <Info label="寄送目的" text={formatPurpose(b.defaultPurpose)} />
-        <Info label="批次状态" text={formatBatchStatus(b.status)} />
-        <Info label="单件寄送状态" text={formatLineStatus(latestLine.lineStatus)} />
-        <Info label="当前库存状态" text={formatItemStatus(item.itemStatus)} />
-        <Info label="快递公司" text={b.carrierCode || "未填写"} />
-        <Info label="快递单号" text={b.trackingNo || "未填写"} />
-        <Info label="发货时间" text={b.shippedAt ? new Date(b.shippedAt).toLocaleString("zh-CN") : "未填写"} />
-        <Info label="签收时间" text={b.receivedAt ? new Date(b.receivedAt).toLocaleString("zh-CN") : "未签收"} />
-        {g?.platformOrderNo ? <Info label="平台订单号" text={g.platformOrderNo} /> : null}
-        {g?.groupName ? <Info label="平台订单组" text={g.groupName} /> : null}
-        {latestLine.rejectedReason ? <Info label="拒收原因" text={latestLine.rejectedReason} /> : null}
-        {latestLine.returnCarrierCode ? <Info label="退回快递公司" text={latestLine.returnCarrierCode} /> : null}
-        {latestLine.returnTrackingNo ? <Info label="退回快递单号" text={latestLine.returnTrackingNo} /> : null}
-        {latestLine.returnedAt ? <Info label="已退回时间" text={new Date(latestLine.returnedAt).toLocaleString("zh-CN")} /> : null}
-        {latestLine.returnedStorageLocation ? <Info label="退回库位" text={latestLine.returnedStorageLocation} /> : null}
+      <CardHeader><CardTitle className="text-base">平台寄送与退回历史</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        {lines.map((line, index) => {
+          const b = line.batch; const g = line.group; const returned = ["RETURNING", "RETURNED"].includes(line.lineStatus);
+          return <div key={line.id} className="rounded-md border p-3 text-sm">
+            <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">第 {lines.length - index} 次平台寄送 · {b.batchNo}</p><p className="mt-1 text-xs text-muted-foreground">{formatPlatform(b.platform)} · {formatPurpose(b.defaultPurpose)} · {formatLineStatus(line.lineStatus)}</p></div><Link href={`/shipments/${b.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>查看寄送批次</Link></div>
+            <div className="mt-3 grid grid-cols-2 gap-3"><Info label="批次状态" text={formatBatchStatus(b.status)} /><Info label="当前库存状态" text={formatItemStatus(item.itemStatus)} /><Info label="退回物流" text={`${line.returnCarrierCode || "未填写"} ${line.returnTrackingNo || ""}`.trim()} /><Info label="退回时间" text={line.returnedAt ? new Date(line.returnedAt).toLocaleString("zh-CN") : "未填写"} />{g?.platformOrderNo ? <Info label="平台订单号" text={g.platformOrderNo} /> : null}</div>
+            {returned ? <div className="mt-3 rounded-md bg-muted/30 p-2"><p className="text-xs text-muted-foreground">退回验货结论</p><p className="mt-1">{line.returnInspection ? (line.returnInspection.result === "RESTOCKED" ? "可重新入库" : line.returnInspection.result === "PROBLEM" ? "问题件" : "待进一步判断") : line.lineStatus === "RETURNING" ? "平台退回途中" : "尚未登记平台退回验货"}</p><Link href={`/platform-returns/${line.id}`} className="mt-2 inline-block text-xs underline">查看平台退回详情</Link></div> : null}
+          </div>;
+        })}
       </CardContent>
     </Card>
   );

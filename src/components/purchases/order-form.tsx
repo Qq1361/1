@@ -15,6 +15,7 @@ type FormItem = {
   name: string;
   skuText: string;
   quantity: number;
+  referenceAmount: string;
   notes: string;
   files: File[];
 };
@@ -32,6 +33,7 @@ function newItem(clientId = createItemClientId()): FormItem {
     name: "",
     skuText: "",
     quantity: 1,
+    referenceAmount: "",
     notes: "",
     files: [],
   };
@@ -125,6 +127,7 @@ export function OrderForm() {
             name: item.name,
             skuText: item.skuText,
             quantity: item.quantity,
+            referenceAmount: item.referenceAmount,
             notes: item.notes,
           })),
         }),
@@ -341,6 +344,18 @@ export function OrderForm() {
                     required
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>商品参考成交总额（可选）</Label>
+                <Input
+                  inputMode="decimal"
+                  value={item.referenceAmount}
+                  onChange={(event) =>
+                    updateItem(item.clientId, { referenceAmount: event.target.value })
+                  }
+                  placeholder="未填写"
+                />
+                <p className="text-xs text-muted-foreground">仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。</p>
               </div>
               <div className="space-y-2">
                 <Label>商品备注</Label>

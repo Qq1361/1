@@ -3,6 +3,7 @@ import type {
   PurchaseOrderStatus,
 } from "@/generated/prisma/enums";
 import { db } from "@/server/db";
+import { isLegacyInventoryItemStatus } from "@/lib/inventory-item-status-contract";
 
 export type TodoType =
   | "MISSING_TRACKING"
@@ -15,7 +16,10 @@ export type TodoType =
   | "EXPIRY_UNDER_365"
   | "OVERSTOCKED"
   | "NINETY_FIVE_EXPIRY_UNDER_90"
-  | "NINETY_FIVE_EXPIRY_UNDER_60";
+  | "NINETY_FIVE_EXPIRY_UNDER_60"
+  | "PLATFORM_RETURNING"
+  | "PLATFORM_RETURNED_PENDING_INSPECTION"
+  | "PLATFORM_RETURN_PENDING_DECISION";
 
 export type TodoAction = {
   label: string;
@@ -149,8 +153,23 @@ type InventoryTodoInput = {
   stockedAt: Date;
   itemStatus: string;
   saleMode: string;
+  ownershipStatus?: string;
   storageLocation: string | null;
   purchaseOrderItem: { purchaseOrder: { id: string; orderNo: string } };
+};
+
+type PlatformReturnTodoInput = {
+  id: string;
+  inventoryCode: string;
+  name: string;
+  skuText: string | null;
+  itemStatus: string;
+  purchaseOrderItem: { purchaseOrder: { id: string; orderNo: string } };
+  shipmentLines: Array<{
+    id: string;
+    returnedAt: Date | null;
+    returnInspection: { result: string } | null;
+  }>;
 };
 
 const saleModeLabels: Record<string, string> = {
@@ -179,10 +198,9 @@ function computeInventoryActions(
   itemStatus: string,
   daysRemaining: number,
 ): AvailableAction[] {
-  if (["SOLD", "REMOVED"].includes(itemStatus)) return [];
+  if (itemStatus === "SOLD" || isLegacyInventoryItemStatus(itemStatus)) return [];
 
   const actions: AvailableAction[] = [];
-  const isProblem = itemStatus === "PROBLEM";
   const isNinetyFive = saleMode === "NINETY_FIVE";
   const isDewuLightning = saleMode === "DEWU_LIGHTNING";
   const isDewuStandard = saleMode === "DEWU_STANDARD";
@@ -230,11 +248,6 @@ function computeInventoryActions(
         label: "修改效期", actionType: "UPDATED_EXPIRY_DATE",
         changes: {}, writesResolution: false, notePrompt: "请输入新的到期日（YYYY-MM-DD）：",
       });
-      if (!isProblem) actions.push({
-        label: "标记问题件", actionType: "MARKED_PROBLEM",
-        confirmMessage: "确认将该库存标记为问题件吗？",
-        changes: { itemStatus: "PROBLEM" }, writesResolution: false, notePrompt: "请输入问题原因（可选）：",
-      });
       actions.push(snooze);
       break;
 
@@ -258,11 +271,6 @@ function computeInventoryActions(
       actions.push({
         label: "修改效期", actionType: "UPDATED_EXPIRY_DATE",
         changes: {}, writesResolution: false, notePrompt: "请输入新的到期日（YYYY-MM-DD）：",
-      });
-      if (!isProblem) actions.push({
-        label: "标记问题件", actionType: "MARKED_PROBLEM",
-        confirmMessage: "确认将该库存标记为问题件吗？",
-        changes: { itemStatus: "PROBLEM" }, writesResolution: false, notePrompt: "请输入问题原因（可选）：",
       });
       actions.push(snooze);
       break;
@@ -288,11 +296,6 @@ function computeInventoryActions(
         label: "修改效期", actionType: "UPDATED_EXPIRY_DATE",
         changes: {}, writesResolution: false, notePrompt: "请输入新的到期日（YYYY-MM-DD）：",
       });
-      if (!isProblem) actions.push({
-        label: "标记问题件", actionType: "MARKED_PROBLEM",
-        confirmMessage: "确认将该库存标记为问题件吗？",
-        changes: { itemStatus: "PROBLEM" }, writesResolution: false, notePrompt: "请输入问题原因（可选）：",
-      });
       actions.push(snooze);
       break;
 
@@ -311,11 +314,6 @@ function computeInventoryActions(
       actions.push({
         label: "修改效期", actionType: "UPDATED_EXPIRY_DATE",
         changes: {}, writesResolution: false, notePrompt: "请输入新的到期日（YYYY-MM-DD）：",
-      });
-      if (!isProblem) actions.push({
-        label: "标记问题件", actionType: "MARKED_PROBLEM",
-        confirmMessage: "确认将该库存标记为问题件吗？",
-        changes: { itemStatus: "PROBLEM" }, writesResolution: false, notePrompt: "请输入问题原因（可选）：",
       });
       actions.push(snooze);
       break;
@@ -337,11 +335,6 @@ function computeInventoryActions(
         label: "修改效期", actionType: "UPDATED_EXPIRY_DATE",
         changes: {}, writesResolution: false, notePrompt: "请输入新的到期日（YYYY-MM-DD）：",
       });
-      if (!isProblem) actions.push({
-        label: "标记问题件", actionType: "MARKED_PROBLEM",
-        confirmMessage: "确认将该库存标记为问题件吗？",
-        changes: { itemStatus: "PROBLEM" }, writesResolution: false, notePrompt: "请输入问题原因（可选）：",
-      });
       actions.push(snooze);
       break;
 
@@ -355,11 +348,6 @@ function computeInventoryActions(
       actions.push({
         label: "修改效期", actionType: "UPDATED_EXPIRY_DATE",
         changes: {}, writesResolution: false, notePrompt: "请输入新的到期日（YYYY-MM-DD）：",
-      });
-      if (!isProblem) actions.push({
-        label: "标记问题件", actionType: "MARKED_PROBLEM",
-        confirmMessage: "确认将该库存标记为问题件吗？",
-        changes: { itemStatus: "PROBLEM" }, writesResolution: false, notePrompt: "请输入问题原因（可选）：",
       });
       actions.push(snooze);
       break;
@@ -376,11 +364,12 @@ function computeInventoryActions(
  *  type for a given inventory item, or null if no reminder applies.
  *  Used by both /api/todos and /api/inventory?reminder=xxx to stay in sync. */
 export function getReminderType(
-  item: { saleMode: string; itemStatus: string; expiryDate: Date | null; stockedAt: Date },
+  item: { saleMode: string; itemStatus: string; expiryDate: Date | null; stockedAt: Date; ownershipStatus?: string },
   now = new Date(),
 ): TodoType | "OVERSTOCKED" | null {
+  if (item.ownershipStatus && item.ownershipStatus !== "OWNED") return null;
   // PROBLEM items don't get reminders
-  if (["PROBLEM", "SOLD", "REMOVED", "RETURNING", "RETURNED"].includes(item.itemStatus)) return null;
+  if (isLegacyInventoryItemStatus(item.itemStatus) || ["PROBLEM", "SOLD", "RETURNING", "RETURNED"].includes(item.itemStatus)) return null;
 
   // Overstock check (applies to all sale modes)
   if (item.stockedAt.getTime() <= now.getTime() - 72 * 60 * 60 * 1000) {
@@ -413,6 +402,7 @@ export function calculateInventoryTodos(
 ) {
   const todos: TodoItem[] = [];
   for (const item of items) {
+    if (item.ownershipStatus && item.ownershipStatus !== "OWNED") continue;
     if (item.itemStatus !== "STOCKED") continue;
     const order = item.purchaseOrderItem.purchaseOrder;
     const base = {
@@ -470,9 +460,58 @@ export function calculateInventoryTodos(
   return todos;
 }
 
+export function calculatePlatformReturnTodos(items: PlatformReturnTodoInput[], now = new Date()) {
+  const todos: TodoItem[] = [];
+  for (const item of items) {
+    const order = item.purchaseOrderItem.purchaseOrder;
+    const base = {
+      orderId: order.id,
+      orderNo: order.orderNo,
+      inventoryId: item.id,
+    };
+    if (item.itemStatus === "RETURNING") {
+      todos.push({
+        ...base,
+        id: `platform-returning:${item.id}`,
+        type: "PLATFORM_RETURNING",
+        severity: "warning",
+        title: "平台退回途中",
+        description: `${item.inventoryCode} ${item.name}${item.skuText ? ` / ${item.skuText}` : ""} 正在从平台退回。`,
+        occurredAt: now.toISOString(),
+        reasonKey: `PLATFORM_RETURNING:${item.id}`,
+        primaryAction: { label: "查看平台退回", href: "/platform-returns?category=RETURNING" },
+      });
+      continue;
+    }
+    if (item.itemStatus !== "RETURNED") continue;
+
+    const currentLine = item.shipmentLines[0] ?? null;
+    const currentResult = currentLine?.returnInspection?.result ?? null;
+    if (currentResult && currentResult !== "PENDING_DECISION") continue;
+    const pendingDecision = currentResult === "PENDING_DECISION";
+    todos.push({
+      ...base,
+      id: `platform-returned-inspection:${item.id}`,
+      type: pendingDecision ? "PLATFORM_RETURN_PENDING_DECISION" : "PLATFORM_RETURNED_PENDING_INSPECTION",
+      severity: pendingDecision ? "warning" : "info",
+      title: pendingDecision ? "平台退回待进一步判断" : "平台已退回待验货",
+      description: `${item.inventoryCode} ${item.name}${pendingDecision ? " 已登记待进一步判断，库存仍保持已退回。" : " 已退回，等待验货结论。"}`,
+      occurredAt: (currentLine?.returnedAt ?? now).toISOString(),
+      reasonKey: `PLATFORM_RETURNED:${item.id}:${currentLine?.id ?? "legacy"}:${currentResult ?? "NONE"}`,
+      primaryAction: {
+        label: "查看平台退回",
+        href: pendingDecision
+          ? "/platform-returns?category=PENDING_DECISION"
+          : "/platform-returns?category=PENDING_INSPECTION",
+      },
+    });
+  }
+  return todos;
+}
+
 export class TodoService {
   async list(ownerId: string) {
-    const [orders, inventory, pendingInspections, reminderStates, todoResolutions] = await db.$transaction([
+    const [orders, inventory, pendingInspections, platformReturnInventory, reminderStates, todoResolutions] = await db.$transaction([
       db.purchaseOrder.findMany({
         where: { ownerId, status: { not: "CANCELLED" } },
         select: {
@@ -487,7 +526,7 @@ export class TodoService {
         },
       }),
       db.inventoryItem.findMany({
-        where: { ownerId, itemStatus: "STOCKED" },
+        where: { ownerId, itemStatus: "STOCKED", ownershipStatus: "OWNED" },
         select: {
           id: true,
           inventoryCode: true,
@@ -497,6 +536,7 @@ export class TodoService {
           stockedAt: true,
           itemStatus: true,
           saleMode: true,
+          ownershipStatus: true,
           storageLocation: true,
           purchaseOrderItem: {
             select: {
@@ -516,6 +556,31 @@ export class TodoService {
               skuText: true,
               quantity: true,
               purchaseOrder: { select: { id: true, orderNo: true } },
+            },
+          },
+        },
+      }),
+      db.inventoryItem.findMany({
+        where: {
+          ownerId,
+          ownershipStatus: "OWNED",
+          itemStatus: { in: ["RETURNING", "RETURNED"] },
+        },
+        select: {
+          id: true,
+          inventoryCode: true,
+          name: true,
+          skuText: true,
+          itemStatus: true,
+          purchaseOrderItem: { select: { purchaseOrder: { select: { id: true, orderNo: true } } } },
+          shipmentLines: {
+            where: { lineStatus: "RETURNED" },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: 1,
+            select: {
+              id: true,
+              returnedAt: true,
+              returnInspection: { select: { result: true } },
             },
           },
         },
@@ -543,8 +608,15 @@ export class TodoService {
       });
     }
     const pendingInspectionCount = pendingInspections.length;
-    const allTodos = [...calculateTodos(orders, pendingInspections), ...calculateInventoryTodos(inventory)]
+    const allTodos = [
+      ...calculateTodos(orders, pendingInspections),
+      ...calculateInventoryTodos(inventory),
+      ...calculatePlatformReturnTodos(platformReturnInventory),
+    ]
       .filter((todo) => {
+        // Platform-return work remains visible until the actual return state changes.
+        // Action logs and generic reminder state must not hide a pending return asset.
+        if (todo.type.startsWith("PLATFORM_RETURN")) return true;
         // Check TodoResolution first — exact match on todoType + reasonKey
         if (resolutionSet.has(`${todo.type}:${todo.reasonKey}`)) return false;
         // Derive entityType and entityId from the todo

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SalesAfterSalesCharts } from "./sales-after-sales-charts";
 
 type Summary = {
   totalOrderCount: number;
@@ -26,6 +28,16 @@ type Summary = {
   averageProfitPerItem: number | null;
   unsettledOrderCount: number;
   overdueUnsettledOrderCount: number;
+  originalProfitTotal: string;
+  totalSalesRefundedAmount: string;
+  netReceivedAmount: string;
+  restockedCostReversal: string;
+  afterSaleNetProfit: string;
+  refundedOrderCount: number;
+  refundOnlyOrderCount: number;
+  returnAndRefundOrderCount: number;
+  restockedItemCount: number;
+  problemReturnedItemCount: number;
 };
 
 type PlatformRow = {
@@ -37,6 +49,11 @@ type PlatformRow = {
   actualReceivedAmountTotal: string;
   profitTotal: string;
   grossMarginRate: number | null;
+  originalProfitTotal: string;
+  totalSalesRefundedAmount: string;
+  netReceivedAmount: string;
+  restockedCostReversal: string;
+  afterSaleNetProfit: string;
 };
 
 type ProductRow = {
@@ -46,8 +63,15 @@ type ProductRow = {
   costTotal: string;
   grossAmountTotal: string;
   expectedIncomeTotal: string;
-  actualReceivedAmountTotal: string;
+  actualReceivedAmountTotal: string | null;
   profitTotal: string;
+  originalProfitTotal: string;
+  refundedAmountTotal: string;
+  restockedCostReversal: string;
+  afterSaleNetProfit: string;
+  refundedItemCount: number;
+  restockedItemCount: number;
+  problemReturnedItemCount: number;
   averageProfitPerItem: number | null;
 };
 
@@ -69,6 +93,9 @@ type ReportData = {
   platformBreakdown: PlatformRow[];
   productBreakdown: ProductRow[];
   unsettledOrders: UnsettledOrder[];
+  trend: { period: string; originalActualReceivedAmount: string; refundedAmount: string; netReceivedAmount: string; originalProfit: string; afterSaleNetProfit: string }[];
+  afterSaleStatusBreakdown: { status: string; count: number }[];
+  returnInspectionBreakdown: { result: string; count: number }[];
 };
 
 const platformParam: Record<string, string> = {
@@ -88,6 +115,11 @@ const settlementParam: Record<string, string> = {
   settled: "SETTLED",
   unsettled: "UNSETTLED",
 };
+
+function uiValueFromParam(values: Record<string, string>, value: string | null) {
+  if (!value) return "all";
+  return Object.entries(values).find(([, queryValue]) => queryValue === value)?.[0] ?? "all";
+}
 
 function formatPlatform(platform: string) {
   const map: Record<string, string> = {
@@ -181,6 +213,13 @@ const metricRows: { key: keyof Summary; label: string; kind?: "money" | "rate" |
   { key: "shippingCostTotal", label: "销售侧运费合计", kind: "money" },
   { key: "otherCostTotal", label: "其他成本合计", kind: "money" },
   { key: "profitTotal", label: "利润合计", kind: "money" },
+  { key: "totalSalesRefundedAmount", label: "累计销售退款", kind: "money" },
+  { key: "netReceivedAmount", label: "净到账", kind: "money" },
+  { key: "restockedCostReversal", label: "恢复库存成本", kind: "money" },
+  { key: "afterSaleNetProfit", label: "售后净利润", kind: "money" },
+  { key: "refundedOrderCount", label: "发生退款订单数", kind: "number" },
+  { key: "restockedItemCount", label: "退货重新入库件数", kind: "number" },
+  { key: "problemReturnedItemCount", label: "退货问题件数", kind: "number" },
   { key: "grossMarginRate", label: "毛利率", kind: "rate" },
   { key: "averageProfitPerItem", label: "平均单件利润", kind: "money" },
   { key: "unsettledOrderCount", label: "未到账订单数", kind: "number" },
@@ -205,12 +244,18 @@ function EmptyRow({ colSpan }: { colSpan: number }) {
 }
 
 export function SalesReportOverview() {
-  const [range, setRange] = useState("all");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
-  const [platform, setPlatform] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [settlementStatus, setSettlementStatus] = useState("all");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [range, setRange] = useState(() => searchParams.get("range") ?? "all");
+  const [customFrom, setCustomFrom] = useState(() => searchParams.get("customFrom") ?? "");
+  const [customTo, setCustomTo] = useState(() => searchParams.get("customTo") ?? "");
+  const [platform, setPlatform] = useState(() => uiValueFromParam(platformParam, searchParams.get("platform")));
+  const [status, setStatus] = useState(() => uiValueFromParam(statusParam, searchParams.get("status")));
+  const [settlementStatus, setSettlementStatus] = useState(() => uiValueFromParam(settlementParam, searchParams.get("settlementStatus")));
+  const [granularity, setGranularity] = useState<"day" | "week" | "month">(() => {
+    const value = searchParams.get("granularity");
+    return value === "week" || value === "month" ? value : "day";
+  });
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -239,6 +284,15 @@ export function SalesReportOverview() {
       if (settlementStatus !== "all") {
         params.set("settlementStatus", settlementParam[settlementStatus]);
       }
+      params.set("granularity", granularity);
+
+      const urlParams = new URLSearchParams(params);
+      urlParams.set("range", range);
+      if (range === "custom") {
+        if (customFrom) urlParams.set("customFrom", customFrom);
+        if (customTo) urlParams.set("customTo", customTo);
+      }
+      router.replace(`/reports/sales?${urlParams.toString()}`, { scroll: false });
 
       const response = await fetch(`/api/reports/sales?${params.toString()}`);
       const body = await response.json().catch(() => null);
@@ -252,7 +306,7 @@ export function SalesReportOverview() {
     } finally {
       setLoading(false);
     }
-  }, [customFrom, customTo, platform, range, settlementStatus, status, validationError]);
+  }, [customFrom, customTo, granularity, platform, range, router, settlementStatus, status, validationError]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -271,16 +325,21 @@ export function SalesReportOverview() {
           报表仅统计已确认销售和已到账销售；平台上架 / 可售不等于已售出。
         </p>
         </div>
-        <Link href="/reports/sales/orders" className={buttonVariants({ variant: "outline" })}>
-          查看销售明细
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/reports/sales/products" className={buttonVariants({ variant: "outline" })}>
+            商品 / SKU 利润分析
+          </Link>
+          <Link href="/reports/sales/orders" className={buttonVariants({ variant: "outline" })}>
+            查看销售明细
+          </Link>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">筛选条件</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-5">
+        <CardContent className="grid gap-3 md:grid-cols-6">
           <label className="space-y-1 text-sm">
             <span className="text-muted-foreground">时间范围</span>
             <select className="h-9 w-full rounded-lg border bg-background px-2.5" value={range} onChange={(event) => setRange(event.target.value)}>
@@ -290,6 +349,14 @@ export function SalesReportOverview() {
               <option value="week">本周</option>
               <option value="month">本月</option>
               <option value="custom">自定义</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">趋势粒度</span>
+            <select className="h-9 w-full rounded-lg border bg-background px-2.5" value={granularity} onChange={(event) => setGranularity(event.target.value as "day" | "week" | "month")}>
+              <option value="day">按日</option>
+              <option value="week">按周</option>
+              <option value="month">按月</option>
             </select>
           </label>
           <label className="space-y-1 text-sm">
@@ -362,6 +429,14 @@ export function SalesReportOverview() {
             ))}
           </section>
 
+          <SalesAfterSalesCharts
+            trend={data.trend}
+            platformBreakdown={data.platformBreakdown}
+            productBreakdown={data.productBreakdown}
+            afterSaleStatusBreakdown={data.afterSaleStatusBreakdown}
+            returnInspectionBreakdown={data.returnInspectionBreakdown}
+          />
+
           <section className="grid gap-6 xl:grid-cols-2">
             <Card>
               <CardHeader>
@@ -377,12 +452,13 @@ export function SalesReportOverview() {
                       <TableHead>成交价</TableHead>
                       <TableHead>预计收入</TableHead>
                       <TableHead>实际到账</TableHead>
-                      <TableHead>利润</TableHead>
-                      <TableHead>毛利率</TableHead>
+                      <TableHead>累计退款</TableHead>
+                      <TableHead>净到账</TableHead>
+                      <TableHead>售后净利润</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.platformBreakdown.length === 0 ? <EmptyRow colSpan={8} /> : data.platformBreakdown.map((row) => (
+                    {data.platformBreakdown.length === 0 ? <EmptyRow colSpan={9} /> : data.platformBreakdown.map((row) => (
                       <TableRow key={row.platform}>
                         <TableCell>{formatPlatform(row.platform)}</TableCell>
                         <TableCell>{row.orderCount}</TableCell>
@@ -390,8 +466,9 @@ export function SalesReportOverview() {
                         <TableCell>{money(row.grossAmountTotal)}</TableCell>
                         <TableCell>{money(row.expectedIncomeTotal)}</TableCell>
                         <TableCell>{money(row.actualReceivedAmountTotal)}</TableCell>
-                        <TableCell>{money(row.profitTotal)}</TableCell>
-                        <TableCell>{rate(row.grossMarginRate)}</TableCell>
+                        <TableCell>{money(row.totalSalesRefundedAmount)}</TableCell>
+                        <TableCell>{money(row.netReceivedAmount)}</TableCell>
+                        <TableCell>{money(row.afterSaleNetProfit)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -413,13 +490,14 @@ export function SalesReportOverview() {
                       <TableHead>成本合计</TableHead>
                       <TableHead>成交价合计</TableHead>
                       <TableHead>预计收入合计</TableHead>
-                      <TableHead>实际到账合计</TableHead>
-                      <TableHead>利润合计</TableHead>
+                      <TableHead>原利润合计</TableHead>
+                      <TableHead>退款分配</TableHead>
+                      <TableHead>售后净利润</TableHead>
                       <TableHead>平均单件利润</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.productBreakdown.length === 0 ? <EmptyRow colSpan={9} /> : data.productBreakdown.map((row) => (
+                    {data.productBreakdown.length === 0 ? <EmptyRow colSpan={10} /> : data.productBreakdown.map((row) => (
                       <TableRow key={`${row.productName}-${row.sku ?? ""}`}>
                         <TableCell className="min-w-36 font-medium">{row.productName || "未填写"}</TableCell>
                         <TableCell>{row.sku || "未填写"}</TableCell>
@@ -427,8 +505,9 @@ export function SalesReportOverview() {
                         <TableCell>{money(row.costTotal)}</TableCell>
                         <TableCell>{money(row.grossAmountTotal)}</TableCell>
                         <TableCell>{money(row.expectedIncomeTotal)}</TableCell>
-                        <TableCell>{money(row.actualReceivedAmountTotal)}</TableCell>
-                        <TableCell>{money(row.profitTotal)}</TableCell>
+                        <TableCell>{money(row.originalProfitTotal)}</TableCell>
+                        <TableCell>{money(row.refundedAmountTotal)}</TableCell>
+                        <TableCell>{money(row.afterSaleNetProfit)}</TableCell>
                         <TableCell>{row.averageProfitPerItem == null ? "未填写" : `¥${row.averageProfitPerItem.toFixed(2)}`}</TableCell>
                       </TableRow>
                     ))}

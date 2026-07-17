@@ -57,7 +57,7 @@ export const LINE_TO_INVENTORY_STATUS: Record<string, string> = {
 export const NON_SELECTABLE_STATUSES = [
   "PLATFORM_SHIPPED", "PLATFORM_RECEIVED", "PLATFORM_IN_WAREHOUSE",
   "PLATFORM_LISTED", "PLATFORM_REJECTED", "RETURNING", "RETURNED",
-  "SOLD", "PROBLEM", "REMOVED",
+  "SOLD", "PROBLEM",
 ];
 
 // Active line statuses that block re-selection

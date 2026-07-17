@@ -30,7 +30,7 @@ type Inspection = {
   notes: string | null;
   result: string | null;
   completedAt: string | null;
-  inventoryItem?: { id: string; storageLocation: string | null; itemStatus: string } | null;
+  inventoryItem?: { id: string; storageLocation: string | null; itemStatus: string; skuText?: string | null } | null;
   purchaseOrderItem: {
     name: string;
     skuText: string | null;
@@ -62,6 +62,7 @@ export function InspectionWizard({ id }: { id: string }) {
           isNew: data.isNew,
           hasUsageTrace: data.hasUsageTrace,
           batchCode: data.batchCode ?? "",
+          skuText: data.inventoryItem?.skuText ?? data.purchaseOrderItem.skuText ?? "",
           expiryDate: data.expiryDate?.slice(0, 10) ?? "",
           storageLocation: data.inventoryItem?.storageLocation ?? "",
           appearanceNotes: data.appearanceNotes ?? "",
@@ -170,6 +171,11 @@ export function InspectionWizard({ id }: { id: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>SKU / 色号</Label>
+              <Input value={String(form.skuText ?? "")} onChange={(e) => set("skuText", e.target.value)} />
+              <p className="text-xs text-muted-foreground">SKU / 色号用于库存汇总，请按实物标签填写。</p>
+            </div>
             {/* Appearance — hasBox + isNew */}
             <BooleanField label="是否有盒" value={form.hasBox} onChange={(v) => set("hasBox", v)} />
             <div className="space-y-2">
@@ -262,6 +268,11 @@ export function InspectionWizard({ id }: { id: string }) {
           {step === 1 ? (
             <div className="space-y-2 text-sm">
               <p className="font-medium">{inspection.purchaseOrderItem.name}</p>
+              <div className="space-y-2">
+                <Label>SKU / 色号</Label>
+                <Input value={String(form.skuText ?? "")} onChange={(e) => set("skuText", e.target.value)} placeholder="例如 2C0、1W1" />
+                <p className="text-xs text-muted-foreground">SKU / 色号用于库存汇总，请按实物标签填写。</p>
+              </div>
               <p>{inspection.purchaseOrderItem.skuText || "无 SKU"}</p>
               <p>当前第 {inspection.sequence}/{inspection.purchaseOrderItem.quantity} 件</p>
               <p className="text-muted-foreground">

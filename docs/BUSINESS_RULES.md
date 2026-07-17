@@ -1,13 +1,26 @@
 # 业务规则
 
-## M4-A 行情与采购决策参考（设计冻结，未实施）
+## M5-A1 采购订单商品明细维护
+
+- 采购订单创建后可以添加、编辑和删除商品明细；最后一条明细不得删除。
+- `PurchaseOrderItem.referenceAmount` 只表示该明细整条商品的参考成交总额，可空、非负、最多两位小数。它不等于单件价格、订单实付、运费、分摊成本、库存成本或采购退款净实付。
+- 参考成交总额仅作明细参考，不参与 `PurchaseOrder.totalAmount`、`shippingAmount`、成本分摊、库存成本、采购退款和经营日报；数量变化不自动修改它。
+- 明细服务端写入统一使用严格 Decimal 字符串校验，拒绝未知字段、科学计数法、NaN、Infinity、负数和超过两位小数的值。
+- 已付款不自动锁定明细；成本分摊、库存、验货、采购售后或采购退款产生后，服务端守卫拒绝继续修改。页面不得绕过服务端守卫。
+
+## M4-A 行情与采购决策参考（M4-A3 API 已完成）
 
 - 行情是人工记录和经营参考，不是采购、库存、销售或售后的权威事实。系统不自动判断是否采购、不自动推荐出售平台、不自动创建采购订单，也不修改库存成本、销售利润或库存状态。
-- 当前没有 `Product` / `Sku` 主数据。行情不得仅以商品名称作为永久唯一键；后续采用独立 `MarketItem`，使用用户明确的版本、成色、包装和配件维度区分会影响价格的商品。
+- 行情 API 继续由 `APP_PASSWORD` 保护。客户端不得提交 `ownerId`、标准化字段、来源类型或确认/失效时间；参数错误为 400，跨 owner 为 404，并发报价修正冲突为 409。
+- 报价修正只能在一个事务中失效旧 Quote 并创建新 Quote；确认和同原因失效允许幂等重试。API 不直接访问 Prisma 写入，也不绕过 Market Service。
+- 当前没有 `Product` / `Sku` 主数据。行情不得仅以商品名称作为永久唯一键；M4-A1 已采用独立 `MarketItem`，使用用户明确的版本、成色、包装和配件维度区分会影响价格的商品。
 - 平台展示价格、`EXPECTED_INCOME`、`SaleOrder.grossAmount` 与 `SaleOrder.actualReceivedAmount` 必须分开命名和展示。采购试算只使用用户确认的 `EXPECTED_INCOME`，不从展示价格、历史 `SaleFeeLine` 或历史到账自动扣费推导。
 - `estimatedProfit = expectedPlatformIncome - candidatePurchasePrice - expectedPurchaseExtraCost`；`maxPurchasePrice = expectedPlatformIncome - expectedPurchaseExtraCost - targetProfitAmount`。金额必须由服务端 Decimal 计算；负最高采购价不得截断为 0。
 - 行情只保存历史 Quote；当前有效 Quote 从已确认、未失效、未过期记录中按 `recordedAt`、`createdAt`、`id` 倒序派生。决策计算必须回显用户明确选择的 Quote，不得静默选用旧行情。
-- M4-A V1 只接收人工 `MANUAL` 来源。未来导入或自动适配器必须转为同一 Quote DTO，不得存储平台账号、Cookie 或 Token，也不得静默覆盖人工确认记录。
+- `MarketQuote` 仅允许人工 `MANUAL` 来源，使用 `MarketPlatform`、`MarketQuoteType` 和 `MarketQuoteSourceType` 独立 enum。Quote 历史通过 `MarketItem` Restrict 关系保留；创建、确认、失效、修正和 owner 隔离查询只能经过 M4-A2 Service。未来导入或自动适配器必须转为同一 Quote DTO，不得存储平台账号、Cookie 或 Token，也不得静默覆盖人工确认记录。
+- 行情商品名称由 Service 做 NFKC、trim、连续空白压缩和仅英文小写的 normalizedName；SKU 必须复用既有 `normalizeSku`。同名同规格只提示疑似重复，系统不得自动合并。
+- 当前有效 Quote 必须已确认、未失效、未过期且 `recordedAt <= asOf`，并按 `recordedAt`、`createdAt`、`id` 倒序稳定选择。未确认、已失效或已过期的记录仅作为历史，不得伪装为当前行情。
+- Quote 纠错只能通过失效旧记录并创建替代记录完成；相同失效原因可幂等重试，不同原因必须冲突，不能覆盖历史原因。
 
 ## M3-D3-2 平台退回验货 Service 规则
 
@@ -372,3 +385,54 @@ pnpm verify:m3a
 4. 权威资产成本只使用 `InventoryItem.unitCost`。不得混入 SaleLine、销售利润、退款、平台费用、寄送费用或推断损失。
 5. 首页三项平台退回待办、平台退回工作台与库存页必须使用相同状态事实；待办在状态未改变前持续可见，不能由动作日志或通用提醒处理记录造成重复或隐藏。
 6. M3-D3 已 FROZEN：不做平台同步、95 分同步、报告附件、平台赔付、退回运费/利润影响或 `PlatformReturnCase`。M3-D1 与 M3-D2 同样保持 FROZEN。
+
+## M4-A4 行情工作台规则
+
+- 手工报价是历史记录：修改价格必须通过替代修正，不覆盖旧 Quote。
+- 当前有效行情、报价过期/失效和可用操作由服务端规则派生，页面不自行判断或写回状态。
+- 平台展示价格、人工参考价和预计收入必须分别显示；仅已确认的 `EXPECTED_INCOME` 可进入未来采购参考试算。
+
+## M4-A5 采购试算规则（设计冻结，未实施）
+
+- 采购试算只使用当前有效、已确认且未过期的 `EXPECTED_INCOME`；不得从 `LISTING_PRICE`、人工参考价、历史 `SaleFeeLine` 或历史实际到账自动推导。
+- V1 使用固定目标利润额和用户明确填写的固定附加成本：`建议最高采购价 = 预计收入 - 附加成本 - 目标利润`。预计收入 Quote 已是预计到账，不得重复扣平台费用。
+- 试算结果仅供参考，使用 Decimal，实时计算但不持久化；不创建采购订单，不修改库存、销售、售后或 `SOLD`。
+
+## M4-A6 采购试算实现规则
+
+- 唯一入口为 `POST /api/market/items/[marketItemId]/purchase-decision`；客户端不能提交 owner、Quote、预计收入或任何计算结果。
+- 试算复用服务端当前行情选择；只读计算，不修改 `MarketItem`、`MarketQuote`、采购、库存、销售或售后。
+- 行情管理不等于采购或出售决策：页面不得自动创建采购订单、推荐执行平台或改写库存/销售事实。
+
+## M4-B0 每日经营报告规则（设计冻结，未实施）
+
+- 昨日经营事件使用用户时区昨天的半开区间；当前库存/风险和今日待办始终为报告生成时刻快照，不得伪装为历史库存快照。
+- 销售只复用 `CONFIRMED` / `SETTLED` 报表口径；成交价、预计收入、实际到账、退款、净到账、原利润和售后净利润保持既有字段及聚合语义。
+- 当前资产复用平台退回汇总，按 `InventoryItem.id` 去重；`PENDING_DECISION` 是已退回待处理子集，不得重复加总；`PLATFORM_LISTED` 不等于已售。
+- M4-B0 只冻结日报口径；日报生成、页面和飞书手动发送分别由 M4-B1 至 M4-B3 实现，M4-B4 已补齐自动发送、去重和发送记录。
+
+## M4-B1 每日经营报告聚合规则
+
+- 日报 API 只接受可选 `date` 和 `timezone`，拒绝客户端 ownerId 与未知参数；V1 仅支持 `Asia/Shanghai`。
+- 昨日销售确认、到账和退款分别按各自业务时间计算；实际退款仅取 `SaleRefundRecord`，采购退款仅取 `PurchaseRefundRecord`。
+- 当前库存、待办、风险与行情是 `generatedAt` 快照，历史 date 不表示历史库存快照；日报聚合仅查询，不写数据库。
+
+## M4-B2 每日经营报告页面规则
+
+- `/reports/daily` 只能读取 M4-B1 的正式日报 API；页面不得自行聚合销售、退款、库存、待办、风险或行情。
+- `date` 只用于所选日期事件；库存、待办和风险必须展示为报告生成时的当前快照，并向用户明确说明。
+- `PENDING_DECISION` 是已退回待处理资产子集，页面只做子集说明，不把它再次加入资产总数。
+- 预计收入、实际到账、实际退款、净到账和售后净利润使用 API 原值与既有说明，页面不得重算或混称。
+- 行情摘要只能表述为人工录入；页面不保存日报、不创建定时任务或业务记录。
+
+## M4-B3 飞书日报手动发送规则
+
+- 仅服务端可读取 `FEISHU_DAILY_REPORT_WEBHOOK_URL` 和可选 `FEISHU_DAILY_REPORT_SECRET`；客户端不得提交、显示或持久化 Webhook、Secret、签名或目标地址。
+- 手动发送必须先生成正式日报，生成失败不得发送假报告。消息只含聚合摘要，不含客户资料、内部 ID、订单明细和售后说明。
+- 飞书发送不写采购、库存、销售、退款或利润事实；M4-B4 仅新增发送记录，不保存日报快照正文或通知凭证。
+## M4-B4 日报发送规则
+
+- 普通发送按 owner、报告日期和飞书渠道幂等；`SENT` 记录不重复发送。
+- 仅超时、网络和飞书 5xx 失败可以自动重试；参数、配置、日报生成和空报告错误不可重试。
+- 发送协调器不把外部 HTTP 请求放进数据库事务；状态更新使用条件更新，避免并发重复领取。
+- 日报为空时不向飞书发送全零假报告。发送不改变采购、库存、销售、退款、利润或任何库存状态。

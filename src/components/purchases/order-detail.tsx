@@ -1,30 +1,167 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, CircleDollarSign, ImageIcon } from "lucide-react";
+import { ArrowLeft, CircleDollarSign, ImageIcon, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { AttachmentUploader } from "./attachment-uploader";
 import { DeleteOrderButton } from "./delete-order-button";
 import { LogisticsCard } from "./logistics-card";
 import { AllocationBadge, PurchaseStatusBadge } from "./status-badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatItemStatus, formatPlatform, formatSaleStatus } from "@/lib/status-labels";
-import type { OrderDto, PurchaseInventoryItemDto } from "@/types/purchase";
+import type { ApiError, OrderDto, OrderItemDto, PurchaseInventoryItemDto } from "@/types/purchase";
+
+type ItemDraft = {
+  name: string;
+  skuText: string;
+  quantity: string;
+  referenceAmount: string;
+  notes: string;
+};
+
+function emptyItemDraft(): ItemDraft {
+  return { name: "", skuText: "", quantity: "1", referenceAmount: "", notes: "" };
+}
 
 export function OrderDetail({ orderId }: { orderId: string }) {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") ?? "";
   const [order, setOrder] = useState<OrderDto | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [itemDialog, setItemDialog] = useState<{ mode: "add" | "edit"; item?: OrderItemDto } | null>(null);
+  const [itemDraft, setItemDraft] = useState<ItemDraft>(emptyItemDraft);
+  const [savingItem, setSavingItem] = useState(false);
+  const [deletingItem, setDeletingItem] = useState<OrderItemDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const loadOrder = useCallback(() => {
+    return fetch(`/api/purchase-orders/${orderId}`)
+      .then(async (response) => {
+        const payload: unknown = await response.json();
+        const hasItems = Boolean(
+          payload
+          && typeof payload === "object"
+          && Array.isArray((payload as { items?: unknown }).items),
+        );
+
+        if (!response.ok || !hasItems) {
+          const error = payload as Partial<ApiError> | null;
+          setOrder(null);
+          setLoadError(error?.message || "订单不存在、已被删除，或暂时无法加载。");
+          return;
+        }
+
+        setOrder(payload as OrderDto);
+      })
+      .catch(() => {
+        setOrder(null);
+        setLoadError("加载采购订单失败，请检查网络后重试。");
+      });
+  }, [orderId]);
 
   useEffect(() => {
-    fetch(`/api/purchase-orders/${orderId}`)
-      .then((response) => response.json())
-      .then(setOrder);
-  }, [orderId]);
+    void loadOrder();
+  }, [loadOrder]);
+
+  function openAddItem() {
+    setItemDraft(emptyItemDraft());
+    setItemDialog({ mode: "add" });
+  }
+
+  function openEditItem(item: OrderItemDto) {
+    setItemDraft({
+      name: item.name,
+      skuText: item.skuText ?? "",
+      quantity: String(item.quantity),
+      referenceAmount: item.referenceAmount ?? "",
+      notes: item.notes ?? "",
+    });
+    setItemDialog({ mode: "edit", item });
+  }
+
+  async function saveItem(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!itemDialog || !order) return;
+    setSavingItem(true);
+    try {
+      const path = itemDialog.mode === "add"
+        ? `/api/purchases/${order.id}/items`
+        : `/api/purchases/${order.id}/items/${itemDialog.item?.id}`;
+      const response = await fetch(path, {
+        method: itemDialog.mode === "add" ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: itemDraft.name,
+          skuText: itemDraft.skuText,
+          quantity: itemDraft.quantity,
+          referenceAmount: itemDraft.referenceAmount,
+          notes: itemDraft.notes,
+        }),
+      });
+      if (!response.ok) {
+        const error = (await response.json()) as ApiError;
+        toast.error(error.message);
+        return;
+      }
+      setOrder((await response.json()) as OrderDto);
+      setItemDialog(null);
+      toast.success(itemDialog.mode === "add" ? "商品明细已添加" : "商品明细已更新");
+    } catch {
+      toast.error("保存商品明细失败，请重试。");
+    } finally {
+      setSavingItem(false);
+    }
+  }
+
+  async function removeItem() {
+    if (!deletingItem || !order) return;
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/purchases/${order.id}/items/${deletingItem.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const error = (await response.json()) as ApiError;
+        toast.error(error.message);
+        return;
+      }
+      setOrder((await response.json()) as OrderDto);
+      setDeletingItem(null);
+      toast.success("商品明细已删除");
+    } catch {
+      toast.error("删除商品明细失败，请重试。");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (loadError) {
+    return (
+      <Card className="rounded-lg shadow-none" data-testid="purchase-order-load-error">
+        <CardHeader>
+          <CardTitle>订单加载失败</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" data-testid="purchase-order-reload" onClick={() => {
+              setLoadError(null);
+              void loadOrder();
+            }}>重新加载</Button>
+            <Link href="/purchases" className={buttonVariants({ variant: "outline" })}>返回采购订单</Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!order) {
     return <Skeleton className="h-[32rem] w-full" />;
@@ -33,7 +170,12 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const paidTotal = (
     Number(order.totalAmount) + Number(order.shippingAmount)
   ).toFixed(2);
-  const inventoryItems = order.items.flatMap((item) => item.inventoryItems ?? []);
+  const orderItems = Array.isArray(order.items) ? order.items : [];
+  const purchaseItemsEditability = order.purchaseItemsEditability ?? {
+    editable: false,
+    reason: "商品明细状态加载不完整，请重新加载订单。",
+  };
+  const inventoryItems = orderItems.flatMap((item) => item.inventoryItems ?? []);
   const salesSummary = buildSalesSummary(inventoryItems);
 
   return (
@@ -58,6 +200,12 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href={`/purchase-after-sales/new?purchaseOrderId=${order.id}`} className={buttonVariants({ variant: "outline" })}>
+            发起采购售后
+          </Link>
+          <Link href={`/purchase-after-sales?purchaseOrderId=${order.id}`} className={buttonVariants({ variant: "outline" })}>
+            查看采购售后
+          </Link>
           <Link href={`/purchases/${order.id}/allocate`} className={buttonVariants()}>
             <CircleDollarSign />
             成本分摊
@@ -80,10 +228,27 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           />
           <Card className="rounded-lg shadow-none">
             <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="text-base">商品明细维护</CardTitle>
+                <Button type="button" size="sm" onClick={openAddItem} disabled={!purchaseItemsEditability.editable}>
+                  <Plus />
+                  添加商品
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                商品参考成交总额仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。
+              </p>
+              {purchaseItemsEditability.reason ? (
+                <p className="text-sm text-amber-700">{purchaseItemsEditability.reason}</p>
+              ) : null}
+            </CardHeader>
+          </Card>
+          <Card className="rounded-lg shadow-none">
+            <CardHeader>
               <CardTitle className="text-base">商品明细</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              {order.items.map((item, index) => (
+              {orderItems.map((item, index) => (
                 <div key={item.id} className="space-y-4">
                   {index ? <Separator /> : null}
                   <div className="flex items-start justify-between gap-4">
@@ -108,6 +273,19 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                     </p>
                   ) : null}
                   <InventorySalesList inventoryItems={item.inventoryItems ?? []} />
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/20 p-3 text-sm">
+                    <span>商品参考成交总额：{item.referenceAmount ? `¥ ${item.referenceAmount}` : "未填写"}</span>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => openEditItem(item)} disabled={!purchaseItemsEditability.editable}>
+                        <Pencil />
+                        编辑
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setDeletingItem(item)} disabled={!purchaseItemsEditability.editable || orderItems.length <= 1}>
+                        <Trash2 />
+                        删除
+                      </Button>
+                    </div>
+                  </div>
                   <div>
                     <div className="mb-2 flex items-center gap-2 text-xs font-medium">
                       <ImageIcon className="size-3.5" />
@@ -125,6 +303,33 @@ export function OrderDetail({ orderId }: { orderId: string }) {
             </CardContent>
           </Card>
 
+          <Dialog open={itemDialog !== null} onOpenChange={(open) => !savingItem && !open && setItemDialog(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{itemDialog?.mode === "add" ? "添加商品" : "编辑商品"}</DialogTitle>
+                <DialogDescription>填写采购商品明细，参考成交总额为可选字段。</DialogDescription>
+              </DialogHeader>
+              <form className="space-y-4" onSubmit={saveItem}>
+                <div className="space-y-2"><Label htmlFor="purchase-item-name">商品名称</Label><Input id="purchase-item-name" value={itemDraft.name} onChange={(event) => setItemDraft({ ...itemDraft, name: event.target.value })} required /></div>
+                <div className="space-y-2"><Label htmlFor="purchase-item-sku">SKU / 规格</Label><Input id="purchase-item-sku" value={itemDraft.skuText} onChange={(event) => setItemDraft({ ...itemDraft, skuText: event.target.value })} /></div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2"><Label htmlFor="purchase-item-quantity">数量</Label><Input id="purchase-item-quantity" type="number" min="1" max="999" step="1" value={itemDraft.quantity} onChange={(event) => setItemDraft({ ...itemDraft, quantity: event.target.value })} required /></div>
+                  <div className="space-y-2"><Label htmlFor="purchase-item-reference">商品参考成交总额（可选）</Label><Input id="purchase-item-reference" inputMode="decimal" placeholder="未填写" value={itemDraft.referenceAmount} onChange={(event) => setItemDraft({ ...itemDraft, referenceAmount: event.target.value })} /></div>
+                </div>
+                <p className="text-xs text-muted-foreground">仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。</p>
+                <div className="space-y-2"><Label htmlFor="purchase-item-notes">备注</Label><Textarea id="purchase-item-notes" value={itemDraft.notes} onChange={(event) => setItemDraft({ ...itemDraft, notes: event.target.value })} /></div>
+                <DialogFooter><Button type="button" variant="outline" onClick={() => setItemDialog(null)} disabled={savingItem}>取消</Button><Button type="submit" disabled={savingItem}>{savingItem ? <Loader2 className="animate-spin" /> : null}{savingItem ? "保存中..." : "保存"}</Button></DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={deletingItem !== null} onOpenChange={(open) => !deleting && !open && setDeletingItem(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader><AlertDialogTitle>确认删除商品明细？</AlertDialogTitle><AlertDialogDescription>将删除“{deletingItem?.name}”数量 {deletingItem?.quantity} 的商品明细，订单实付和其他商品不会改变。</AlertDialogDescription></AlertDialogHeader>
+              <AlertDialogFooter><AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel><AlertDialogAction onClick={removeItem} disabled={deleting}>{deleting ? "删除中..." : "确认删除"}</AlertDialogAction></AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <Card className="rounded-lg shadow-none">
             <CardHeader>
               <CardTitle className="text-base">订单附件</CardTitle>
@@ -140,7 +345,24 @@ export function OrderDetail({ orderId }: { orderId: string }) {
         </div>
 
         <div className="space-y-4">
-          <Card className="rounded-lg shadow-none">
+          <Card className="rounded-lg shadow-none" data-testid="purchase-after-sales-summary">
+            <CardHeader>
+              <CardTitle className="text-base">采购售后财务摘要</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <SummaryRow label="原采购实付" value={money(paidTotal)} />
+              <SummaryRow label="累计采购退款" value={money(order.purchaseAfterSalesSummary.totalPurchaseRefundedAmount)} />
+              <SummaryRow label="净采购实付" value={money(order.purchaseAfterSalesSummary.netPurchasePaidAmount)} strong />
+              <Separator />
+              <SummaryRow label="采购售后单数" value={`${order.purchaseAfterSalesSummary.totalCaseCount} 单`} />
+              <SummaryRow label="进行中售后" value={`${order.purchaseAfterSalesSummary.inProgressCaseCount} 单`} />
+              <SummaryRow label="已完成售后" value={`${order.purchaseAfterSalesSummary.completedCaseCount} 单`} />
+              <Link href={`/purchase-after-sales?purchaseOrderId=${order.id}`} className={buttonVariants({ variant: "outline", size: "sm", className: "w-full" })}>
+                查看采购售后
+              </Link>
+            </CardContent>
+          </Card>
+          <Card className="rounded-lg shadow-none" data-testid="purchase-sales-summary">
             <CardHeader>
               <CardTitle className="text-base">销售汇总</CardTitle>
             </CardHeader>
@@ -152,7 +374,10 @@ export function OrderDetail({ orderId }: { orderId: string }) {
               <SummaryRow label="已售库存成本合计" value={money(salesSummary.costTotal)} />
               <SummaryRow label="已售成交价合计" value={money(salesSummary.grossTotal)} />
               <SummaryRow label="已售实际到账合计" value={money(salesSummary.receivedTotal)} />
-              <SummaryRow label="已售利润合计" value={money(salesSummary.profitTotal)} strong />
+              <SummaryRow label="已售原利润合计" value={money(salesSummary.profitTotal)} />
+              <SummaryRow label="累计销售退款（按商品分配）" value={money(salesSummary.salesRefundTotal)} />
+              <SummaryRow label="恢复库存成本" value={money(salesSummary.restockedCostTotal)} />
+              <SummaryRow label="销售售后净利润" value={money(salesSummary.afterSaleNetProfitTotal)} strong />
             </CardContent>
           </Card>
 
@@ -171,7 +396,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
               </div>
               <Separator />
               <div className="flex justify-between font-semibold">
-                <span>实付总额</span>
+                <span>原采购实付</span>
                 <span>¥ {paidTotal}</span>
               </div>
             </CardContent>
@@ -212,15 +437,28 @@ function buildSalesSummary(items: PurchaseInventoryItemDto[]) {
   let grossTotal = 0;
   let receivedTotal = 0;
   let profitTotal = 0;
+  let salesRefundTotal = 0;
+  let restockedCostTotal = 0;
+  let afterSaleNetProfitTotal = 0;
+  const countedSaleOrderIds = new Set<string>();
 
   for (const item of items) {
     const line = effectiveSaleLine(item);
     if (!line) continue;
     soldCount += 1;
     costTotal += Number(line.costAmount);
-    grossTotal += Number(line.saleOrder.grossAmount);
-    receivedTotal += Number(line.saleOrder.actualReceivedAmount ?? 0);
     profitTotal += Number(line.profitAmount);
+    salesRefundTotal += Number(line.salesAfterSaleFinancials?.refundedAmount ?? 0);
+    restockedCostTotal += Number(line.salesAfterSaleFinancials?.restockedCostReversal ?? 0);
+    afterSaleNetProfitTotal += Number(line.salesAfterSaleFinancials?.afterSaleNetProfit ?? line.profitAmount);
+
+    // A combined sale can contain several inventory lines from this purchase
+    // order. SaleOrder amounts belong to the order, so count them once.
+    if (!countedSaleOrderIds.has(line.saleOrder.id)) {
+      countedSaleOrderIds.add(line.saleOrder.id);
+      grossTotal += Number(line.saleOrder.grossAmount);
+      receivedTotal += Number(line.saleOrder.actualReceivedAmount ?? 0);
+    }
   }
 
   return {
@@ -231,6 +469,9 @@ function buildSalesSummary(items: PurchaseInventoryItemDto[]) {
     grossTotal,
     receivedTotal,
     profitTotal,
+    salesRefundTotal,
+    restockedCostTotal,
+    afterSaleNetProfitTotal,
   };
 }
 
@@ -295,7 +536,9 @@ function InventorySaleCard({ item }: { item: PurchaseInventoryItemDto }) {
           <TraceField label="销售状态" value={formatSaleStatus(currentLine.saleOrder.status)} />
           <TraceField label="成交价" value={money(currentLine.saleOrder.grossAmount)} />
           <TraceField label="实际到账" value={money(currentLine.saleOrder.actualReceivedAmount)} />
-          <TraceField label="利润" value={money(currentLine.profitAmount)} />
+          <TraceField label="原利润" value={money(currentLine.profitAmount)} />
+          <TraceField label="销售退款分配" value={money(currentLine.salesAfterSaleFinancials?.refundedAmount)} />
+          <TraceField label="销售售后净利润" value={money(currentLine.salesAfterSaleFinancials?.afterSaleNetProfit ?? currentLine.profitAmount)} />
           <Link href={`/sales/${currentLine.saleOrder.id}`} className={buttonVariants({ variant: "outline", size: "sm", className: "w-fit" })}>
             查看销售订单
           </Link>

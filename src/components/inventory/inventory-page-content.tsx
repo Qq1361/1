@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { InventoryList } from "@/components/inventory/inventory-list";
+import { InventoryAssetSummary } from "@/components/inventory/inventory-asset-summary";
 import { InventorySkuSummary } from "@/components/inventory/inventory-sku-summary";
 import { buttonVariants } from "@/components/ui/button";
 
 export function InventoryPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const tabParam = searchParams.get("tab");
   const [tab, setTab] = useState(tabParam === "summary" ? "summary" : "details");
 
@@ -33,7 +35,7 @@ export function InventoryPageContent() {
               size: "sm",
               className: "rounded-md",
             })}
-            onClick={() => setTab("details")}
+            onClick={() => { setTab("details"); const params = new URLSearchParams(searchParams.toString()); params.set("tab", "details"); router.replace(`/inventory?${params}`); }}
           >
             库存明细
           </button>
@@ -44,12 +46,13 @@ export function InventoryPageContent() {
               size: "sm",
               className: "rounded-md",
             })}
-            onClick={() => setTab("summary")}
+            onClick={() => { setTab("summary"); const params = new URLSearchParams(searchParams.toString()); params.set("tab", "summary"); router.replace(`/inventory?${params}`); }}
           >
             SKU 汇总
           </button>
         </div>
       </div>
+      <InventoryAssetSummary />
       {tab === "summary" ? <InventorySkuSummary /> : <InventoryList />}
     </div>
   );

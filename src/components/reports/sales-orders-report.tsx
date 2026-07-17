@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { AlertCircle, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -29,6 +30,14 @@ type SaleOrderReportRow = {
   shippingCost: string;
   otherCost: string;
   profit: string;
+  originalProfit: string;
+  totalSalesRefundedAmount: string;
+  netReceivedAmount: string;
+  restockedCostReversal: string;
+  afterSaleNetProfit: string;
+  afterSaleCaseCount: number;
+  activeAfterSaleCaseCount: number;
+  afterSaleStatusSummary: { status: string; count: number }[];
   grossMarginRate: string | null;
   soldItemCount: number;
   isSettled: boolean;
@@ -142,7 +151,7 @@ function resolveRange(range: string, customFrom: string, customTo: string) {
 function EmptyRow() {
   return (
     <TableRow>
-      <TableCell colSpan={15} className="h-24 text-center text-sm text-muted-foreground">
+      <TableCell colSpan={20} className="h-24 text-center text-sm text-muted-foreground">
         暂无数据
       </TableCell>
     </TableRow>
@@ -150,6 +159,10 @@ function EmptyRow() {
 }
 
 export function SalesOrdersReport() {
+  const searchParams = useSearchParams();
+  const productNameExact = searchParams.get("productNameExact")?.trim() || "";
+  const skuExact = searchParams.get("skuExact")?.trim() || "";
+  const skuEmpty = searchParams.get("skuEmpty") === "true";
   const [range, setRange] = useState("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -189,6 +202,9 @@ export function SalesOrdersReport() {
         params.set("settlementStatus", settlementParam[settlementStatus]);
       }
       if (keyword.trim()) params.set("keyword", keyword.trim());
+      if (productNameExact) params.set("productNameExact", productNameExact);
+      if (skuEmpty) params.set("skuEmpty", "true");
+      else if (skuExact) params.set("skuExact", skuExact);
       params.set("page", String(nextPage));
       params.set("pageSize", "20");
 
@@ -205,7 +221,7 @@ export function SalesOrdersReport() {
     } finally {
       setLoading(false);
     }
-  }, [customFrom, customTo, keyword, page, platform, range, settlementStatus, status, validationError]);
+  }, [customFrom, customTo, keyword, page, platform, productNameExact, range, settlementStatus, skuEmpty, skuExact, status, validationError]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -231,6 +247,11 @@ export function SalesOrdersReport() {
           <p className="max-w-3xl text-sm text-muted-foreground">
             只统计已确认销售和已到账销售；草稿和已取消销售不计入报表。
           </p>
+          {productNameExact || skuExact || skuEmpty ? (
+            <p className="text-sm text-muted-foreground">
+              已按商品快照精确筛选：{productNameExact || "全部商品"} / {skuEmpty ? "未填写 SKU" : skuExact || "全部 SKU"}
+            </p>
+          ) : null}
         </div>
         <Link href="/reports/sales" className={buttonVariants({ variant: "outline" })}>
           返回销售报表
@@ -339,9 +360,13 @@ export function SalesOrdersReport() {
                     <TableHead>成交价</TableHead>
                     <TableHead>预计收入</TableHead>
                     <TableHead>实际到账</TableHead>
+                    <TableHead>累计退款</TableHead>
+                    <TableHead>净到账</TableHead>
                     <TableHead>成本</TableHead>
                     <TableHead>费用</TableHead>
-                    <TableHead>利润</TableHead>
+                    <TableHead>原利润</TableHead>
+                    <TableHead>恢复成本</TableHead>
+                    <TableHead>售后净利润</TableHead>
                     <TableHead>毛利率</TableHead>
                     <TableHead>件数</TableHead>
                     <TableHead>商品摘要</TableHead>
@@ -359,9 +384,13 @@ export function SalesOrdersReport() {
                       <TableCell>{money(order.grossAmount)}</TableCell>
                       <TableCell>{money(order.expectedIncome)}</TableCell>
                       <TableCell>{money(order.actualReceivedAmount)}</TableCell>
+                      <TableCell>{money(order.totalSalesRefundedAmount)}</TableCell>
+                      <TableCell>{money(order.netReceivedAmount)}</TableCell>
                       <TableCell>{money(order.inventoryCostTotal)}</TableCell>
                       <TableCell>{money(order.feeTotal)}</TableCell>
-                      <TableCell>{money(order.profit)}</TableCell>
+                      <TableCell>{money(order.originalProfit)}</TableCell>
+                      <TableCell>{money(order.restockedCostReversal)}</TableCell>
+                      <TableCell>{money(order.afterSaleNetProfit)}</TableCell>
                       <TableCell>{order.grossMarginRate ? `${order.grossMarginRate}%` : "未填写"}</TableCell>
                       <TableCell>{order.soldItemCount}</TableCell>
                       <TableCell className="min-w-64">{order.itemsSummary || "未填写"}</TableCell>
@@ -370,9 +399,12 @@ export function SalesOrdersReport() {
                           {order.isSettled ? "已到账" : order.isOverdueUnsettled ? "已超期" : "未到账"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-44">
                         <Link href={`/sales/${order.saleOrderId}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
                           查看销售订单
+                        </Link>
+                        <Link href={`/sales-after-sales?saleOrderId=${order.saleOrderId}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                          查看售后（{order.afterSaleCaseCount}）
                         </Link>
                       </TableCell>
                     </TableRow>

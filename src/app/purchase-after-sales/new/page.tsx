@@ -1,0 +1,3 @@
+import { Suspense } from "react";
+import { PurchaseAfterSaleForm } from "@/components/purchase-after-sales/purchase-after-sales-ui";
+export default async function Page({ searchParams }: { searchParams: Promise<{ purchaseOrderId?: string }> }) { const { purchaseOrderId } = await searchParams; return <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6"><h1 className="mb-5 text-2xl font-semibold">发起采购售后</h1>{purchaseOrderId ? <Suspense fallback={<div className="h-80 animate-pulse rounded-lg border" />}><PurchaseAfterSaleForm purchaseOrderId={purchaseOrderId} /></Suspense> : <p className="rounded-md border p-4 text-sm text-muted-foreground">请从采购订单或问题库存详情进入，以确定原采购订单。</p>}</main>; }

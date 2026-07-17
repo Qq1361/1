@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Boxes, ClipboardCheck, LayoutDashboard, Menu, Package, ReceiptText, ShoppingBag } from "lucide-react";
+import { BarChart3, Boxes, CircleDollarSign, ClipboardCheck, LayoutDashboard, Menu, Package, ReceiptText, RotateCcw, ShoppingBag, TrendingUp, Undo2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
@@ -15,11 +15,17 @@ import {
 const navItems = [
   { label: "工作台", href: "/", icon: LayoutDashboard },
   { label: "采购订单", href: "/purchases", icon: ReceiptText },
+  { label: "采购售后", href: "/purchase-after-sales", icon: RotateCcw },
   { label: "待验货", href: "/inspections", icon: ClipboardCheck },
   { label: "库存", href: "/inventory", icon: Boxes },
+  { label: "行情管理", href: "/market", icon: TrendingUp },
   { label: "寄送批次", href: "/shipments", icon: Package },
+  { label: "平台退回", href: "/platform-returns", icon: Undo2 },
   { label: "销售订单", href: "/sales", icon: ShoppingBag },
+  { label: "销售售后", href: "/sales-after-sales", icon: RotateCcw },
   { label: "销售报表", href: "/reports/sales", icon: BarChart3 },
+  { label: "每日经营报告", href: "/reports/daily", icon: BarChart3 },
+  { label: "到账管理", href: "/sales/settlements", icon: CircleDollarSign },
 ];
 
 function Brand() {
@@ -43,7 +49,9 @@ function Navigation({ pathname }: { pathname: string }) {
         const Icon = item.icon;
         const active =
           pathname === item.href ||
-          (item.href !== "/" && pathname.startsWith(item.href));
+          (item.href !== "/" &&
+            pathname.startsWith(`${item.href}/`) &&
+            !(item.href === "/sales" && pathname.startsWith("/sales/settlements")));
         return (
           <Link
             key={item.label}

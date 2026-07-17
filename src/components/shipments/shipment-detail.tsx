@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Pencil, PackageCheck, Save, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { getAvailableActions, getActionLabel, type ShipmentLineAction } from "@/lib/shipment-status-machine";
-import { formatItemStatus, formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform } from "@/lib/status-labels";
+import { formatLineStatus, formatBatchStatus, formatPurpose, formatPlatform } from "@/lib/status-labels";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
-interface LineDetail { id: string; lineStatus: string; inventoryCodeSnapshot: string; productNameSnapshot: string; skuSnapshot: string | null; unitCostSnapshot: string; packedChecked: boolean; rejectedReason: string | null; returnCarrierCode: string | null; returnTrackingNo: string | null; returnedStorageLocation: string | null; inventoryItemId: string; inventoryItem: { storageLocation: string | null; purchaseOrderItem: { purchaseOrder: { id: string } } } | null; group: { groupName: string | null; platformOrderNo: string | null } | null; }
+interface LineDetail { id: string; lineStatus: string; inventoryCodeSnapshot: string; productNameSnapshot: string; skuSnapshot: string | null; unitCostSnapshot: string; packedChecked: boolean; rejectedReason: string | null; returnCarrierCode: string | null; returnTrackingNo: string | null; returnedStorageLocation: string | null; inventoryItemId: string; inventoryItem: { storageLocation: string | null; itemStatus?: string; purchaseOrderItem: { purchaseOrder: { id: string } } } | null; group: { groupName: string | null; platformOrderNo: string | null } | null; returnInspection?: { result: string; storageLocation: string | null; problemReason: string | null; note: string | null; inspectedAt: string | null } | null; }
 interface ActionLog { id: string; createdAt: string; actionType: string; note: string | null; }
 interface BatchDetail { id: string; batchNo: string; platform: string; defaultPurpose: string; status: string; carrierCode: string | null; trackingNo: string | null; shippedAt: string | null; receivedAt: string | null; outboundShippingCost: string | null; packagingCost: string | null; otherShipmentCost: string | null; note: string | null; lines: LineDetail[]; actionLogs: ActionLog[]; }
 interface LineAction { label: string; fn: () => void; }
@@ -109,7 +109,6 @@ export function ShipmentDetail({ id }: { id: string }) {
         markReceived: "mark-received", markInWarehouse: "mark-in-warehouse",
         markListed: "mark-listed", markRejected: "mark-rejected",
         markReturning: "mark-returning", markReturned: "mark-returned",
-        confirmRestocked: "confirm-restocked",
       };
       const route = routeMap[action.key];
       if (!route) { toast.error("未知操作"); return; }
@@ -125,9 +124,6 @@ export function ShipmentDetail({ id }: { id: string }) {
       } else if (action.key === "markReturned") {
         const loc = prompt("退回后存放库位（必填）："); if (!loc?.trim()) { toast.error("库位不能为空"); return; }
         body = { returnedStorageLocation: loc.trim() };
-      } else if (action.key === "confirmRestocked") {
-        const loc = prompt("重新入库库位（必填）："); if (!loc?.trim()) { toast.error("库位不能为空"); return; }
-        body = { storageLocation: loc.trim() };
       }
 
       const r = await fetch(`/api/shipments/lines/${line.id}/${route}`, {
@@ -149,6 +145,7 @@ export function ShipmentDetail({ id }: { id: string }) {
     }
     const purpose = batch!.defaultPurpose;
     for (const action of getAvailableActions(l.lineStatus, purpose)) {
+      if (action.key === "confirmRestocked") continue;
       const label = getActionLabel(action.key, purpose);
       actions.push({ label, fn: () => executeAction(l, action) });
     }
@@ -248,6 +245,13 @@ export function ShipmentDetail({ id }: { id: string }) {
                     {line.group?.groupName ? <p className="text-xs">组：{line.group.groupName}{line.group.platformOrderNo ? ` · 平台单号：${line.group.platformOrderNo}` : ""}</p> : null}
                     {line.rejectedReason ? <p className="text-xs text-destructive">拒收：{line.rejectedReason}</p> : null}
                     {line.returnTrackingNo ? <p className="text-xs text-muted-foreground">退回：{line.returnCarrierCode} {line.returnTrackingNo} · 库位：{line.returnedStorageLocation}</p> : null}
+                    {["RETURNING", "RETURNED"].includes(line.lineStatus) ? (
+                      <div className="mt-2 rounded-md border bg-muted/20 p-2 text-xs">
+                        <p className="font-medium">{line.lineStatus === "RETURNING" ? "平台退回途中" : line.returnInspection?.result === "PENDING_DECISION" ? "待进一步判断" : line.returnInspection?.result === "RESTOCKED" ? "验货合格，当前库存：在库" : line.returnInspection?.result === "PROBLEM" ? "验货异常，当前库存：问题件" : "已退回，待验货"}</p>
+                        {line.returnInspection ? <p className="mt-1 text-muted-foreground">验货结论：{line.returnInspection.result === "RESTOCKED" ? "可重新入库" : line.returnInspection.result === "PROBLEM" ? "问题件" : "待进一步判断"}</p> : null}
+                        <Link href={`/platform-returns/${line.id}`} className="mt-2 inline-block underline">查看退回详情</Link>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-1">
                     {actions.map((a) => (

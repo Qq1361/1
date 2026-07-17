@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+const referenceAmount = z
+  .string()
+  .trim()
+  .regex(/^\d{1,10}(\.\d{1,2})?$/, "商品参考成交总额格式无效");
+
+export const purchaseItemMutationSchema = z
+  .object({
+    name: z.string().trim().min(1, "商品名称不能为空").max(120),
+    skuText: z.string().trim().max(200).optional().or(z.literal("")),
+    quantity: z.coerce.number().int().min(1).max(999),
+    notes: z.string().trim().max(1000).optional().or(z.literal("")),
+    referenceAmount: referenceAmount.optional().or(z.literal("")),
+  })
+  .strict();
+
 const money = z
   .string()
   .trim()
@@ -12,6 +27,7 @@ export const orderItemSchema = z.object({
   skuText: z.string().trim().max(200).optional().or(z.literal("")),
   quantity: z.coerce.number().int().min(1).max(999),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
+  referenceAmount: referenceAmount.optional().or(z.literal("")),
 });
 
 export const purchaseOrderSchema = z.object({
@@ -22,7 +38,7 @@ export const purchaseOrderSchema = z.object({
   shippingAmount: money.default("0"),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
   items: z.array(orderItemSchema).min(1, "至少添加一件商品").max(100),
-});
+}).strict();
 
 export const orderListQuerySchema = z.object({
   query: z.string().trim().max(100).optional(),
@@ -69,4 +85,5 @@ export const trackingSchema = z.object({
 });
 
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderSchema>;
+export type PurchaseItemMutationInput = z.infer<typeof purchaseItemMutationSchema>;
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;

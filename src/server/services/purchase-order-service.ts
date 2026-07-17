@@ -1,18 +1,39 @@
 import { Prisma } from "@/generated/prisma/client";
+import { normalizeSku } from "@/lib/normalize-sku";
 import { db } from "@/server/db";
 import { ServiceError } from "@/server/errors";
 import { LocalStorageAdapter } from "@/server/adapters/storage/local-storage-adapter";
+import { isActivePurchaseAfterSaleStatus, sumDecimals } from "@/server/purchase-after-sales/purchase-after-sales-rules";
+import { getSalesAfterSaleFinancials } from "@/server/reports/sales-after-sales-financials";
 import type {
   OrderListQuery,
+  PurchaseItemMutationInput,
   PurchaseOrderInput,
 } from "@/server/validation/purchase-order";
 
 function serializeOrder<T>(value: T): T {
-  return JSON.parse(
+  const serialized = JSON.parse(
     JSON.stringify(value, (_, current) =>
       current instanceof Prisma.Decimal ? current.toFixed(2) : current,
     ),
-  ) as T;
+  );
+  const moneyKey = (key: string) => {
+    const lower = key.toLowerCase();
+    return lower.includes("amount") || lower.includes("cost") || lower.includes("profit");
+  };
+  function normalizeMoneyFields(current: unknown): unknown {
+    if (Array.isArray(current)) return current.map(normalizeMoneyFields);
+    if (!current || typeof current !== "object") return current;
+    return Object.fromEntries(
+      Object.entries(current).map(([key, item]) => [
+        key,
+        moneyKey(key) && typeof item === "string" && /^\d+(\.\d+)?$/.test(item)
+          ? new Prisma.Decimal(item).toFixed(2)
+          : normalizeMoneyFields(item),
+      ]),
+    );
+  }
+  return normalizeMoneyFields(serialized) as T;
 }
 
 const storage = new LocalStorageAdapter();
@@ -30,7 +51,157 @@ export function canDeleteOrder(order: {
   );
 }
 
+const purchaseItemEditableStatuses = new Set(["PAID", "WAITING_SHIPMENT", "IN_TRANSIT"]);
+
+type PurchaseItemEditSnapshot = {
+  id: string;
+  status: string;
+  allocationStatus: string;
+  deliveredAt: Date | null;
+  items: Array<{
+    id: string;
+    allocatedTotalCost: Prisma.Decimal | null;
+    _count: { inventoryItems: number; inspections: number };
+  }>;
+  _count: { afterSaleCases: number; refundRecords: number };
+};
+
+function purchaseItemEditLockReason(order: PurchaseItemEditSnapshot) {
+  if (!purchaseItemEditableStatuses.has(order.status) || order.deliveredAt) {
+    return "该订单已进入后续物流或收货流程，商品明细已锁定。";
+  }
+  if (order.allocationStatus !== "UNALLOCATED" || order.items.some((item) => item.allocatedTotalCost !== null)) {
+    return order.allocationStatus === "DRAFT"
+      ? "当前订单已有成本分摊草稿，请先处理草稿后再修改商品。"
+      : "该订单已完成成本分摊，商品明细已锁定。";
+  }
+  if (order.items.some((item) => item._count.inventoryItems > 0)) {
+    return "该订单已生成库存，不能直接修改原采购商品。";
+  }
+  if (order.items.some((item) => item._count.inspections > 0)) {
+    return "该订单已开始验货，商品明细已锁定。";
+  }
+  if (order._count.afterSaleCases > 0) {
+    return "该订单存在采购售后记录，不能直接修改商品。";
+  }
+  if (order._count.refundRecords > 0) {
+    return "该订单存在采购退款记录，不能直接修改商品。";
+  }
+  return null;
+}
+
 export class PurchaseOrderService {
+  private async getPurchaseItemEditSnapshot(
+    tx: Prisma.TransactionClient | typeof db,
+    ownerId: string,
+    orderId: string,
+  ): Promise<PurchaseItemEditSnapshot> {
+    const order = await tx.purchaseOrder.findFirst({
+      where: { id: orderId, ownerId },
+      select: {
+        id: true,
+        status: true,
+        allocationStatus: true,
+        deliveredAt: true,
+        items: {
+          select: {
+            id: true,
+            allocatedTotalCost: true,
+            _count: { select: { inventoryItems: true, inspections: true } },
+          },
+        },
+        _count: { select: { afterSaleCases: true, refundRecords: true } },
+      },
+    });
+    if (!order) {
+      throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
+    }
+    return order;
+  }
+
+  private async assertPurchaseItemsEditable(
+    tx: Prisma.TransactionClient,
+    ownerId: string,
+    orderId: string,
+  ) {
+    const order = await this.getPurchaseItemEditSnapshot(tx, ownerId, orderId);
+    const reason = purchaseItemEditLockReason(order);
+    if (reason) {
+      throw new ServiceError("PURCHASE_ITEM_EDIT_LOCKED", reason, 409);
+    }
+    return order;
+  }
+
+  async getPurchaseItemsEditability(ownerId: string, orderId: string) {
+    const order = await this.getPurchaseItemEditSnapshot(db, ownerId, orderId);
+    const reason = purchaseItemEditLockReason(order);
+    return {
+      editable: !reason,
+      reasonCode: reason ? "PURCHASE_ITEM_EDIT_LOCKED" : null,
+      reason,
+    };
+  }
+
+  async addPurchaseItem(
+    ownerId: string,
+    orderId: string,
+    input: PurchaseItemMutationInput,
+  ) {
+    await db.$transaction(async (tx) => {
+      await this.assertPurchaseItemsEditable(tx, ownerId, orderId);
+      await tx.purchaseOrderItem.create({
+        data: {
+          purchaseOrderId: orderId,
+          name: input.name,
+          skuText: normalizeSku(input.skuText),
+          quantity: input.quantity,
+          referenceAmount: input.referenceAmount ? new Prisma.Decimal(input.referenceAmount) : null,
+          notes: input.notes?.trim() || null,
+        },
+      });
+    });
+    return this.getOrder(ownerId, orderId);
+  }
+
+  async updatePurchaseItem(
+    ownerId: string,
+    orderId: string,
+    itemId: string,
+    input: PurchaseItemMutationInput,
+  ) {
+    await db.$transaction(async (tx) => {
+      const order = await this.assertPurchaseItemsEditable(tx, ownerId, orderId);
+      if (!order.items.some((item) => item.id === itemId)) {
+        throw new ServiceError("PURCHASE_ITEM_NOT_FOUND", "商品明细不存在。", 404);
+      }
+      await tx.purchaseOrderItem.update({
+        where: { id: itemId },
+        data: {
+          name: input.name,
+          skuText: normalizeSku(input.skuText),
+          quantity: input.quantity,
+          referenceAmount: input.referenceAmount ? new Prisma.Decimal(input.referenceAmount) : null,
+          notes: input.notes?.trim() || null,
+        },
+      });
+    });
+    return this.getOrder(ownerId, orderId);
+  }
+
+  async deletePurchaseItem(ownerId: string, orderId: string, itemId: string) {
+    await db.$transaction(async (tx) => {
+      const order = await this.assertPurchaseItemsEditable(tx, ownerId, orderId);
+      if (!order.items.some((item) => item.id === itemId)) {
+        throw new ServiceError("PURCHASE_ITEM_NOT_FOUND", "商品明细不存在。", 404);
+      }
+      if (order.items.length <= 1) {
+        throw new ServiceError("PURCHASE_ORDER_REQUIRES_ITEM", "采购订单至少保留一条商品明细。", 409);
+      }
+      await tx.purchaseOrderItem.delete({ where: { id: itemId } });
+    });
+    return this.getOrder(ownerId, orderId);
+  }
+
   async createOrder(ownerId: string, input: PurchaseOrderInput) {
     try {
       const order = await db.$transaction(async (tx) =>
@@ -46,8 +217,9 @@ export class PurchaseOrderService {
             items: {
               create: input.items.map((item) => ({
                 name: item.name,
-                skuText: item.skuText || null,
+                skuText: normalizeSku(item.skuText),
                 quantity: item.quantity,
+                referenceAmount: item.referenceAmount ? new Prisma.Decimal(item.referenceAmount) : null,
                 notes: item.notes || null,
               })),
             },
@@ -96,6 +268,13 @@ export class PurchaseOrderService {
             },
           },
         },
+        afterSaleCases: {
+          select: {
+            id: true,
+            status: true,
+            refundRecords: { select: { refundAmount: true } },
+          },
+        },
       },
     });
     if (!order) {
@@ -114,7 +293,55 @@ export class PurchaseOrderService {
             take: 20,
           })
         : [];
-    return serializeOrder({ ...order, logisticsEvents });
+    const { afterSaleCases, ...orderDetail } = order;
+    const paidTotal = order.totalAmount.plus(order.shippingAmount);
+    const totalPurchaseRefundedAmount = sumDecimals(
+      afterSaleCases.flatMap((afterSaleCase) =>
+        afterSaleCase.refundRecords.map((record) => record.refundAmount),
+      ),
+    );
+    const saleOrderIds = orderDetail.items.flatMap((item) => item.inventoryItems.flatMap((inventoryItem) =>
+      inventoryItem.saleLines
+        .filter((line) => ["CONFIRMED", "SETTLED"].includes(line.saleOrder.status))
+        .map((line) => line.saleOrderId),
+    ));
+    const salesAfterSaleFinancials = await getSalesAfterSaleFinancials(ownerId, saleOrderIds);
+    const purchaseItemsEditability = await this.getPurchaseItemsEditability(ownerId, orderId);
+    const items = orderDetail.items.map((item) => ({
+      ...item,
+      inventoryItems: item.inventoryItems.map((inventoryItem) => ({
+        ...inventoryItem,
+        saleLines: inventoryItem.saleLines.map((line) => {
+          const financial = salesAfterSaleFinancials.lines.get(line.id);
+          return {
+            ...line,
+            salesAfterSaleFinancials: financial ? {
+              refundedAmount: financial.refundedAmount,
+              restockedCostReversal: financial.restockedCostReversal,
+              afterSaleNetProfit: financial.afterSaleNetProfit,
+            } : null,
+          };
+        }),
+      })),
+    }));
+
+    return serializeOrder({
+      ...orderDetail,
+      items,
+      purchaseItemsEditability,
+      logisticsEvents,
+      purchaseAfterSalesSummary: {
+        totalPurchaseRefundedAmount,
+        netPurchasePaidAmount: paidTotal.minus(totalPurchaseRefundedAmount),
+        totalCaseCount: afterSaleCases.length,
+        inProgressCaseCount: afterSaleCases.filter((afterSaleCase) =>
+          isActivePurchaseAfterSaleStatus(afterSaleCase.status),
+        ).length,
+        completedCaseCount: afterSaleCases.filter(
+          (afterSaleCase) => afterSaleCase.status === "COMPLETED",
+        ).length,
+      },
+    });
   }
 
   async listOrders(ownerId: string, query: OrderListQuery) {
@@ -269,8 +496,9 @@ export class PurchaseOrderService {
             where: { id: item.id, purchaseOrderId: orderId },
             data: {
               name: item.name,
-              skuText: item.skuText || null,
+              skuText: normalizeSku(item.skuText),
               quantity: item.quantity,
+              referenceAmount: item.referenceAmount ? new Prisma.Decimal(item.referenceAmount) : null,
               notes: item.notes || null,
               allocatedTotalCost: null,
             },
@@ -280,8 +508,9 @@ export class PurchaseOrderService {
             data: {
               purchaseOrderId: orderId,
               name: item.name,
-              skuText: item.skuText || null,
+              skuText: normalizeSku(item.skuText),
               quantity: item.quantity,
+              referenceAmount: item.referenceAmount ? new Prisma.Decimal(item.referenceAmount) : null,
               notes: item.notes || null,
             },
           });

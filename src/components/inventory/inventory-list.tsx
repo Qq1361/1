@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
-import { formatItemStatus, formatSaleMode } from "@/lib/status-labels";
+import { formatInventoryOwnershipStatus, formatItemStatus, formatSaleMode } from "@/lib/status-labels";
+import { SUPPORTED_INVENTORY_ITEM_STATUSES } from "@/lib/inventory-item-status-contract";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -38,21 +41,10 @@ type InventoryRow = {
   locationStatus: string;
   storageLocation: string | null;
   saleMode: string;
+  ownershipStatus: string;
 };
 
-const inventoryStatusOptions = [
-  "STOCKED",
-  "PLATFORM_SHIPPED",
-  "PLATFORM_RECEIVED",
-  "PLATFORM_IN_WAREHOUSE",
-  "PLATFORM_LISTED",
-  "SOLD",
-  "PROBLEM",
-  "PLATFORM_REJECTED",
-  "RETURNING",
-  "RETURNED",
-  "REMOVED",
-] as const;
+const inventoryStatusOptions = SUPPORTED_INVENTORY_ITEM_STATUSES;
 
 function daysUntil(date: string | null) {
   if (!date) return "未填写";
@@ -78,21 +70,37 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
   const searchParams = useSearchParams();
   const reminderParam = searchParams.get("reminder") ?? "";
   const queryParam = searchParams.get("query") ?? "";
+  const productNameExact = searchParams.get("productNameExact") ?? "";
+  const skuExact = searchParams.get("skuExact") ?? "";
+  const skuEmpty = searchParams.get("skuEmpty") === "true";
 
   const [query, setQuery] = useState(queryParam);
   const [status, setStatus] = useState("ALL");
   const [result, setResult] = useState<{ data: InventoryRow[]; total: number } | null>(
     null,
   );
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkSkuText, setBulkSkuText] = useState("");
+  const [overwriteExisting, setOverwriteExisting] = useState(false);
+  const [allowMixedProducts, setAllowMixedProducts] = useState(false);
+  const [includeHistorical, setIncludeHistorical] = useState(false);
+  const [bulkPending, setBulkPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
     if (query) params.set("query", query);
     if (status !== "ALL") params.set("itemStatus", status);
     if (reminderParam) params.set("reminder", reminderParam);
+    if (productNameExact) params.set("productNameExact", productNameExact);
+    if (skuExact) params.set("skuExact", skuExact);
+    if (skuEmpty) params.set("skuEmpty", "true");
     const response = await fetch(`/api/inventory?${params}`);
-    setResult(await response.json());
-  }, [query, status, reminderParam]);
+    const body = await response.json();
+    if (!response.ok) { setError(body?.message ?? "库存加载失败。"); return; }
+    setError(null); setResult(body);
+  }, [query, status, reminderParam, productNameExact, skuExact, skuEmpty]);
 
   useEffect(() => {
     const timer = setTimeout(load, 200);
@@ -107,6 +115,21 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
   }, [queryParam]);
 
   const title = reminderLabels[reminderParam] ? `库存 · ${reminderLabels[reminderParam]}` : "库存";
+
+  const selectedItems = result?.data.filter((item) => selectedIds.includes(item.id)) ?? [];
+  const productCount = new Set(selectedItems.map((item) => item.name)).size;
+  const historicalCount = selectedItems.filter((item) => item.itemStatus === "SOLD").length;
+  const toggleSelected = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  async function submitBulkSku() {
+    setBulkPending(true);
+    try {
+      const response = await fetch("/api/inventory/bulk-sku", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inventoryItemIds: selectedIds, skuText: bulkSkuText, overwriteExisting, allowMixedProducts, includeHistorical }) });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) { setError(body?.message ?? "批量设置 SKU 失败。"); return; }
+      setBulkOpen(false); setSelectedIds([]); await load();
+    } catch { setError("网络异常，批量设置 SKU 失败。"); }
+    finally { setBulkPending(false); }
+  }
 
   return (
     <div className="space-y-5">
@@ -123,6 +146,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
           </Link>
         ) : null}
       </div>
+      {(productNameExact || skuExact || skuEmpty) ? <div className="flex flex-wrap items-center gap-2 text-xs"><span className="rounded-full border px-2 py-1">商品：{productNameExact}</span><span className="rounded-full border px-2 py-1">SKU：{skuEmpty ? "未填写" : skuExact}</span><Link href="/inventory?tab=details" className={buttonVariants({ variant: "ghost", size: "sm" })}>清除精确筛选</Link></div> : null}
       <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -146,6 +170,8 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
         </Select>
       </div>
 
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {selectedIds.length ? <div className="flex items-center justify-between rounded-lg border p-3 text-sm"><span>已选择 {selectedIds.length} 件库存</span><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => setBulkOpen(true)}>批量设置 SKU / 色号</button></div> : null}
       {!result ? (
         <Skeleton className="h-48" />
       ) : result.data.length ? (
@@ -154,6 +180,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
             {result.data.map((item) => (
               <Card key={item.id} className="rounded-lg shadow-none">
                 <CardContent className="space-y-3 p-4">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelected(item.id)} /> 选择此库存</label>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium">{item.name}</p>
@@ -168,6 +195,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                     <span>库位 {item.storageLocation || "未填写"}</span>
                     <span>{formatSaleMode(item.saleMode)}</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">{formatInventoryOwnershipStatus(item.ownershipStatus)}</p>
                   <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "outline", className: "w-full" })}>
                     查看详情
                   </Link>
@@ -179,6 +207,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">选择</TableHead>
                   <TableHead>库存编号</TableHead>
                   <TableHead>商品</TableHead>
                   <TableHead>库位</TableHead>
@@ -193,6 +222,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
               <TableBody>
                 {result.data.map((item) => (
                   <TableRow key={item.id}>
+                    <TableCell><input aria-label={`选择 ${item.inventoryCode}`} type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelected(item.id)} /></TableCell>
                     <TableCell>{item.inventoryCode}</TableCell>
                     <TableCell>
                       <p>{item.name}</p>
@@ -207,6 +237,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                       <Badge variant={item.itemStatus === "PROBLEM" ? "destructive" : "secondary"}>
                         {formatItemStatus(item.itemStatus)}
                       </Badge>
+                      <p className="mt-1 text-xs text-muted-foreground">{formatInventoryOwnershipStatus(item.ownershipStatus)}</p>
                     </TableCell>
                     <TableCell className="text-right">
                       <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>查看</Link>
@@ -222,6 +253,21 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
           暂无符合条件的库存
         </div>
       )}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>批量设置 SKU / 色号</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>已选择 {selectedIds.length} 件库存，涉及 {productCount} 个商品。</p>
+            {productCount > 1 ? <p className="rounded-md bg-amber-50 p-2 text-amber-800">包含多个不同商品。默认拒绝提交，需明确确认。</p> : null}
+            {historicalCount ? <p className="rounded-md bg-amber-50 p-2 text-amber-800">包含 {historicalCount} 件已售出库存档案。默认不会批量修改。</p> : null}
+            <div className="space-y-2"><Label htmlFor="bulkSkuText">新 SKU / 色号</Label><Input id="bulkSkuText" value={bulkSkuText} onChange={(event) => setBulkSkuText(event.target.value)} placeholder="例如 2C0、1W1" /></div>
+            <label className="flex gap-2"><input type="checkbox" checked={overwriteExisting} onChange={(event) => setOverwriteExisting(event.target.checked)} />覆盖已有 SKU（默认只补空 SKU）</label>
+            <label className="flex gap-2"><input type="checkbox" checked={allowMixedProducts} onChange={(event) => setAllowMixedProducts(event.target.checked)} />我确认允许跨商品批量设置</label>
+            <label className="flex gap-2"><input type="checkbox" checked={includeHistorical} onChange={(event) => setIncludeHistorical(event.target.checked)} />我确认包含已售出库存档案</label>
+          </div>
+          <DialogFooter><button type="button" className={buttonVariants({ variant: "outline" })} disabled={bulkPending} onClick={() => setBulkOpen(false)}>取消</button><button type="button" className={buttonVariants()} disabled={bulkPending} onClick={submitBulkSku}>{bulkPending ? "保存中..." : "确认批量设置"}</button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

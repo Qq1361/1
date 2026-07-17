@@ -83,15 +83,33 @@ enum ItemStatus {
   RETURNING
   RETURNED
   SOLD
-  LISTED
-  IN_BATCH
-  SHIPPED_TO_WAREHOUSE
-  WAREHOUSE_RECEIVED
-  INBOUND_SUCCESS
-  INBOUND_FAILED
-  PENDING_SETTLEMENT
-  SETTLED
   PROBLEM
+}
+
+enum InventoryOwnershipStatus {
+  OWNED
+  RETURNING_TO_UPSTREAM_SELLER
+  RETURNED_TO_UPSTREAM_SELLER
+}
+
+enum PurchaseAfterSaleType {
+  REFUND_ONLY
+  RETURN_AND_REFUND
+}
+
+enum PurchaseAfterSaleStatus {
+  DRAFT
+  REQUESTED
+  SELLER_APPROVED
+  SELLER_REJECTED
+  RETURN_PENDING
+  RETURNING_TO_SELLER
+  SELLER_RECEIVED
+  REFUND_PENDING
+  PARTIALLY_REFUNDED
+  REFUNDED
+  COMPLETED
+  CANCELLED
 }
 
 enum ShipmentPlatform {
@@ -150,62 +168,224 @@ enum SaleFeeType {
   OTHER
 }
 
+enum SaleAfterSaleType {
+  REFUND_ONLY
+  RETURN_AND_REFUND
+}
+
+enum SaleAfterSaleStatus {
+  DRAFT
+  REQUESTED
+  APPROVED
+  REJECTED
+  RETURN_PENDING
+  RETURNING
+  RETURN_RECEIVED
+  INSPECTED
+  REFUND_PENDING
+  PARTIALLY_REFUNDED
+  REFUNDED
+  COMPLETED
+  CANCELLED
+}
+
+enum SaleAfterSaleInspectionResult {
+  RESTOCKED
+  PROBLEM
+  PENDING_DECISION
+}
+
+enum PlatformReturnInspectionResult {
+  RESTOCKED
+  PROBLEM
+  PENDING_DECISION
+}
+
+enum MarketPlatform {
+  DEWU
+  NINETY_FIVE
+  XIANYU
+  OTHER
+}
+
+enum MarketQuoteType {
+  EXPECTED_INCOME
+  LISTING_PRICE
+  MANUAL_REFERENCE
+}
+
+enum MarketQuoteSourceType {
+  MANUAL
+}
+
+enum DailyBusinessReportDeliveryChannel {
+  FEISHU
+}
+
+enum DailyBusinessReportDeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  purchaseOrders  PurchaseOrder[]
-  attachments     Attachment[]
-  logisticsEvents LogisticsEvent[]
-  inspections     Inspection[]
-  inventoryItems     InventoryItem[]
-  reminderStates     ReminderState[]
-  inventoryActionLogs InventoryActionLog[]
-  todoResolutions    TodoResolution[]
-  shipmentBatches         PlatformShipmentBatch[]
-  shipmentGroups          PlatformShipmentGroup[]
-  shipmentLines           PlatformShipmentLine[]
-  shipmentAttachments     PlatformShipmentAttachment[]
-  shipmentActionLogs      PlatformShipmentActionLog[]
-  saleOrders              SaleOrder[]
-  saleLines               SaleLine[]
-  saleFeeLines            SaleFeeLine[]
-  saleActionLogs          SaleActionLog[]
+  purchaseOrders              PurchaseOrder[]
+  attachments                 Attachment[]
+  logisticsEvents             LogisticsEvent[]
+  inspections                 Inspection[]
+  inventoryItems              InventoryItem[]
+  reminderStates              ReminderState[]
+  inventoryActionLogs         InventoryActionLog[]
+  todoResolutions             TodoResolution[]
+  shipmentBatches             PlatformShipmentBatch[]
+  shipmentGroups              PlatformShipmentGroup[]
+  shipmentLines               PlatformShipmentLine[]
+  shipmentAttachments         PlatformShipmentAttachment[]
+  shipmentActionLogs          PlatformShipmentActionLog[]
+  saleOrders                  SaleOrder[]
+  saleLines                   SaleLine[]
+  saleFeeLines                SaleFeeLine[]
+  saleActionLogs              SaleActionLog[]
+  saleAfterSaleCases          SaleAfterSaleCase[]
+  saleAfterSaleLines          SaleAfterSaleLine[]
+  saleRefundRecords           SaleRefundRecord[]
+  saleRefundAllocations       SaleRefundAllocation[]
+  saleAfterSaleInspections    SaleAfterSaleInspection[]
+  saleAfterSaleActionLogs     SaleAfterSaleActionLog[]
+  purchaseAfterSaleCases      PurchaseAfterSaleCase[]
+  purchaseAfterSaleLines      PurchaseAfterSaleLine[]
+  purchaseRefundRecords       PurchaseRefundRecord[]
+  purchaseRefundAllocations   PurchaseRefundAllocation[]
+  purchaseAfterSaleActionLogs PurchaseAfterSaleActionLog[]
+  platformReturnInspections   PlatformReturnInspection[]
+  platformReturnActionLogs    PlatformReturnActionLog[]
+  marketItems                 MarketItem[]
+  marketQuotes                MarketQuote[]
+  dailyBusinessReportDeliveries DailyBusinessReportDelivery[]
 
   @@map("users")
 }
 
+model DailyBusinessReportDelivery {
+  id              String                            @id @default(cuid())
+  ownerId         String
+  reportDate      DateTime                          @db.Date
+  timezone        String
+  channel         DailyBusinessReportDeliveryChannel
+  status          DailyBusinessReportDeliveryStatus @default(PENDING)
+  idempotencyKey  String                            @unique
+  attemptCount    Int                               @default(0)
+  requestedAt     DateTime
+  startedAt       DateTime?
+  sentAt          DateTime?
+  failedAt        DateTime?
+  lastErrorCode   String?
+  lastErrorMessage String?
+  providerRequestId String?
+  createdAt       DateTime                          @default(now())
+  updatedAt       DateTime                          @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@unique([ownerId, reportDate, channel])
+  @@index([ownerId, reportDate])
+  @@index([ownerId, status, updatedAt])
+  @@map("daily_business_report_deliveries")
+}
+
+model MarketItem {
+  id                        String        @id @default(cuid())
+  ownerId                   String
+  displayName               String
+  normalizedName            String
+  skuText                   String?
+  normalizedSku             String?
+  versionText               String?
+  conditionText             String?
+  packageVariant            String?
+  accessoryVariant          String?
+  defaultTargetProfitAmount Decimal?      @db.Decimal(12, 2)
+  note                      String?
+  isActive                  Boolean       @default(true)
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+
+  owner  User          @relation(fields: [ownerId], references: [id])
+  quotes MarketQuote[]
+
+  @@index([ownerId, isActive])
+  @@index([ownerId, normalizedName])
+  @@index([ownerId, normalizedName, normalizedSku])
+  @@index([ownerId, updatedAt(sort: Desc)])
+  @@map("market_items")
+}
+
+model MarketQuote {
+  id                 String                @id @default(cuid())
+  ownerId            String
+  marketItemId       String
+  platform           MarketPlatform
+  quoteType          MarketQuoteType
+  amount             Decimal               @db.Decimal(12, 2)
+  recordedAt         DateTime
+  expiresAt          DateTime?
+  sourceType         MarketQuoteSourceType @default(MANUAL)
+  sourceReference    String?
+  confirmedAt        DateTime?
+  invalidatedAt      DateTime?
+  invalidationReason String?
+  note               String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  owner      User       @relation(fields: [ownerId], references: [id])
+  marketItem MarketItem @relation(fields: [marketItemId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, marketItemId, recordedAt(sort: Desc)])
+  @@index([ownerId, marketItemId, platform, quoteType, recordedAt(sort: Desc)])
+  @@index([ownerId, platform, recordedAt(sort: Desc)])
+  @@index([ownerId, confirmedAt, invalidatedAt])
+  @@index([expiresAt])
+  @@map("market_quotes")
+}
+
 model PurchaseOrder {
-  id                      String              @id @default(cuid())
-  ownerId                 String
-  orderNo                 String
-  platform                PurchasePlatform    @default(XIANYU)
-  status                  PurchaseOrderStatus @default(PAID)
-  allocationStatus        AllocationStatus    @default(UNALLOCATED)
-  allocationConfirmedAt   DateTime?
-  paidAt                  DateTime
-  totalAmount             Decimal             @db.Decimal(12, 2)
-  shippingAmount          Decimal             @default(0) @db.Decimal(12, 2)
-  carrierCode             String?
-  trackingNo              String?
-  shippedAt               DateTime?
-  deliveredAt             DateTime?
-  logisticsStatus           LogisticsStatus @default(NOT_SHIPPED)
+  id                        String              @id @default(cuid())
+  ownerId                   String
+  orderNo                   String
+  platform                  PurchasePlatform    @default(XIANYU)
+  status                    PurchaseOrderStatus @default(PAID)
+  allocationStatus          AllocationStatus    @default(UNALLOCATED)
+  allocationConfirmedAt     DateTime?
+  paidAt                    DateTime
+  totalAmount               Decimal             @db.Decimal(12, 2)
+  shippingAmount            Decimal             @default(0) @db.Decimal(12, 2)
+  carrierCode               String?
+  trackingNo                String?
+  shippedAt                 DateTime?
+  deliveredAt               DateTime?
+  logisticsStatus           LogisticsStatus     @default(NOT_SHIPPED)
   logisticsLastCheckedAt    DateTime?
   logisticsLastEventAt      DateTime?
   logisticsLastEventText    String?
   logisticsExceptionType    String?
   logisticsExceptionMessage String?
-  notes                   String?
-  sellerNickname          String?
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @updatedAt
+  notes                     String?
+  sellerNickname            String?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
 
-  owner User                @relation(fields: [ownerId], references: [id])
-  items PurchaseOrderItem[]
+  owner           User                    @relation(fields: [ownerId], references: [id])
+  items           PurchaseOrderItem[]
   logisticsEvents LogisticsEvent[]
+  afterSaleCases  PurchaseAfterSaleCase[]
+  refundRecords   PurchaseRefundRecord[]
 
   @@unique([ownerId, orderNo])
   @@index([ownerId, status])
@@ -219,14 +399,16 @@ model PurchaseOrderItem {
   name               String
   skuText            String?
   quantity           Int
+  referenceAmount    Decimal? @db.Decimal(12, 2)
   allocatedTotalCost Decimal? @db.Decimal(12, 2)
   notes              String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  inspections   Inspection[]
+  purchaseOrder  PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inspections    Inspection[]
   inventoryItems InventoryItem[]
+  afterSaleLines PurchaseAfterSaleLine[]
 
   @@index([purchaseOrderId])
   @@map("purchase_order_items")
@@ -271,12 +453,12 @@ model LogisticsEvent {
 }
 
 model Inspection {
-  id                  String           @id @default(cuid())
+  id                  String            @id @default(cuid())
   ownerId             String
   purchaseOrderItemId String
   sequence            Int
-  status              InspectionStatus @default(PENDING)
-  currentStep         Int              @default(1)
+  status              InspectionStatus  @default(PENDING)
+  currentStep         Int               @default(1)
   hasBox              Boolean?
   capCondition        String?
   paintCondition      String?
@@ -290,12 +472,13 @@ model Inspection {
   notes               String?
   startedAt           DateTime?
   completedAt         DateTime?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
-  owner             User              @relation(fields: [ownerId], references: [id])
-  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  owner             User                    @relation(fields: [ownerId], references: [id])
+  purchaseOrderItem PurchaseOrderItem       @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
   inventoryItem     InventoryItem?
+  afterSaleLines    PurchaseAfterSaleLine[]
 
   @@unique([purchaseOrderItemId, sequence])
   @@index([ownerId, status])
@@ -303,36 +486,171 @@ model Inspection {
 }
 
 model InventoryItem {
-  id                  String         @id @default(cuid())
+  id                  String                   @id @default(cuid())
   ownerId             String
   purchaseOrderItemId String
-  inspectionId        String         @unique
+  inspectionId        String                   @unique
   inventoryCode       String
   name                String
   skuText             String?
-  unitCost            Decimal        @db.Decimal(12, 2)
+  unitCost            Decimal                  @db.Decimal(12, 2)
   expiryDate          DateTime?
-  locationStatus      LocationStatus @default(LOCAL)
+  locationStatus      LocationStatus           @default(LOCAL)
   storageLocation     String?
-  saleMode            SaleMode       @default(NONE)
+  saleMode            SaleMode                 @default(NONE)
   itemStatus          ItemStatus
+  ownershipStatus     InventoryOwnershipStatus @default(OWNED)
   stockedAt           DateTime
   outboundAt          DateTime?
   problemReason       String?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
 
-  owner             User              @relation(fields: [ownerId], references: [id])
-  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
-  inspection       Inspection        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
-  actionLogs       InventoryActionLog[]
-  shipmentLines    PlatformShipmentLine[]
-  saleLines        SaleLine[]
+  owner                  User                    @relation(fields: [ownerId], references: [id])
+  purchaseOrderItem      PurchaseOrderItem       @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  inspection             Inspection              @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  actionLogs             InventoryActionLog[]
+  shipmentLines          PlatformShipmentLine[]
+  platformReturnInspections PlatformReturnInspection[]
+  saleLines              SaleLine[]
+  saleAfterSaleLines     SaleAfterSaleLine[]
+  purchaseAfterSaleLines PurchaseAfterSaleLine[]
 
   @@unique([ownerId, inventoryCode])
   @@index([ownerId, itemStatus])
+  @@index([ownerId, ownershipStatus])
   @@index([ownerId, locationStatus, saleMode])
   @@map("inventory_items")
+}
+
+model PurchaseAfterSaleCase {
+  id                String                  @id @default(cuid())
+  ownerId           String
+  caseNo            String                  @unique
+  purchaseOrderId   String
+  type              PurchaseAfterSaleType
+  status            PurchaseAfterSaleStatus @default(DRAFT)
+  reason            String?
+  requestedAt       DateTime?
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  returnCarrierCode String?
+  returnTrackingNo  String?
+  returnShippedAt   DateTime?
+  sellerReceivedAt  DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  note              String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  owner         User                         @relation(fields: [ownerId], references: [id])
+  purchaseOrder PurchaseOrder                @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  lines         PurchaseAfterSaleLine[]
+  refundRecords PurchaseRefundRecord[]
+  actionLogs    PurchaseAfterSaleActionLog[]
+
+  @@index([ownerId, status])
+  @@index([ownerId, type])
+  @@index([ownerId, createdAt])
+  @@index([purchaseOrderId])
+  @@map("purchase_after_sale_cases")
+}
+
+model PurchaseAfterSaleLine {
+  id                    String   @id @default(cuid())
+  ownerId               String
+  afterSaleCaseId       String
+  purchaseOrderItemId   String
+  inspectionId          String
+  inventoryItemId       String
+  requestedRefundAmount Decimal  @db.Decimal(12, 2)
+  approvedRefundAmount  Decimal? @db.Decimal(12, 2)
+  returnRequired        Boolean
+  returnedToSeller      Boolean  @default(false)
+  productNameSnapshot   String
+  skuSnapshot           String?
+  inventoryCodeSnapshot String
+  costAmountSnapshot    Decimal  @db.Decimal(12, 2)
+  note                  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  owner             User                       @relation(fields: [ownerId], references: [id])
+  afterSaleCase     PurchaseAfterSaleCase      @relation(fields: [afterSaleCaseId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem          @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Restrict)
+  inspection        Inspection                 @relation(fields: [inspectionId], references: [id], onDelete: Restrict)
+  inventoryItem     InventoryItem              @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  refundAllocations PurchaseRefundAllocation[]
+
+  @@unique([afterSaleCaseId, inspectionId])
+  @@unique([afterSaleCaseId, inventoryItemId])
+  @@index([ownerId, afterSaleCaseId])
+  @@index([ownerId, purchaseOrderItemId])
+  @@index([ownerId, inspectionId])
+  @@index([ownerId, inventoryItemId])
+  @@map("purchase_after_sale_lines")
+}
+
+model PurchaseRefundRecord {
+  id               String   @id @default(cuid())
+  ownerId          String
+  afterSaleCaseId  String
+  purchaseOrderId  String
+  refundAmount     Decimal  @db.Decimal(12, 2)
+  refundedAt       DateTime
+  refundMethod     String?
+  externalRefundNo String?
+  idempotencyKey   String   @unique
+  note             String?
+  createdAt        DateTime @default(now())
+
+  owner         User                       @relation(fields: [ownerId], references: [id])
+  afterSaleCase PurchaseAfterSaleCase      @relation(fields: [afterSaleCaseId], references: [id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder              @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  allocations   PurchaseRefundAllocation[]
+
+  @@index([ownerId, afterSaleCaseId])
+  @@index([ownerId, purchaseOrderId])
+  @@index([ownerId, refundedAt])
+  @@index([ownerId, externalRefundNo])
+  @@map("purchase_refund_records")
+}
+
+model PurchaseRefundAllocation {
+  id              String   @id @default(cuid())
+  ownerId         String
+  refundRecordId  String
+  afterSaleLineId String
+  amount          Decimal  @db.Decimal(12, 2)
+  createdAt       DateTime @default(now())
+
+  owner         User                  @relation(fields: [ownerId], references: [id])
+  refundRecord  PurchaseRefundRecord  @relation(fields: [refundRecordId], references: [id], onDelete: Cascade)
+  afterSaleLine PurchaseAfterSaleLine @relation(fields: [afterSaleLineId], references: [id], onDelete: Restrict)
+
+  @@unique([refundRecordId, afterSaleLineId])
+  @@index([ownerId, refundRecordId])
+  @@index([ownerId, afterSaleLineId])
+  @@map("purchase_refund_allocations")
+}
+
+model PurchaseAfterSaleActionLog {
+  id              String   @id @default(cuid())
+  ownerId         String
+  afterSaleCaseId String
+  action          String
+  fromStatus      String?
+  toStatus        String?
+  note            String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  owner         User                  @relation(fields: [ownerId], references: [id])
+  afterSaleCase PurchaseAfterSaleCase @relation(fields: [afterSaleCaseId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, afterSaleCaseId, createdAt(sort: Desc)])
+  @@map("purchase_after_sale_action_logs")
 }
 
 enum ReminderStatus {
@@ -362,7 +680,7 @@ model ReminderState {
 }
 
 model InventoryActionLog {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   ownerId            String
   inventoryItemId    String
   purchaseOrderId    String?
@@ -378,7 +696,7 @@ model InventoryActionLog {
   newStorageLocation String?
   oldExpiryDate      DateTime?
   newExpiryDate      DateTime?
-  createdAt          DateTime @default(now())
+  createdAt          DateTime  @default(now())
 
   owner         User          @relation(fields: [ownerId], references: [id])
   inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
@@ -409,25 +727,25 @@ model TodoResolution {
 }
 
 model PlatformShipmentBatch {
-  id                     String              @id @default(cuid())
-  ownerId                String
-  batchNo                String
-  platform               ShipmentPlatform
-  defaultPurpose         ShipmentPurpose
-  status                 ShipmentBatchStatus @default(DRAFT)
-  carrierCode            String?
-  trackingNo             String?
-  shippedAt              DateTime?
-  receivedAt             DateTime?
-  outboundShippingCost   Decimal?            @db.Decimal(12, 2)
-  packagingCost          Decimal?            @db.Decimal(12, 2)
-  otherShipmentCost      Decimal?            @db.Decimal(12, 2)
-  returnShippingCost     Decimal?            @db.Decimal(12, 2)
-  note                   String?
-  createdAt              DateTime            @default(now())
-  updatedAt              DateTime            @updatedAt
+  id                   String              @id @default(cuid())
+  ownerId              String
+  batchNo              String
+  platform             ShipmentPlatform
+  defaultPurpose       ShipmentPurpose
+  status               ShipmentBatchStatus @default(DRAFT)
+  carrierCode          String?
+  trackingNo           String?
+  shippedAt            DateTime?
+  receivedAt           DateTime?
+  outboundShippingCost Decimal?            @db.Decimal(12, 2)
+  packagingCost        Decimal?            @db.Decimal(12, 2)
+  otherShipmentCost    Decimal?            @db.Decimal(12, 2)
+  returnShippingCost   Decimal?            @db.Decimal(12, 2)
+  note                 String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
-  owner       User                      @relation(fields: [ownerId], references: [id])
+  owner       User                         @relation(fields: [ownerId], references: [id])
   groups      PlatformShipmentGroup[]
   lines       PlatformShipmentLine[]
   attachments PlatformShipmentAttachment[]
@@ -441,55 +759,56 @@ model PlatformShipmentBatch {
 }
 
 model PlatformShipmentGroup {
-  id               String            @id @default(cuid())
-  ownerId          String
-  batchId          String
-  platformOrderNo  String?
-  platformTradeNo  String?
-  groupName        String?
-  purpose          ShipmentPurpose?
-  note             String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id              String           @id @default(cuid())
+  ownerId         String
+  batchId         String
+  platformOrderNo String?
+  platformTradeNo String?
+  groupName       String?
+  purpose         ShipmentPurpose?
+  note            String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
-  owner  User                    @relation(fields: [ownerId], references: [id])
-  batch  PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  lines  PlatformShipmentLine[]
+  owner User                   @relation(fields: [ownerId], references: [id])
+  batch PlatformShipmentBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  lines PlatformShipmentLine[]
 
   @@index([ownerId, batchId])
   @@map("platform_shipment_groups")
 }
 
 model PlatformShipmentLine {
-  id                         String              @id @default(cuid())
-  ownerId                    String
-  batchId                    String
-  groupId                    String?
-  inventoryItemId            String
-  lineStatus                 ShipmentLineStatus  @default(DRAFT)
-  inventoryCodeSnapshot      String
-  productNameSnapshot        String
-  skuSnapshot                String?
-  unitCostSnapshot           Decimal             @db.Decimal(12, 2)
-  oldSaleModeSnapshot        String?
-  newSaleModeSnapshot        String?
-  sourcePurchaseOrderId      String
-  packedCheckedAt            DateTime?
-  packedChecked              Boolean             @default(false)
-  rejectedReason             String?
-  returnCarrierCode          String?
-  returnTrackingNo           String?
-  returnedAt                 DateTime?
-  returnedStorageLocation    String?
-  note                       String?
-  createdAt                  DateTime            @default(now())
-  updatedAt                  DateTime            @updatedAt
+  id                      String             @id @default(cuid())
+  ownerId                 String
+  batchId                 String
+  groupId                 String?
+  inventoryItemId         String
+  lineStatus              ShipmentLineStatus @default(DRAFT)
+  inventoryCodeSnapshot   String
+  productNameSnapshot     String
+  skuSnapshot             String?
+  unitCostSnapshot        Decimal            @db.Decimal(12, 2)
+  oldSaleModeSnapshot     String?
+  newSaleModeSnapshot     String?
+  sourcePurchaseOrderId   String
+  packedCheckedAt         DateTime?
+  packedChecked           Boolean            @default(false)
+  rejectedReason          String?
+  returnCarrierCode       String?
+  returnTrackingNo        String?
+  returnedAt              DateTime?
+  returnedStorageLocation String?
+  note                    String?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
 
-  owner         User                    @relation(fields: [ownerId], references: [id])
-  batch         PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  group         PlatformShipmentGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  inventoryItem InventoryItem           @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  owner         User                   @relation(fields: [ownerId], references: [id])
+  batch         PlatformShipmentBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  group         PlatformShipmentGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  inventoryItem InventoryItem          @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   saleLines     SaleLine[]
+  returnInspection PlatformReturnInspection?
 
   @@unique([ownerId, inventoryItemId, batchId])
   @@index([ownerId, batchId])
@@ -499,18 +818,18 @@ model PlatformShipmentLine {
 }
 
 model PlatformShipmentAttachment {
-  id         String   @id @default(cuid())
-  ownerId    String
-  batchId    String
-  lineId     String?
-  fileName   String
-  fileUrl    String
-  fileType   String
-  note       String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  ownerId   String
+  batchId   String
+  lineId    String?
+  fileName  String
+  fileUrl   String
+  fileType  String
+  note      String?
+  createdAt DateTime @default(now())
 
-  owner User                    @relation(fields: [ownerId], references: [id])
-  batch PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  owner User                  @relation(fields: [ownerId], references: [id])
+  batch PlatformShipmentBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, batchId])
   @@map("platform_shipment_attachments")
@@ -530,16 +849,61 @@ model PlatformShipmentActionLog {
   note            String?
   createdAt       DateTime @default(now())
 
-  owner User                    @relation(fields: [ownerId], references: [id])
-  batch PlatformShipmentBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  owner User                  @relation(fields: [ownerId], references: [id])
+  batch PlatformShipmentBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, batchId, createdAt(sort: Desc)])
   @@index([ownerId, inventoryItemId])
   @@map("platform_shipment_action_logs")
 }
 
+model PlatformReturnInspection {
+  id              String                       @id @default(cuid())
+  ownerId         String
+  shipmentLineId  String                       @unique
+  inventoryItemId String
+  result          PlatformReturnInspectionResult
+  storageLocation String?
+  problemReason   String?
+  note            String?
+  inspectedAt     DateTime?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+
+  owner         User                 @relation(fields: [ownerId], references: [id])
+  shipmentLine  PlatformShipmentLine @relation(fields: [shipmentLineId], references: [id], onDelete: Restrict)
+  inventoryItem InventoryItem        @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  actionLogs    PlatformReturnActionLog[]
+
+  @@index([ownerId])
+  @@index([ownerId, result])
+  @@index([ownerId, inspectedAt])
+  @@index([inventoryItemId])
+  @@map("platform_return_inspections")
+}
+
+model PlatformReturnActionLog {
+  id         String                        @id @default(cuid())
+  ownerId    String
+  inspectionId String
+  action     String
+  fromResult PlatformReturnInspectionResult?
+  toResult   PlatformReturnInspectionResult?
+  note       String?
+  metadata   Json?
+  createdAt  DateTime                      @default(now())
+
+  owner      User                     @relation(fields: [ownerId], references: [id])
+  inspection PlatformReturnInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([inspectionId, createdAt])
+  @@index([ownerId, createdAt])
+  @@map("platform_return_action_logs")
+}
+
 model SaleOrder {
-  id                   String           @id @default(cuid())
+  id                   String          @id @default(cuid())
   ownerId              String
   saleNo               String
   platform             String
@@ -547,23 +911,25 @@ model SaleOrder {
   platformTradeNo      String?
   buyerName            String?
   soldAt               DateTime
-  grossAmount          Decimal          @db.Decimal(12, 2)
-  expectedIncome       Decimal?         @db.Decimal(12, 2)
-  actualReceivedAmount Decimal?         @db.Decimal(12, 2)
-  shippingCost         Decimal          @default(0) @db.Decimal(12, 2)
-  otherCost            Decimal          @default(0) @db.Decimal(12, 2)
-  status               SaleOrderStatus  @default(DRAFT)
+  grossAmount          Decimal         @db.Decimal(12, 2)
+  expectedIncome       Decimal?        @db.Decimal(12, 2)
+  actualReceivedAmount Decimal?        @db.Decimal(12, 2)
+  shippingCost         Decimal         @default(0) @db.Decimal(12, 2)
+  otherCost            Decimal         @default(0) @db.Decimal(12, 2)
+  status               SaleOrderStatus @default(DRAFT)
   note                 String?
   confirmedAt          DateTime?
   settledAt            DateTime?
   cancelledAt          DateTime?
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
-  owner     User          @relation(fields: [ownerId], references: [id])
-  lines     SaleLine[]
-  feeLines  SaleFeeLine[]
+  owner      User            @relation(fields: [ownerId], references: [id])
+  lines      SaleLine[]
+  feeLines   SaleFeeLine[]
   actionLogs SaleActionLog[]
+  afterSaleCases SaleAfterSaleCase[]
+  refundRecords  SaleRefundRecord[]
 
   @@unique([ownerId, saleNo])
   @@index([ownerId, status])
@@ -575,31 +941,32 @@ model SaleOrder {
 }
 
 model SaleLine {
-  id                       String   @id @default(cuid())
-  ownerId                  String
-  saleOrderId              String
-  inventoryItemId          String
-  inventoryCodeSnapshot    String
-  productNameSnapshot      String
-  skuSnapshot              String?
-  unitCostSnapshot         Decimal  @db.Decimal(12, 2)
-  saleAmount               Decimal  @default(0) @db.Decimal(12, 2)
-  costAmount               Decimal  @default(0) @db.Decimal(12, 2)
-  profitAmount             Decimal  @default(0) @db.Decimal(12, 2)
-  sourcePurchaseOrderId    String?
+  id                        String   @id @default(cuid())
+  ownerId                   String
+  saleOrderId               String
+  inventoryItemId           String
+  inventoryCodeSnapshot     String
+  productNameSnapshot       String
+  skuSnapshot               String?
+  unitCostSnapshot          Decimal  @db.Decimal(12, 2)
+  saleAmount                Decimal  @default(0) @db.Decimal(12, 2)
+  costAmount                Decimal  @default(0) @db.Decimal(12, 2)
+  profitAmount              Decimal  @default(0) @db.Decimal(12, 2)
+  sourcePurchaseOrderId     String?
   sourcePurchaseOrderItemId String?
-  sourceShipmentBatchId    String?
-  sourceShipmentLineId     String?
-  preSaleItemStatus        String
-  preSaleSaleMode          String?
-  preSaleStorageLocation   String?
-  createdAt                DateTime @default(now())
+  sourceShipmentBatchId     String?
+  sourceShipmentLineId      String?
+  preSaleItemStatus         String
+  preSaleSaleMode           String?
+  preSaleStorageLocation    String?
+  createdAt                 DateTime @default(now())
 
-  owner          User                    @relation(fields: [ownerId], references: [id])
-  saleOrder      SaleOrder               @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
-  inventoryItem  InventoryItem           @relation(fields: [inventoryItemId], references: [id])
-  shipmentBatch  PlatformShipmentBatch?  @relation(fields: [sourceShipmentBatchId], references: [id])
-  shipmentLine   PlatformShipmentLine?   @relation(fields: [sourceShipmentLineId], references: [id])
+  owner         User                   @relation(fields: [ownerId], references: [id])
+  saleOrder     SaleOrder              @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem          @relation(fields: [inventoryItemId], references: [id])
+  shipmentBatch PlatformShipmentBatch? @relation(fields: [sourceShipmentBatchId], references: [id])
+  shipmentLine  PlatformShipmentLine?  @relation(fields: [sourceShipmentLineId], references: [id])
+  afterSaleLines SaleAfterSaleLine[]
 
   @@index([ownerId, saleOrderId])
   @@index([ownerId, inventoryItemId])
@@ -636,4 +1003,158 @@ model SaleActionLog {
 
   @@index([ownerId, saleOrderId, createdAt(sort: Desc)])
   @@map("sale_action_logs")
+}
+
+model SaleAfterSaleCase {
+  id                String              @id @default(cuid())
+  ownerId           String
+  caseNo            String              @unique
+  saleOrderId       String
+  type              SaleAfterSaleType
+  status            SaleAfterSaleStatus @default(DRAFT)
+  reason            String?
+  requestedAt       DateTime?
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  returnCarrierCode String?
+  returnTrackingNo  String?
+  returnShippedAt   DateTime?
+  returnReceivedAt  DateTime?
+  inspectedAt       DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  note              String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  owner         User                       @relation(fields: [ownerId], references: [id])
+  saleOrder     SaleOrder                  @relation(fields: [saleOrderId], references: [id], onDelete: Restrict)
+  lines         SaleAfterSaleLine[]
+  refundRecords SaleRefundRecord[]
+  inspections   SaleAfterSaleInspection[]
+  actionLogs    SaleAfterSaleActionLog[]
+
+  @@index([ownerId, status])
+  @@index([ownerId, type])
+  @@index([ownerId, createdAt])
+  @@index([saleOrderId])
+  @@map("sale_after_sale_cases")
+}
+
+model SaleAfterSaleLine {
+  id                    String   @id @default(cuid())
+  ownerId               String
+  afterSaleCaseId       String
+  saleLineId            String
+  inventoryItemId       String
+  requestedRefundAmount Decimal  @db.Decimal(12, 2)
+  approvedRefundAmount  Decimal? @db.Decimal(12, 2)
+  returnRequired        Boolean
+  returnReceived        Boolean  @default(false)
+  productNameSnapshot   String
+  skuSnapshot           String?
+  inventoryCodeSnapshot String
+  saleAmountSnapshot    Decimal? @db.Decimal(12, 2)
+  costAmountSnapshot    Decimal  @db.Decimal(12, 2)
+  profitAmountSnapshot  Decimal? @db.Decimal(12, 2)
+  note                  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  owner             User                       @relation(fields: [ownerId], references: [id])
+  afterSaleCase     SaleAfterSaleCase          @relation(fields: [afterSaleCaseId], references: [id], onDelete: Cascade)
+  saleLine          SaleLine                   @relation(fields: [saleLineId], references: [id], onDelete: Restrict)
+  inventoryItem     InventoryItem              @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  refundAllocations SaleRefundAllocation[]
+  inspection        SaleAfterSaleInspection?
+
+  @@unique([afterSaleCaseId, saleLineId])
+  @@unique([afterSaleCaseId, inventoryItemId])
+  @@index([ownerId, afterSaleCaseId])
+  @@index([ownerId, saleLineId])
+  @@index([ownerId, inventoryItemId])
+  @@map("sale_after_sale_lines")
+}
+
+model SaleRefundRecord {
+  id               String   @id @default(cuid())
+  ownerId          String
+  afterSaleCaseId  String
+  saleOrderId      String
+  refundAmount     Decimal  @db.Decimal(12, 2)
+  refundedAt       DateTime
+  refundMethod     String?
+  externalRefundNo String?
+  idempotencyKey   String   @unique
+  note             String?
+  createdAt        DateTime @default(now())
+
+  owner         User                  @relation(fields: [ownerId], references: [id])
+  afterSaleCase SaleAfterSaleCase     @relation(fields: [afterSaleCaseId], references: [id], onDelete: Restrict)
+  saleOrder     SaleOrder             @relation(fields: [saleOrderId], references: [id], onDelete: Restrict)
+  allocations   SaleRefundAllocation[]
+
+  @@index([ownerId, afterSaleCaseId])
+  @@index([ownerId, saleOrderId])
+  @@index([ownerId, refundedAt])
+  @@index([ownerId, externalRefundNo])
+  @@map("sale_refund_records")
+}
+
+model SaleRefundAllocation {
+  id              String   @id @default(cuid())
+  ownerId         String
+  refundRecordId  String
+  afterSaleLineId String
+  amount          Decimal  @db.Decimal(12, 2)
+  createdAt       DateTime @default(now())
+
+  owner         User              @relation(fields: [ownerId], references: [id])
+  refundRecord  SaleRefundRecord  @relation(fields: [refundRecordId], references: [id], onDelete: Cascade)
+  afterSaleLine SaleAfterSaleLine @relation(fields: [afterSaleLineId], references: [id], onDelete: Restrict)
+
+  @@unique([refundRecordId, afterSaleLineId])
+  @@index([ownerId, refundRecordId])
+  @@index([ownerId, afterSaleLineId])
+  @@map("sale_refund_allocations")
+}
+
+model SaleAfterSaleInspection {
+  id              String                       @id @default(cuid())
+  ownerId         String
+  afterSaleCaseId String
+  afterSaleLineId String                       @unique
+  result          SaleAfterSaleInspectionResult
+  storageLocation String?
+  problemReason   String?
+  note            String?
+  inspectedAt     DateTime
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+
+  owner         User              @relation(fields: [ownerId], references: [id])
+  afterSaleCase SaleAfterSaleCase @relation(fields: [afterSaleCaseId], references: [id], onDelete: Cascade)
+  afterSaleLine SaleAfterSaleLine @relation(fields: [afterSaleLineId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, afterSaleCaseId])
+  @@index([ownerId, inspectedAt])
+  @@map("sale_after_sale_inspections")
+}
+
+model SaleAfterSaleActionLog {
+  id              String   @id @default(cuid())
+  ownerId         String
+  afterSaleCaseId String
+  action          String
+  fromStatus      String?
+  toStatus        String?
+  note            String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  owner         User              @relation(fields: [ownerId], references: [id])
+  afterSaleCase SaleAfterSaleCase @relation(fields: [afterSaleCaseId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, afterSaleCaseId, createdAt(sort: Desc)])
+  @@map("sale_after_sale_action_logs")
 }

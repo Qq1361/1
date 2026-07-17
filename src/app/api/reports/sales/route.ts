@@ -4,6 +4,7 @@ import { salesReportService } from "@/server/reports/sales-report-service";
 const PLATFORMS = ["DEWU", "NINETY_FIVE", "XIANYU", "OTHER"] as const;
 const STATUSES = ["CONFIRMED", "SETTLED"] as const;
 const SETTLEMENT_STATUSES = ["ALL", "SETTLED", "UNSETTLED"] as const;
+const GRANULARITIES = ["day", "week", "month"] as const;
 
 function badRequest(message: string) {
   return Response.json({ message }, { status: 400 });
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
     let platform: (typeof PLATFORMS)[number] | undefined;
     let status: (typeof STATUSES)[number] | undefined;
     let settlementStatus: (typeof SETTLEMENT_STATUSES)[number] | undefined;
+    let granularity: (typeof GRANULARITIES)[number] | undefined;
 
     try {
       dateFrom = parseDateParam(searchParams.get("dateFrom"), "dateFrom");
@@ -53,6 +55,7 @@ export async function GET(request: Request) {
         SETTLEMENT_STATUSES,
         "settlementStatus",
       );
+      granularity = enumParam(searchParams.get("granularity"), GRANULARITIES, "granularity");
     } catch (error) {
       return badRequest(error instanceof Error ? error.message : "参数无效。");
     }
@@ -68,6 +71,7 @@ export async function GET(request: Request) {
       platform,
       status,
       settlementStatus: settlementStatus ?? "ALL",
+      granularity,
     });
 
     return Response.json(report);

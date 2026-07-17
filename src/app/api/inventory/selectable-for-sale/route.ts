@@ -2,14 +2,7 @@ import { DEFAULT_OWNER_ID } from "@/server/constants";
 import { db } from "@/server/db";
 import { toErrorResponse } from "@/server/errors";
 import { Prisma } from "@/generated/prisma/client";
-
-const SELECTABLE_STATUSES = [
-  "STOCKED",
-  "PLATFORM_SHIPPED",
-  "PLATFORM_RECEIVED",
-  "PLATFORM_IN_WAREHOUSE",
-  "PLATFORM_LISTED",
-] as const;
+import { isSellableInventoryItemStatus } from "@/lib/inventory-item-status-contract";
 
 const STATUS_LABELS: Record<string, string> = {
   STOCKED: "已入库",
@@ -19,7 +12,6 @@ const STATUS_LABELS: Record<string, string> = {
   PLATFORM_LISTED: "平台已上架 / 可售",
   SOLD: "已售出",
   PROBLEM: "问题件",
-  REMOVED: "已移出",
   RETURNING: "退回中",
   RETURNED: "已退回，待重新入库",
   PLATFORM_REJECTED: "平台拒收",
@@ -46,7 +38,7 @@ function saleModeMatches(query: string) {
 }
 
 function selectableReason(itemStatus: string) {
-  if (SELECTABLE_STATUSES.includes(itemStatus as (typeof SELECTABLE_STATUSES)[number])) {
+  if (isSellableInventoryItemStatus(itemStatus)) {
     if (itemStatus === "PLATFORM_LISTED") return "可选择：平台已上架 / 可售，但不等于已售出。";
     return "可选择";
   }
@@ -63,6 +55,7 @@ export async function GET(request: Request) {
 
     const where: Prisma.InventoryItemWhereInput = {
       ownerId: DEFAULT_OWNER_ID,
+      ownershipStatus: "OWNED",
       ...(query
         ? {
             OR: [
@@ -115,7 +108,7 @@ export async function GET(request: Request) {
     return Response.json({
       data: items.map((item) => ({
         ...item,
-        selectable: SELECTABLE_STATUSES.includes(item.itemStatus as (typeof SELECTABLE_STATUSES)[number]),
+        selectable: isSellableInventoryItemStatus(item.itemStatus),
         selectableReason: selectableReason(item.itemStatus),
         currentShipmentLine: item.shipmentLines[0] ?? null,
       })),

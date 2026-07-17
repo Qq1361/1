@@ -76,7 +76,6 @@ CANCELLED  (REFUNDED — 留到后续版本)
 | PLATFORM_LISTED | ✅ |
 | SOLD | ❌ |
 | PROBLEM | ❌ |
-| REMOVED | ❌ |
 | RETURNING | ❌ |
 | RETURNED | ❌ |
 | PLATFORM_REJECTED | ❌ |

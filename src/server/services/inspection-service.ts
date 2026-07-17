@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 import { ServiceError } from "@/server/errors";
+import { normalizeSku } from "@/lib/normalize-sku";
 
 export function splitUnitCosts(total: string, quantity: number) {
   const [whole, fraction = ""] = total.split(".");
@@ -124,18 +125,21 @@ export class InspectionService {
     // Strip storageLocation — it belongs to InventoryItem, not Inspection
     const inspectionData = { ...data } as Record<string, unknown>;
     const storageLoc = inspectionData.storageLocation as string | undefined;
+    const skuText = inspectionData.skuText as string | null | undefined;
     const resultChange = inspectionData.result as "PASS" | "PROBLEM" | undefined;
     delete inspectionData.storageLocation;
+    delete inspectionData.skuText;
     // Don't pass result to inspection update during simple save (only during completed edit)
     if (!isCompleted) {
       delete inspectionData.result;
     }
 
-    if (isCompleted && inspection.inventoryItem && (storageLoc !== undefined || inspectionData.expiryDate !== undefined || resultChange)) {
+    if (isCompleted && inspection.inventoryItem && (storageLoc !== undefined || skuText !== undefined || inspectionData.expiryDate !== undefined || resultChange)) {
       // Sync changes to InventoryItem in a transaction
       return db.$transaction(async (tx) => {
         const invUpdate: Record<string, unknown> = {};
         if (storageLoc !== undefined) invUpdate.storageLocation = storageLoc.trim() || null;
+        if (skuText !== undefined) invUpdate.skuText = normalizeSku(skuText);
         if (inspectionData.expiryDate !== undefined) invUpdate.expiryDate = inspectionData.expiryDate;
         if (resultChange) {
           if (resultChange === "PROBLEM") {
@@ -201,7 +205,7 @@ export class InspectionService {
           );
           const now = new Date();
           // Extract storageLocation for InventoryItem; it is not an Inspection field
-          const { result, storageLocation: loc, ...fields } = input;
+          const { result, storageLocation: loc, skuText, ...fields } = input;
           const updatedInspection = await tx.inspection.update({
             where: { id },
             data: {
@@ -220,7 +224,7 @@ export class InspectionService {
               inspectionId: id,
               inventoryCode: `INV-${now.toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 6).toUpperCase()}`,
               name: inspection.purchaseOrderItem.name,
-              skuText: inspection.purchaseOrderItem.skuText,
+              skuText: normalizeSku((skuText as string | null | undefined) ?? inspection.purchaseOrderItem.skuText),
               unitCost: new Prisma.Decimal(costs[inspection.sequence - 1]),
               expiryDate: updatedInspection.expiryDate,
               storageLocation: (loc as string)?.trim() || null,
@@ -271,4 +275,3 @@ export class InspectionService {
 }
 
 export const inspectionService = new InspectionService();
-

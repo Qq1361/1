@@ -1,12 +1,14 @@
 import "dotenv/config";
 import { db } from "../src/server/db.ts";
+import { ACCESS_COOKIE_NAME, createAccessToken } from "../src/lib/access-protection.ts";
 
 const baseUrl = process.env.APP_BASE_URL ?? "http://127.0.0.1:3000";
 let orderId, batchId;
+const accessCookie = process.env.APP_PASSWORD ? `${ACCESS_COOKIE_NAME}=${await createAccessToken(process.env.APP_PASSWORD)}` : null;
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
 async function api(path, options = {}) {
-  const res = await fetch(`${baseUrl}${path}`, options);
+  const res = await fetch(`${baseUrl}${path}`, { ...options, headers: { ...(options.headers ?? {}), ...(accessCookie ? { Cookie: accessCookie } : {}) } });
   const body = res.status === 204 ? null : await res.json().catch(() => null);
   return { ok: res.ok, status: res.status, body };
 }
@@ -41,7 +43,7 @@ try {
   const inspections = await ok(`/api/inspections?query=${encodeURIComponent(orderNo)}`);
   for (const insp of inspections.data) await ok(`/api/inspections/${insp.id}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ result: "PASS" }) });
 
-  const sel = await ok(`/api/inventory/selectable-for-shipment?query=${encodeURIComponent("M30验证商品")}`);
+  const sel = await ok(`/api/inventory/selectable-for-shipment?query=${encodeURIComponent(orderNo)}`);
   assert(sel.total === 2, `expected 2 selectable, got ${sel.total}`);
 
   // === 1. Create draft, confirm shipped ===
@@ -94,7 +96,7 @@ try {
   assert(line2After.lineStatus === "RETURNED", "line should stay RETURNED after restock");
 
   // selectable again
-  const sel2 = await ok(`/api/inventory/selectable-for-shipment?query=${encodeURIComponent("M30验证商品")}`);
+  const sel2 = await ok(`/api/inventory/selectable-for-shipment?query=${encodeURIComponent(orderNo)}`);
   assert(sel2.data.some(i => i.id === inv2), "restocked item not selectable");
 
   // === 7. Illegal transitions ===

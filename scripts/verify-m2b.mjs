@@ -1,16 +1,18 @@
 import "dotenv/config";
 import { db } from "../src/server/db.ts";
+import { ACCESS_COOKIE_NAME, createAccessToken } from "../src/lib/access-protection.ts";
 
 const baseUrl = process.env.APP_BASE_URL ?? "http://127.0.0.1:3000";
 const orderNo = `M2B-E2E-${Date.now()}`;
 let orderId;
+const accessCookie = process.env.APP_PASSWORD ? `${ACCESS_COOKIE_NAME}=${await createAccessToken(process.env.APP_PASSWORD)}` : null;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
 async function call(path, options = {}) {
-  const response = await fetch(`${baseUrl}${path}`, options);
+  const response = await fetch(`${baseUrl}${path}`, { ...options, headers: { ...(options.headers ?? {}), ...(accessCookie ? { Cookie: accessCookie } : {}) } });
   const body = response.status === 204 ? null : await response.json().catch(() => null);
   return { response, body };
 }

@@ -45,7 +45,10 @@ type TodoType =
   | "EXPIRY_UNDER_365"
   | "OVERSTOCKED"
   | "NINETY_FIVE_EXPIRY_UNDER_90"
-  | "NINETY_FIVE_EXPIRY_UNDER_60";
+  | "NINETY_FIVE_EXPIRY_UNDER_60"
+  | "PLATFORM_RETURNING"
+  | "PLATFORM_RETURNED_PENDING_INSPECTION"
+  | "PLATFORM_RETURN_PENDING_DECISION";
 
 type TodosResponse = {
   data: {
@@ -72,35 +75,97 @@ type TodosResponse = {
     overstocked: number;
     ninetyFiveUnder90: number;
     ninetyFiveUnder60: number;
+    platformReturning: number;
+    platformReturnedPendingInspection: number;
+    platformReturnPendingDecision: number;
   };
 };
+
+type PlatformReturnSummary = {
+  counts: {
+    returning: number;
+    pendingInspection: number;
+    pendingDecision: number;
+  };
+};
+
+const EMPTY_TODO_COUNTS: TodosResponse["counts"] = {
+  missingTracking: 0,
+  logisticsIssues: 0,
+  pendingInspection: 0,
+  distanceTo395Within7Days: 0,
+  expiryUnder395: 0,
+  distanceTo365Within10Days: 0,
+  expiryUnder365: 0,
+  overstocked: 0,
+  ninetyFiveUnder90: 0,
+  ninetyFiveUnder60: 0,
+  platformReturning: 0,
+  platformReturnedPendingInspection: 0,
+  platformReturnPendingDecision: 0,
+};
+
+function isListResponse(value: unknown): value is ListResponse {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<ListResponse>;
+  return Array.isArray(candidate.data) && typeof candidate.total === "number";
+}
+
+function isTodosResponse(value: unknown): value is TodosResponse {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<TodosResponse>;
+  return Array.isArray(candidate.data) && Boolean(candidate.counts) && typeof candidate.counts === "object";
+}
+
+function isPlatformReturnSummary(value: unknown): value is PlatformReturnSummary {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<PlatformReturnSummary>;
+  return Boolean(candidate.counts) && typeof candidate.counts === "object";
+}
 
 export default function Home() {
   const [orders, setOrders] = useState<ListResponse | null>(null);
   const [todos, setTodos] = useState<TodosResponse | null>(null);
+  const [platformReturnSummary, setPlatformReturnSummary] = useState<PlatformReturnSummary | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/purchase-orders?pageSize=5").then((response) => response.json()),
       fetch("/api/todos").then((response) => response.json()),
-    ]).then(([orderData, todoData]) => {
-      setOrders(orderData);
-      setTodos(todoData);
-    });
+      fetch("/api/platform-returns/summary").then(async (response) => response.ok ? response.json() : null),
+    ])
+      .then(([orderData, todoData, returnSummary]) => {
+        setOrders(isListResponse(orderData) ? orderData : null);
+        setTodos(isTodosResponse(todoData) ? todoData : null);
+        setPlatformReturnSummary(isPlatformReturnSummary(returnSummary) ? returnSummary : null);
+      })
+      .catch(() => {
+        setOrders(null);
+        setTodos(null);
+        setPlatformReturnSummary(null);
+      });
   }, []);
+
+  const todoCounts = todos?.counts ?? EMPTY_TODO_COUNTS;
 
   const cards = [
     { label: "采购订单", value: orders?.total, icon: ReceiptText, href: "/purchases" },
-    { label: "超48小时未填单号", value: todos?.counts.missingTracking, icon: Truck, href: "/purchases?todo=missingTracking" },
-    { label: "物流异常 / 停滞", value: todos?.counts.logisticsIssues, icon: AlertTriangle, href: "/purchases?todo=logisticsIssues" },
-    { label: "待验货", value: todos?.counts.pendingInspection, icon: ClipboardCheck, href: "/inspections" },
-    { label: "距395天不足7天", value: todos?.counts.distanceTo395Within7Days, icon: Timer, href: "/inventory?reminder=DISTANCE_TO_395_WITHIN_7_DAYS" },
-    { label: "效期低于395天", value: todos?.counts.expiryUnder395, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_395" },
-    { label: "距365天不足10天", value: todos?.counts.distanceTo365Within10Days, icon: Timer, href: "/inventory?reminder=DISTANCE_TO_365_WITHIN_10_DAYS" },
-    { label: "效期低于365天", value: todos?.counts.expiryUnder365, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_365" },
-    { label: "95分效期接近限制", value: todos?.counts.ninetyFiveUnder90, icon: Timer, href: "/inventory?reminder=NINETY_FIVE_EXPIRY_UNDER_90" },
-    { label: "95分效期低于60天", value: todos?.counts.ninetyFiveUnder60, icon: AlertTriangle, href: "/inventory?reminder=NINETY_FIVE_EXPIRY_UNDER_60" },
-    { label: "入库满 3 天", value: todos?.counts.overstocked, icon: Clock3, href: "/inventory?reminder=STOCKED_OVER_3_DAYS" },
+    { label: "超48小时未填单号", value: todoCounts.missingTracking, icon: Truck, href: "/purchases?todo=missingTracking" },
+    { label: "物流异常 / 停滞", value: todoCounts.logisticsIssues, icon: AlertTriangle, href: "/purchases?todo=logisticsIssues" },
+    { label: "待验货", value: todoCounts.pendingInspection, icon: ClipboardCheck, href: "/inspections" },
+    { label: "距395天不足7天", value: todoCounts.distanceTo395Within7Days, icon: Timer, href: "/inventory?reminder=DISTANCE_TO_395_WITHIN_7_DAYS" },
+    { label: "效期低于395天", value: todoCounts.expiryUnder395, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_395" },
+    { label: "距365天不足10天", value: todoCounts.distanceTo365Within10Days, icon: Timer, href: "/inventory?reminder=DISTANCE_TO_365_WITHIN_10_DAYS" },
+    { label: "效期低于365天", value: todoCounts.expiryUnder365, icon: AlertTriangle, href: "/inventory?reminder=EXPIRY_UNDER_365" },
+    { label: "95分效期接近限制", value: todoCounts.ninetyFiveUnder90, icon: Timer, href: "/inventory?reminder=NINETY_FIVE_EXPIRY_UNDER_90" },
+    { label: "95分效期低于60天", value: todoCounts.ninetyFiveUnder60, icon: AlertTriangle, href: "/inventory?reminder=NINETY_FIVE_EXPIRY_UNDER_60" },
+    { label: "入库满 3 天", value: todoCounts.overstocked, icon: Clock3, href: "/inventory?reminder=STOCKED_OVER_3_DAYS" },
+    { label: "平台退回途中", value: platformReturnSummary?.counts.returning ?? todoCounts.platformReturning, icon: Truck, href: "/platform-returns?category=RETURNING" },
+    { label: "已退回待验货", value: platformReturnSummary?.counts.pendingInspection ?? todoCounts.platformReturnedPendingInspection, icon: ClipboardCheck, href: "/platform-returns?category=PENDING_INSPECTION" },
+    { label: "待进一步判断", value: platformReturnSummary?.counts.pendingDecision ?? todoCounts.platformReturnPendingDecision, icon: AlertTriangle, href: "/platform-returns?category=PENDING_DECISION" },
   ];
 
   return (
@@ -144,7 +209,9 @@ export default function Home() {
                 onUpdated={() => {
                   fetch("/api/todos")
                     .then((r) => r.json())
-                    .then(setTodos);
+                    .then((nextTodos) => {
+                      if (isTodosResponse(nextTodos)) setTodos(nextTodos);
+                    });
                 }}
               />
             ))

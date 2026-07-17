@@ -20,6 +20,9 @@ export async function GET() {
         overstocked: todos.filter((t) => t.type === "OVERSTOCKED").length,
         ninetyFiveUnder90: todos.filter((t) => t.type === "NINETY_FIVE_EXPIRY_UNDER_90").length,
         ninetyFiveUnder60: todos.filter((t) => t.type === "NINETY_FIVE_EXPIRY_UNDER_60").length,
+        platformReturning: todos.filter((t) => t.type === "PLATFORM_RETURNING").length,
+        platformReturnedPendingInspection: todos.filter((t) => t.type === "PLATFORM_RETURNED_PENDING_INSPECTION").length,
+        platformReturnPendingDecision: todos.filter((t) => t.type === "PLATFORM_RETURN_PENDING_DECISION").length,
       },
     });
   } catch (error) {
