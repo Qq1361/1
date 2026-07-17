@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, CircleDollarSign, ImageIcon, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, CircleDollarSign, Copy, ImageIcon, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AttachmentUploader } from "./attachment-uploader";
 import { DeleteOrderButton } from "./delete-order-button";
@@ -29,8 +29,14 @@ type ItemDraft = {
   notes: string;
 };
 
+type BatchItemDraft = Omit<ItemDraft, "quantity">;
+
 function emptyItemDraft(): ItemDraft {
   return { name: "", skuText: "", quantity: "1", referenceAmount: "", notes: "" };
+}
+
+function emptyBatchItemDraft(): BatchItemDraft {
+  return { name: "", skuText: "", referenceAmount: "", notes: "" };
 }
 
 export function OrderDetail({ orderId }: { orderId: string }) {
@@ -41,6 +47,12 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const [itemDialog, setItemDialog] = useState<{ mode: "add" | "edit"; item?: OrderItemDto } | null>(null);
   const [itemDraft, setItemDraft] = useState<ItemDraft>(emptyItemDraft);
   const [savingItem, setSavingItem] = useState(false);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchItems, setBatchItems] = useState<BatchItemDraft[]>([emptyBatchItemDraft()]);
+  const [batchCopyCount, setBatchCopyCount] = useState("2");
+  const [batchError, setBatchError] = useState<string | null>(null);
+  const [batchRowErrors, setBatchRowErrors] = useState<string[][]>([]);
+  const [savingBatch, setSavingBatch] = useState(false);
   const [deletingItem, setDeletingItem] = useState<OrderItemDto | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -87,6 +99,101 @@ export function OrderDetail({ orderId }: { orderId: string }) {
       notes: item.notes ?? "",
     });
     setItemDialog({ mode: "edit", item });
+  }
+
+  function openBatchItems() {
+    setBatchItems([emptyBatchItemDraft()]);
+    setBatchCopyCount("2");
+    setBatchError(null);
+    setBatchRowErrors([]);
+    setBatchDialogOpen(true);
+  }
+
+  function updateBatchItem(index: number, patch: Partial<BatchItemDraft>) {
+    setBatchItems((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
+    setBatchRowErrors((errors) => errors.map((error, errorIndex) => errorIndex === index ? [] : error));
+  }
+
+  function addBatchItem() {
+    if (batchItems.length >= 50) {
+      setBatchError("批量模式最多保存 50 行商品明细。");
+      return;
+    }
+    setBatchItems((items) => [...items, emptyBatchItemDraft()]);
+    setBatchError(null);
+  }
+
+  function duplicateBatchItem(index: number) {
+    if (batchItems.length >= 50) {
+      setBatchError("批量模式最多保存 50 行商品明细。");
+      return;
+    }
+    const source = batchItems[index];
+    setBatchItems((items) => [...items.slice(0, index + 1), { ...source }, ...items.slice(index + 1)]);
+    setBatchError(null);
+  }
+
+  function removeBatchItem(index: number) {
+    if (batchItems.length <= 1) {
+      setBatchError("至少保留一行商品明细。");
+      return;
+    }
+    setBatchItems((items) => items.filter((_, itemIndex) => itemIndex !== index));
+    setBatchRowErrors((errors) => errors.filter((_, itemIndex) => itemIndex !== index));
+    setBatchError(null);
+  }
+
+  function duplicateFirstBatchItems() {
+    const count = Number(batchCopyCount);
+    if (!Number.isInteger(count) || count < 1 || count > 50) {
+      setBatchError("复制件数必须是 1 到 50 的整数。");
+      return;
+    }
+    const first = batchItems[0] ?? emptyBatchItemDraft();
+    setBatchItems(Array.from({ length: count }, () => ({ ...first })));
+    setBatchRowErrors([]);
+    setBatchError(null);
+  }
+
+  function validateBatchItems() {
+    const errors = batchItems.map((item) => {
+      const rowErrors: string[] = [];
+      if (!item.name.trim()) rowErrors.push("商品名称不能为空。");
+      if (item.skuText.trim().length > 200) rowErrors.push("SKU / 规格不能超过 200 个字符。");
+      if (item.referenceAmount.trim() && !/^\d{1,10}(\.\d{1,2})?$/.test(item.referenceAmount.trim())) {
+        rowErrors.push("参考成交总额必须是非负且最多两位小数的金额。");
+      }
+      if (item.notes.trim().length > 1000) rowErrors.push("备注不能超过 1000 个字符。");
+      return rowErrors;
+    });
+    setBatchRowErrors(errors);
+    return errors.every((errorsForRow) => errorsForRow.length === 0);
+  }
+
+  async function saveBatchItems(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBatchError(null);
+    if (!order || !validateBatchItems()) return;
+    setSavingBatch(true);
+    try {
+      const response = await fetch(`/api/purchases/${order.id}/items/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: batchItems }),
+      });
+      const payload = await response.json() as OrderDto | (ApiError & { fieldErrors?: unknown });
+      if (!response.ok) {
+        setBatchError((payload as ApiError).message || "批量保存商品明细失败，请重试。");
+        return;
+      }
+      setOrder(payload as OrderDto);
+      setBatchDialogOpen(false);
+      toast.success("批量商品明细已保存");
+    } catch {
+      setBatchError("批量保存商品明细失败，请重试。");
+    } finally {
+      setSavingBatch(false);
+    }
   }
 
   async function saveItem(event: React.FormEvent<HTMLFormElement>) {
@@ -230,10 +337,16 @@ export function OrderDetail({ orderId }: { orderId: string }) {
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <CardTitle className="text-base">商品明细维护</CardTitle>
-                <Button type="button" size="sm" onClick={openAddItem} disabled={!purchaseItemsEditability.editable}>
-                  <Plus />
-                  添加商品
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" onClick={openAddItem} disabled={!purchaseItemsEditability.editable}>
+                    <Plus />
+                    添加商品
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={openBatchItems} disabled={!purchaseItemsEditability.editable}>
+                    <Copy />
+                    批量添加商品
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 商品参考成交总额仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。
@@ -319,6 +432,80 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                 <p className="text-xs text-muted-foreground">仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。</p>
                 <div className="space-y-2"><Label htmlFor="purchase-item-notes">备注</Label><Textarea id="purchase-item-notes" value={itemDraft.notes} onChange={(event) => setItemDraft({ ...itemDraft, notes: event.target.value })} /></div>
                 <DialogFooter><Button type="button" variant="outline" onClick={() => setItemDialog(null)} disabled={savingItem}>取消</Button><Button type="submit" disabled={savingItem}>{savingItem ? <Loader2 className="animate-spin" /> : null}{savingItem ? "保存中..." : "保存"}</Button></DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={batchDialogOpen} onOpenChange={(open) => !savingBatch && !open && setBatchDialogOpen(false)}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>批量添加商品</DialogTitle>
+                <DialogDescription>
+                  批量模式会将每一行保存为独立商品明细，每条数量固定为 1。相同名称和 SKU 也不会合并。
+                </DialogDescription>
+              </DialogHeader>
+              <form className="space-y-4" onSubmit={saveBatchItems}>
+                <div className="space-y-3">
+                  {batchItems.map((item, index) => (
+                    <div key={index} className="space-y-3 rounded-lg border p-3 sm:p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium">商品 {index + 1}</p>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => duplicateBatchItem(index)} disabled={savingBatch || batchItems.length >= 50}>
+                            <Copy />
+                            复制此行
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" onClick={() => removeBatchItem(index)} disabled={savingBatch || batchItems.length <= 1}>
+                            <Trash2 />
+                            删除此行
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor={`batch-item-name-${index}`}>商品名称</Label>
+                          <Input id={`batch-item-name-${index}`} value={item.name} onChange={(event) => updateBatchItem(index, { name: event.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`batch-item-sku-${index}`}>SKU / 规格</Label>
+                          <Input id={`batch-item-sku-${index}`} value={item.skuText} onChange={(event) => updateBatchItem(index, { skuText: event.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`batch-item-reference-${index}`}>商品参考成交总额（可选）</Label>
+                          <Input id={`batch-item-reference-${index}`} inputMode="decimal" placeholder="未填写" value={item.referenceAmount} onChange={(event) => updateBatchItem(index, { referenceAmount: event.target.value })} />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor={`batch-item-notes-${index}`}>备注（可选）</Label>
+                          <Textarea id={`batch-item-notes-${index}`} value={item.notes} onChange={(event) => updateBatchItem(index, { notes: event.target.value })} />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">数量固定为 1，不在批量模式中编辑数量。</p>
+                      {batchRowErrors[index]?.length ? (
+                        <div className="space-y-1 text-sm text-destructive">
+                          {batchRowErrors[index].map((error) => <p key={error}>{error}</p>)}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+                {batchError ? <p className="text-sm text-destructive">{batchError}</p> : null}
+                <div className="flex flex-col gap-3 rounded-lg bg-muted/40 p-3 sm:flex-row sm:items-end sm:justify-between">
+                  <Button type="button" variant="outline" onClick={addBatchItem} disabled={savingBatch || batchItems.length >= 50}>
+                    <Plus />
+                    添加空白行
+                  </Button>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="space-y-2">
+                      <Label htmlFor="batch-copy-count">复制第一行多件</Label>
+                      <Input id="batch-copy-count" className="w-full sm:w-24" type="number" min="1" max="50" step="1" value={batchCopyCount} onChange={(event) => setBatchCopyCount(event.target.value)} />
+                    </div>
+                    <Button type="button" variant="outline" onClick={duplicateFirstBatchItems} disabled={savingBatch}>生成对应总行数</Button>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setBatchDialogOpen(false)} disabled={savingBatch}>取消</Button>
+                  <Button type="submit" disabled={savingBatch}>{savingBatch ? <Loader2 className="animate-spin" /> : null}{savingBatch ? "保存中..." : "保存全部"}</Button>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>

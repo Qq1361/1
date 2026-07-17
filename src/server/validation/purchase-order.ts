@@ -15,6 +15,21 @@ export const purchaseItemMutationSchema = z
   })
   .strict();
 
+export const purchaseItemBatchRowSchema = purchaseItemMutationSchema
+  .omit({ quantity: true })
+  .extend({
+    skuText: z.string().trim().max(200).nullable().optional().or(z.literal("")),
+    notes: z.string().trim().max(1000).nullable().optional().or(z.literal("")),
+    referenceAmount: referenceAmount.nullable().optional().or(z.literal("")),
+  })
+  .strict();
+
+export const purchaseItemBatchSchema = z
+  .object({
+    items: z.array(purchaseItemBatchRowSchema).min(1).max(50),
+  })
+  .strict();
+
 const money = z
   .string()
   .trim()
@@ -86,4 +101,5 @@ export const trackingSchema = z.object({
 
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderSchema>;
 export type PurchaseItemMutationInput = z.infer<typeof purchaseItemMutationSchema>;
+export type PurchaseItemBatchInput = z.infer<typeof purchaseItemBatchSchema>;
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;

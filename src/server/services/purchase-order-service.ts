@@ -7,6 +7,7 @@ import { isActivePurchaseAfterSaleStatus, sumDecimals } from "@/server/purchase-
 import { getSalesAfterSaleFinancials } from "@/server/reports/sales-after-sales-financials";
 import type {
   OrderListQuery,
+  PurchaseItemBatchInput,
   PurchaseItemMutationInput,
   PurchaseOrderInput,
 } from "@/server/validation/purchase-order";
@@ -158,6 +159,29 @@ export class PurchaseOrderService {
           referenceAmount: input.referenceAmount ? new Prisma.Decimal(input.referenceAmount) : null,
           notes: input.notes?.trim() || null,
         },
+      });
+    });
+    return this.getOrder(ownerId, orderId);
+  }
+
+  async addPurchaseItemsBatch(
+    ownerId: string,
+    orderId: string,
+    input: PurchaseItemBatchInput,
+  ) {
+    await db.$transaction(async (tx) => {
+      await this.assertPurchaseItemsEditable(tx, ownerId, orderId);
+      await tx.purchaseOrderItem.createMany({
+        data: input.items.map((item) => ({
+          purchaseOrderId: orderId,
+          name: item.name,
+          skuText: normalizeSku(item.skuText),
+          quantity: 1,
+          referenceAmount: item.referenceAmount
+            ? new Prisma.Decimal(item.referenceAmount)
+            : null,
+          notes: item.notes?.trim() || null,
+        })),
       });
     });
     return this.getOrder(ownerId, orderId);

@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import { createAccessToken, ACCESS_COOKIE_NAME } from "../src/lib/access-protection.ts";
@@ -165,6 +166,108 @@ try {
   const afterDeleteDetail = await api(`/api/purchase-orders/${orderId}`);
   assert(afterDeleteDetail.body.totalAmount === "100.00" && afterDeleteDetail.body.shippingAmount === "5.00" && afterDeleteDetail.body.purchaseAfterSalesSummary.netPurchasePaidAmount === "105.00", "deleting a temporary item leaves order money, refunds and net paid amount unchanged");
 
+  const batchDailyBefore = await db.dailyBusinessReportDelivery.findMany({ where: { ownerId }, select: { id: true, status: true, attemptCount: true, updatedAt: true, sentAt: true, failedAt: true }, orderBy: { id: "asc" } });
+  const batchInventoryBefore = await db.inventoryItem.count({ where: { ownerId } });
+  const batchInspectionBefore = await db.inspection.count({ where: { ownerId } });
+  const batchSoldBefore = await db.inventoryItem.findMany({ where: { ownerId, itemStatus: "SOLD" }, select: { id: true, itemStatus: true, updatedAt: true }, orderBy: { id: "asc" } });
+
+  const sameBatchOrderResponse = await apiJson("/api/purchase-orders", "POST", orderInput("BATCH-SAME"));
+  assert(sameBatchOrderResponse.status === 201, "batch fixture for duplicate products can be created");
+  const sameBatchOrderId = sameBatchOrderResponse.body.id;
+  orderIds.push(sameBatchOrderId);
+  const sameExistingIds = new Set(sameBatchOrderResponse.body.items.map((item) => item.id));
+  const sameBatchResponse = await apiJson(`/api/purchases/${sameBatchOrderId}/items/batch`, "POST", {
+    items: [
+      { name: `${runId} 同款商品`, skuText: "2c0", referenceAmount: "625.00", notes: "无盒" },
+      { name: `${runId} 同款商品`, skuText: "2c0", referenceAmount: "625.00", notes: "无盒" },
+    ],
+  });
+  const sameBatchItems = sameBatchResponse.body?.items?.filter((item) => !sameExistingIds.has(item.id)) ?? [];
+  assert(sameBatchResponse.status === 201 && sameBatchItems.length === 2, "batch API creates two duplicate product rows in one request");
+  assert(sameBatchItems[0].id !== sameBatchItems[1].id, "duplicate batch rows have different ids");
+  assert(sameBatchItems.every((item) => item.quantity === 1), "duplicate batch rows each have quantity one");
+  assert(!sameBatchItems.some((item) => item.quantity === 2), "batch API does not collapse duplicate rows into quantity two");
+  assert(sameBatchResponse.body.items.length === 3, "batch API returns the complete refreshed order DTO");
+  assert(sameBatchItems.every((item) => item.skuText === "2C0" && item.referenceAmount === "625.00"), "batch rows normalize SKU and preserve reference amount");
+  const sameBatchDetail = await api(`/api/purchase-orders/${sameBatchOrderId}`);
+  const sameBatchDetailItems = sameBatchDetail.body.items.filter((item) => !sameExistingIds.has(item.id));
+  assert(sameBatchDetail.status === 200 && sameBatchDetailItems.length === 2 && sameBatchDetailItems.every((item) => item.quantity === 1), "batch detail refresh keeps two independent duplicate rows");
+  assert(sameBatchDetail.body.totalAmount === "100.00" && sameBatchDetail.body.shippingAmount === "5.00", "batch creation leaves order money unchanged");
+
+  const fiveBatchOrderResponse = await apiJson("/api/purchase-orders", "POST", orderInput("BATCH-FIVE"));
+  assert(fiveBatchOrderResponse.status === 201, "five-row batch fixture can be created");
+  const fiveBatchOrderId = fiveBatchOrderResponse.body.id;
+  orderIds.push(fiveBatchOrderId);
+  const fiveExistingIds = new Set(fiveBatchOrderResponse.body.items.map((item) => item.id));
+  const fiveBatchResponse = await apiJson(`/api/purchases/${fiveBatchOrderId}/items/batch`, "POST", {
+    items: Array.from({ length: 5 }, () => ({ name: `${runId} 五件商品`, skuText: "1w1", referenceAmount: null, notes: null })),
+  });
+  const fiveBatchItems = fiveBatchResponse.body?.items?.filter((item) => !fiveExistingIds.has(item.id)) ?? [];
+  assert(fiveBatchResponse.status === 201 && fiveBatchItems.length === 5, "batch API creates five independent rows in one request");
+  assert(new Set(fiveBatchItems.map((item) => item.id)).size === 5 && fiveBatchItems.every((item) => item.quantity === 1), "five-row batch has unique ids and quantity one");
+  assert(fiveBatchItems.every((item) => item.referenceAmount === null), "batch rows preserve null reference amounts");
+
+  const mixedBatchOrderResponse = await apiJson("/api/purchase-orders", "POST", orderInput("BATCH-MIXED"));
+  assert(mixedBatchOrderResponse.status === 201, "mixed-product batch fixture can be created");
+  const mixedBatchOrderId = mixedBatchOrderResponse.body.id;
+  orderIds.push(mixedBatchOrderId);
+  const mixedExistingIds = new Set(mixedBatchOrderResponse.body.items.map((item) => item.id));
+  const mixedBatchResponse = await apiJson(`/api/purchases/${mixedBatchOrderId}/items/batch`, "POST", {
+    items: [
+      { name: `${runId} DW 粉底液`, skuText: "2c0", referenceAmount: "625.00", notes: "正常中文" },
+      { name: `${runId} DW 粉底液`, skuText: "1w1", referenceAmount: "625.00", notes: "正常中文" },
+      { name: `${runId} 小棕瓶`, skuText: "30ml", referenceAmount: null, notes: "正常中文" },
+    ],
+  });
+  const mixedBatchItems = mixedBatchResponse.body?.items?.filter((item) => !mixedExistingIds.has(item.id)) ?? [];
+  assert(mixedBatchResponse.status === 201 && mixedBatchItems.length === 3, "three different products save in one batch");
+  assert(mixedBatchItems.map((item) => item.skuText).join(",") === "2C0,1W1,30ML", "mixed batch normalizes each SKU independently");
+  assert(mixedBatchItems.every((item) => item.notes === "正常中文"), "mixed batch preserves normal Chinese notes");
+
+  const beforeRollbackCount = await db.purchaseOrderItem.count({ where: { purchaseOrderId: mixedBatchOrderId } });
+  const failedBatch = await apiJson(`/api/purchases/${mixedBatchOrderId}/items/batch`, "POST", {
+    items: [
+      { name: `${runId} 回滚一`, skuText: "A", referenceAmount: "10.00", notes: null },
+      { name: `${runId} 回滚二`, skuText: "B", referenceAmount: "1.001", notes: null },
+      { name: `${runId} 回滚三`, skuText: "C", referenceAmount: "10.00", notes: null },
+    ],
+  });
+  const afterRollbackCount = await db.purchaseOrderItem.count({ where: { purchaseOrderId: mixedBatchOrderId } });
+  assert(failedBatch.status === 400 && afterRollbackCount === beforeRollbackCount, "invalid batch row rejects the whole batch without partial writes");
+
+  for (const amount of ["-1", "1.001", "1e3", "NaN", "Infinity"]) {
+    const invalidAmount = await apiJson(`/api/purchases/${sameBatchOrderId}/items/batch`, "POST", {
+      items: [{ name: `${runId} invalid`, skuText: "X", referenceAmount: amount, notes: null }],
+    });
+    assert(invalidAmount.status === 400, `batch rejects invalid reference amount ${amount}`);
+  }
+  for (const field of ["ownerId", "purchaseOrderId", "quantity", "unitCost", "allocatedTotalCost", "inventoryStatus", "SOLD"]) {
+    const invalidField = await apiJson(`/api/purchases/${sameBatchOrderId}/items/batch`, "POST", {
+      items: [{ name: `${runId} forbidden`, skuText: "X", referenceAmount: null, notes: null, [field]: field === "quantity" ? 2 : "forbidden" }],
+    });
+    assert(invalidField.status === 400, `batch rejects forbidden field ${field}`);
+  }
+  const emptyBatch = await apiJson(`/api/purchases/${sameBatchOrderId}/items/batch`, "POST", { items: [] });
+  assert(emptyBatch.status === 400, "batch rejects empty items");
+  const oversizedBatch = await apiJson(`/api/purchases/${sameBatchOrderId}/items/batch`, "POST", { items: Array.from({ length: 51 }, () => ({ name: `${runId} too many`, skuText: "X", referenceAmount: null, notes: null })) });
+  assert(oversizedBatch.status === 400, "batch rejects more than fifty rows");
+
+  const batchDailyAfter = await db.dailyBusinessReportDelivery.findMany({ where: { ownerId }, select: { id: true, status: true, attemptCount: true, updatedAt: true, sentAt: true, failedAt: true }, orderBy: { id: "asc" } });
+  const batchInventoryAfter = await db.inventoryItem.count({ where: { ownerId } });
+  const batchInspectionAfter = await db.inspection.count({ where: { ownerId } });
+  const batchSoldAfter = await db.inventoryItem.findMany({ where: { ownerId, itemStatus: "SOLD" }, select: { id: true, itemStatus: true, updatedAt: true }, orderBy: { id: "asc" } });
+  assert(JSON.stringify(batchDailyAfter) === JSON.stringify(batchDailyBefore), "batch maintenance leaves DailyBusinessReportDelivery unchanged");
+  assert(batchInventoryAfter === batchInventoryBefore && batchInspectionAfter === batchInspectionBefore, "batch maintenance does not create inventory or inspections");
+  assert(JSON.stringify(batchSoldAfter) === JSON.stringify(batchSoldBefore), "batch maintenance does not create or update SOLD inventory");
+
+  const detailSource = await readFile("src/components/purchases/order-detail.tsx", "utf8");
+  const batchRouteSource = await readFile("src/app/api/purchases/[purchaseOrderId]/items/batch/route.ts", "utf8");
+  assert(detailSource.includes("批量添加商品"), "purchase detail has an independent batch entry");
+  assert(detailSource.includes("复制此行") && detailSource.includes("复制第一行多件"), "batch dialog supports row and multi-copy actions");
+  assert(detailSource.includes("数量固定为 1"), "batch dialog explains quantity is fixed at one");
+  assert(detailSource.includes("/items/batch") && !detailSource.includes("Promise.all"), "page submits one batch request instead of looping single-item APIs");
+  assert(batchRouteSource.includes("purchaseItemBatchSchema") && batchRouteSource.includes("addPurchaseItemsBatch"), "batch route uses strict schema and batch service");
+
   for (const unknownField of ["ownerId", "unitCost", "allocatedCost", "inventoryStatus"]) {
     const invalid = await apiJson(`/api/purchases/${orderId}/items`, "POST", {
       name: `${runId} invalid`, skuText: "X", quantity: 1, referenceAmount: "1.00", [unknownField]: "forbidden",
@@ -195,6 +298,8 @@ try {
   await db.purchaseOrder.update({ where: { id: lockOrderId }, data: { allocationStatus: "DRAFT" } });
   const locked = await apiJson(`/api/purchases/${lockOrderId}/items`, "POST", { name: "锁定新增", quantity: 1, referenceAmount: "1.00" });
   assert(locked.status === 409 && locked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "allocation draft locks item maintenance");
+  const lockedBatch = await apiJson(`/api/purchases/${lockOrderId}/items/batch`, "POST", { items: [{ name: "锁定批量", skuText: "X", referenceAmount: null, notes: null }] });
+  assert(lockedBatch.status === 409 && lockedBatch.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "allocation draft locks batch item maintenance");
   const lockedDetail = await api(`/api/purchase-orders/${lockOrderId}`);
   assert(lockedDetail.status === 200 && lockedDetail.body.purchaseItemsEditability.editable === false, "detail DTO exposes lock state");
   assert(lockedDetail.body.purchaseItemsEditability.reason, "detail DTO exposes a human-readable lock reason");
@@ -206,6 +311,8 @@ try {
   await db.purchaseOrder.update({ where: { id: confirmedAllocationOrderId }, data: { allocationStatus: "CONFIRMED", allocationConfirmedAt: new Date() } });
   const confirmedAllocationLocked = await apiJson(`/api/purchases/${confirmedAllocationOrderId}/items`, "POST", { name: "不应新增", quantity: 1, referenceAmount: "1.00" });
   assert(confirmedAllocationLocked.status === 409 && confirmedAllocationLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "confirmed allocation locks item maintenance");
+  const confirmedAllocationBatchLocked = await apiJson(`/api/purchases/${confirmedAllocationOrderId}/items/batch`, "POST", { items: [{ name: "确认分摊批量", skuText: "X", referenceAmount: null, notes: null }] });
+  assert(confirmedAllocationBatchLocked.status === 409 && confirmedAllocationBatchLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "confirmed allocation locks batch item maintenance");
 
   const inspectionOrderResponse = await apiJson("/api/purchase-orders", "POST", orderInput("INSPECTION"));
   assert(inspectionOrderResponse.status === 201, "inspection lock fixture can be created");
@@ -214,6 +321,8 @@ try {
   await db.inspection.create({ data: { ownerId, purchaseOrderItemId: inspectionOrderResponse.body.items[0].id, sequence: 1, status: "PENDING" } });
   const inspectionLocked = await apiJson(`/api/purchases/${inspectionOrderId}/items`, "POST", { name: "不应新增", quantity: 1, referenceAmount: "1.00" });
   assert(inspectionLocked.status === 409 && inspectionLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "started inspection locks item maintenance even before inventory exists");
+  const inspectionBatchLocked = await apiJson(`/api/purchases/${inspectionOrderId}/items/batch`, "POST", { items: [{ name: "验货批量", skuText: "X", referenceAmount: null, notes: null }] });
+  assert(inspectionBatchLocked.status === 409 && inspectionBatchLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "started inspection locks batch item maintenance");
 
   const inventoryOrderResponse = await apiJson("/api/purchase-orders", "POST", orderInput("INVENTORY"));
   assert(inventoryOrderResponse.status === 201, "inventory lock fixture can be created");
@@ -224,6 +333,8 @@ try {
   await db.inventoryItem.create({ data: { id: inventoryItemId, ownerId, purchaseOrderItemId: inventoryOrderResponse.body.items[0].id, inspectionId: inspection.id, inventoryCode: `${runId}-INV`, name: `${runId} 库存`, unitCost: "100.00", itemStatus: "STOCKED", stockedAt: new Date() } });
   const inventoryLocked = await apiJson(`/api/purchases/${inventoryOrderId}/items`, "POST", { name: "不应新增", quantity: 1, referenceAmount: "1.00" });
   assert(inventoryLocked.status === 409, "generated inventory locks item maintenance");
+  const inventoryBatchLocked = await apiJson(`/api/purchases/${inventoryOrderId}/items/batch`, "POST", { items: [{ name: "库存批量", skuText: "X", referenceAmount: null, notes: null }] });
+  assert(inventoryBatchLocked.status === 409, "generated inventory locks batch item maintenance");
 
   const afterSaleOrderResponse = await apiJson("/api/purchase-orders", "POST", orderInput("AFTER-SALE"));
   assert(afterSaleOrderResponse.status === 201, "after-sale lock fixture can be created");
@@ -232,6 +343,8 @@ try {
   await db.purchaseAfterSaleCase.create({ data: { ownerId, caseNo: `${runId}-CASE`, purchaseOrderId: afterSaleOrderId, type: "REFUND_ONLY", status: "DRAFT" } });
   const afterSaleLocked = await apiJson(`/api/purchases/${afterSaleOrderId}/items`, "POST", { name: "不应新增", quantity: 1, referenceAmount: "1.00" });
   assert(afterSaleLocked.status === 409 && afterSaleLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "purchase after-sale locks item maintenance");
+  const afterSaleBatchLocked = await apiJson(`/api/purchases/${afterSaleOrderId}/items/batch`, "POST", { items: [{ name: "售后批量", skuText: "X", referenceAmount: null, notes: null }] });
+  assert(afterSaleBatchLocked.status === 409 && afterSaleBatchLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "purchase after-sale locks batch item maintenance");
 
   const refundOrderResponse = await apiJson("/api/purchase-orders", "POST", orderInput("REFUND"));
   assert(refundOrderResponse.status === 201, "purchase refund lock fixture can be created");
@@ -242,6 +355,8 @@ try {
   refundRecordIds.push(refundRecord.id);
   const refundLocked = await apiJson(`/api/purchases/${refundOrderId}/items`, "POST", { name: "不应新增", quantity: 1, referenceAmount: "1.00" });
   assert(refundLocked.status === 409 && refundLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "purchase refund record locks item maintenance");
+  const refundBatchLocked = await apiJson(`/api/purchases/${refundOrderId}/items/batch`, "POST", { items: [{ name: "退款批量", skuText: "X", referenceAmount: null, notes: null }] });
+  assert(refundBatchLocked.status === 409 && refundBatchLocked.body.code === "PURCHASE_ITEM_EDIT_LOCKED", "purchase refund record locks batch item maintenance");
 
   otherOwnerId = `${runId}-OTHER-OWNER`;
   await db.user.create({ data: { id: otherOwnerId, name: "M5 Cross Owner" } });
@@ -249,6 +364,8 @@ try {
   orderIds.push(otherOwnerOrder.id);
   const crossOwner = await apiJson(`/api/purchases/${otherOwnerOrder.id}/items`, "POST", { name: "不应访问", quantity: 1, referenceAmount: "1.00" });
   assert(crossOwner.status === 404 && crossOwner.body.code === "ORDER_NOT_FOUND", "item maintenance does not expose another owner's purchase order");
+  const crossOwnerBatch = await apiJson(`/api/purchases/${otherOwnerOrder.id}/items/batch`, "POST", { items: [{ name: "跨 owner 批量", skuText: "X", referenceAmount: null, notes: null }] });
+  assert(crossOwnerBatch.status === 404 && crossOwnerBatch.body.code === "ORDER_NOT_FOUND", "batch item maintenance does not expose another owner's purchase order");
 
   const dailyDeliveryAfter = await db.dailyBusinessReportDelivery.findMany({
     where: { ownerId },
