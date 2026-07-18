@@ -112,6 +112,18 @@ function orderInput(suffix, itemName = `${runId} 商品`) {
   };
 }
 
+async function createTwoItemOrder(suffix) {
+  const created = await apiJson("/api/purchase-orders", "POST", orderInput(suffix));
+  assert(created.status === 201, `${suffix} fixture can be created`);
+  const orderId = created.body.id;
+  orderIds.push(orderId);
+  const added = await apiJson(`/api/purchases/${orderId}/items`, "POST", {
+    name: `${runId} ${suffix} 第二件`, skuText: "2c0", quantity: 1, referenceAmount: "20.00", notes: "delete fixture",
+  });
+  assert(added.status === 201 && added.body.items.length === 2, `${suffix} fixture has two purchase items`);
+  return { orderId, firstItem: added.body.items[0], secondItem: added.body.items[1] };
+}
+
 try {
   await startTemporaryServer();
   assert(Boolean(accessCookie), "APP_PASSWORD session is available");
@@ -165,6 +177,70 @@ try {
   assert(deleteLast.status === 409 && deleteLast.body.code === "PURCHASE_ORDER_REQUIRES_ITEM", "last purchase item cannot be deleted");
   const afterDeleteDetail = await api(`/api/purchase-orders/${orderId}`);
   assert(afterDeleteDetail.body.totalAmount === "100.00" && afterDeleteDetail.body.shippingAmount === "5.00" && afterDeleteDetail.body.purchaseAfterSalesSummary.netPurchasePaidAmount === "105.00", "deleting a temporary item leaves order money, refunds and net paid amount unchanged");
+
+  const logisticsDeleteFixture = await createTwoItemOrder("DELETE-LOGISTICS");
+  await db.purchaseOrder.update({
+    where: { id: logisticsDeleteFixture.orderId },
+    data: {
+      carrierCode: "YTO",
+      trackingNo: `${runId}-TRACKING`,
+      trackingNumberRecordedAt: new Date(),
+      shippedAt: new Date(),
+      logisticsStatus: "IN_TRANSIT",
+    },
+  });
+  const logisticsDelete = await api(`/api/purchases/${logisticsDeleteFixture.orderId}/items/${logisticsDeleteFixture.secondItem.id}`, { method: "DELETE" });
+  assert(logisticsDelete.status === 200 && logisticsDelete.body.items.length === 1, "tracking fields and logistics reminder timestamps do not lock item deletion");
+
+  const unrelatedInspectionFixture = await createTwoItemOrder("DELETE-UNRELATED-INSPECTION");
+  await db.inspection.create({
+    data: { ownerId, purchaseOrderItemId: unrelatedInspectionFixture.firstItem.id, sequence: 1, status: "PENDING" },
+  });
+  const unrelatedDetail = await api(`/api/purchase-orders/${unrelatedInspectionFixture.orderId}`);
+  assert(unrelatedDetail.status === 200 && unrelatedDetail.body.purchaseItemsEditability.editable === false, "generic item maintenance remains locked when another item has inspection facts");
+  assert(unrelatedDetail.body.purchaseItemsDeleteability[unrelatedInspectionFixture.firstItem.id].deletable === false, "inspected item is marked non-deletable");
+  assert(unrelatedDetail.body.purchaseItemsDeleteability[unrelatedInspectionFixture.secondItem.id].deletable === true, "unrelated item remains deletable");
+  const unrelatedDelete = await api(`/api/purchases/${unrelatedInspectionFixture.orderId}/items/${unrelatedInspectionFixture.secondItem.id}`, { method: "DELETE" });
+  assert(unrelatedDelete.status === 200 && unrelatedDelete.body.items.length === 1, "service deletes an unlocked item even when another item has downstream facts");
+
+  const allocationDraftFixture = await createTwoItemOrder("DELETE-ALLOCATION-DRAFT");
+  await db.purchaseOrder.update({ where: { id: allocationDraftFixture.orderId }, data: { allocationStatus: "DRAFT" } });
+  const allocationDraftDelete = await api(`/api/purchases/${allocationDraftFixture.orderId}/items/${allocationDraftFixture.secondItem.id}`, { method: "DELETE" });
+  assert(allocationDraftDelete.status === 409 && allocationDraftDelete.body.code === "PURCHASE_ITEM_DOWNSTREAM_LOCKED", "allocation draft locks item deletion");
+
+  const allocationConfirmedFixture = await createTwoItemOrder("DELETE-ALLOCATION-CONFIRMED");
+  await db.purchaseOrder.update({ where: { id: allocationConfirmedFixture.orderId }, data: { allocationStatus: "CONFIRMED", allocationConfirmedAt: new Date() } });
+  const allocationConfirmedDelete = await api(`/api/purchases/${allocationConfirmedFixture.orderId}/items/${allocationConfirmedFixture.secondItem.id}`, { method: "DELETE" });
+  assert(allocationConfirmedDelete.status === 409 && allocationConfirmedDelete.body.code === "PURCHASE_ITEM_DOWNSTREAM_LOCKED", "confirmed allocation locks item deletion");
+
+  const inventoryDeleteFixture = await createTwoItemOrder("DELETE-INVENTORY");
+  const inventoryInspection = await db.inspection.create({
+    data: { ownerId, purchaseOrderItemId: inventoryDeleteFixture.firstItem.id, sequence: 1, status: "PASSED", result: "PASS", completedAt: new Date() },
+  });
+  await db.inventoryItem.create({
+    data: {
+      ownerId,
+      purchaseOrderItemId: inventoryDeleteFixture.firstItem.id,
+      inspectionId: inventoryInspection.id,
+      inventoryCode: `${runId}-DELETE-LOCK-INV`,
+      name: `${runId} inventory lock`,
+      unitCost: "20.00",
+      itemStatus: "STOCKED",
+      stockedAt: new Date(),
+    },
+  });
+  const inventoryDelete = await api(`/api/purchases/${inventoryDeleteFixture.orderId}/items/${inventoryDeleteFixture.firstItem.id}`, { method: "DELETE" });
+  assert(inventoryDelete.status === 409 && inventoryDelete.body.code === "PURCHASE_ITEM_DOWNSTREAM_LOCKED", "inventory facts lock their own purchase item deletion");
+
+  const concurrencyFixture = await createTwoItemOrder("DELETE-CONCURRENCY");
+  const [concurrentFirst, concurrentSecond] = await Promise.all([
+    api(`/api/purchases/${concurrencyFixture.orderId}/items/${concurrencyFixture.firstItem.id}`, { method: "DELETE" }),
+    api(`/api/purchases/${concurrencyFixture.orderId}/items/${concurrencyFixture.secondItem.id}`, { method: "DELETE" }),
+  ]);
+  const concurrencyRemaining = await db.purchaseOrderItem.count({ where: { purchaseOrderId: concurrencyFixture.orderId } });
+  assert([concurrentFirst.status, concurrentSecond.status].filter((status) => status === 200).length === 1 && concurrencyRemaining === 1, "concurrent deletes cannot leave an empty purchase order");
+  const repeatedDelete = await api(`/api/purchases/${concurrencyFixture.orderId}/items/${concurrentFirst.status === 200 ? concurrencyFixture.firstItem.id : concurrencyFixture.secondItem.id}`, { method: "DELETE" });
+  assert(repeatedDelete.status === 404 && repeatedDelete.body.code === "PURCHASE_ITEM_NOT_FOUND", "repeating a successful delete returns a stable not-found result");
 
   const batchDailyBefore = await db.dailyBusinessReportDelivery.findMany({ where: { ownerId }, select: { id: true, status: true, attemptCount: true, updatedAt: true, sentAt: true, failedAt: true }, orderBy: { id: "asc" } });
   const batchInventoryBefore = await db.inventoryItem.count({ where: { ownerId } });
@@ -366,6 +442,9 @@ try {
   assert(crossOwner.status === 404 && crossOwner.body.code === "ORDER_NOT_FOUND", "item maintenance does not expose another owner's purchase order");
   const crossOwnerBatch = await apiJson(`/api/purchases/${otherOwnerOrder.id}/items/batch`, "POST", { items: [{ name: "跨 owner 批量", skuText: "X", referenceAmount: null, notes: null }] });
   assert(crossOwnerBatch.status === 404 && crossOwnerBatch.body.code === "ORDER_NOT_FOUND", "batch item maintenance does not expose another owner's purchase order");
+  const otherOwnerItem = await db.purchaseOrderItem.findFirstOrThrow({ where: { purchaseOrderId: otherOwnerOrder.id }, select: { id: true } });
+  const crossOwnerDelete = await api(`/api/purchases/${otherOwnerOrder.id}/items/${otherOwnerItem.id}`, { method: "DELETE" });
+  assert(crossOwnerDelete.status === 404 && crossOwnerDelete.body.code === "ORDER_NOT_FOUND", "delete does not expose another owner's purchase order");
 
   const dailyDeliveryAfter = await db.dailyBusinessReportDelivery.findMany({
     where: { ownerId },

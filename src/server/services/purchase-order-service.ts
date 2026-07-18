@@ -71,6 +71,25 @@ type PurchaseItemEditSnapshot = {
   _count: { afterSaleCases: number; refundRecords: number };
 };
 
+type PurchaseItemDeleteSnapshot = {
+  allocationStatus: string;
+  items: Array<{
+    id: string;
+    allocatedTotalCost: Prisma.Decimal | null;
+    _count: {
+      inventoryItems: number;
+      inspections: number;
+      afterSaleLines: number;
+    };
+  }>;
+};
+
+type PurchaseItemDeleteability = {
+  deletable: boolean;
+  reasonCode: string | null;
+  reason: string | null;
+};
+
 function purchaseItemEditLockReason(order: PurchaseItemEditSnapshot) {
   if (!purchaseItemEditableStatuses.has(order.status) || order.deliveredAt) {
     return "该订单已进入后续物流或收货流程，商品明细已锁定。";
@@ -93,6 +112,34 @@ function purchaseItemEditLockReason(order: PurchaseItemEditSnapshot) {
     return "该订单存在采购退款记录，不能直接修改商品。";
   }
   return null;
+}
+
+function purchaseItemDeleteLockReason(
+  order: PurchaseItemDeleteSnapshot,
+  item: PurchaseItemDeleteSnapshot["items"][number],
+): PurchaseItemDeleteability {
+  if (order.items.length <= 1) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ORDER_REQUIRES_ITEM",
+      reason: "采购订单至少需要保留一条商品，请先添加正确商品后再删除。",
+    };
+  }
+  if (order.allocationStatus !== "UNALLOCATED" || item.allocatedTotalCost !== null) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_DOWNSTREAM_LOCKED",
+      reason: "该采购订单已有成本分摊记录，商品明细已锁定。",
+    };
+  }
+  if (item._count.inspections > 0 || item._count.inventoryItems > 0 || item._count.afterSaleLines > 0) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_DOWNSTREAM_LOCKED",
+      reason: "该商品已产生后续业务记录，不能删除。",
+    };
+  }
+  return { deletable: true, reasonCode: null, reason: null };
 }
 
 export class PurchaseOrderService {
@@ -124,6 +171,36 @@ export class PurchaseOrderService {
     return order;
   }
 
+  private async getPurchaseItemDeleteSnapshot(
+    tx: Prisma.TransactionClient | typeof db,
+    ownerId: string,
+    orderId: string,
+  ): Promise<PurchaseItemDeleteSnapshot> {
+    const order = await tx.purchaseOrder.findFirst({
+      where: { id: orderId, ownerId },
+      select: {
+        allocationStatus: true,
+        items: {
+          select: {
+            id: true,
+            allocatedTotalCost: true,
+            _count: {
+              select: {
+                inventoryItems: true,
+                inspections: true,
+                afterSaleLines: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!order) {
+      throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
+    }
+    return order;
+  }
+
   private async assertPurchaseItemsEditable(
     tx: Prisma.TransactionClient,
     ownerId: string,
@@ -145,6 +222,13 @@ export class PurchaseOrderService {
       reasonCode: reason ? "PURCHASE_ITEM_EDIT_LOCKED" : null,
       reason,
     };
+  }
+
+  async getPurchaseItemsDeleteability(ownerId: string, orderId: string) {
+    const order = await this.getPurchaseItemDeleteSnapshot(db, ownerId, orderId);
+    return Object.fromEntries(
+      order.items.map((item) => [item.id, purchaseItemDeleteLockReason(order, item)]),
+    ) as Record<string, PurchaseItemDeleteability>;
   }
 
   async addPurchaseItem(
@@ -217,16 +301,38 @@ export class PurchaseOrderService {
   }
 
   async deletePurchaseItem(ownerId: string, orderId: string, itemId: string) {
-    await db.$transaction(async (tx) => {
-      const order = await this.assertPurchaseItemsEditable(tx, ownerId, orderId);
-      if (!order.items.some((item) => item.id === itemId)) {
-        throw new ServiceError("PURCHASE_ITEM_NOT_FOUND", "商品明细不存在。", 404);
+    try {
+      await db.$transaction(async (tx) => {
+        const lockedOrders = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
+          SELECT "id" FROM "purchase_orders"
+          WHERE "id" = ${orderId} AND "ownerId" = ${ownerId}
+          FOR UPDATE
+        `);
+        if (!lockedOrders.length) {
+          throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
+        }
+
+        const order = await this.getPurchaseItemDeleteSnapshot(tx, ownerId, orderId);
+        const item = order.items.find((candidate) => candidate.id === itemId);
+        if (!item) {
+          throw new ServiceError("PURCHASE_ITEM_NOT_FOUND", "商品明细不存在。", 404);
+        }
+        const deleteability = purchaseItemDeleteLockReason(order, item);
+        if (!deleteability.deletable) {
+          throw new ServiceError(
+            deleteability.reasonCode ?? "PURCHASE_ITEM_DELETE_CONFLICT",
+            deleteability.reason ?? "商品明细当前不能删除。",
+            409,
+          );
+        }
+        await tx.purchaseOrderItem.delete({ where: { id: itemId } });
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+        throw new ServiceError("PURCHASE_ITEM_DELETE_CONFLICT", "商品明细删除发生并发冲突，请刷新后重试。", 409);
       }
-      if (order.items.length <= 1) {
-        throw new ServiceError("PURCHASE_ORDER_REQUIRES_ITEM", "采购订单至少保留一条商品明细。", 409);
-      }
-      await tx.purchaseOrderItem.delete({ where: { id: itemId } });
-    });
+      throw error;
+    }
     return this.getOrder(ownerId, orderId);
   }
 
@@ -334,7 +440,10 @@ export class PurchaseOrderService {
         .map((line) => line.saleOrderId),
     ));
     const salesAfterSaleFinancials = await getSalesAfterSaleFinancials(ownerId, saleOrderIds);
-    const purchaseItemsEditability = await this.getPurchaseItemsEditability(ownerId, orderId);
+    const [purchaseItemsEditability, purchaseItemsDeleteability] = await Promise.all([
+      this.getPurchaseItemsEditability(ownerId, orderId),
+      this.getPurchaseItemsDeleteability(ownerId, orderId),
+    ]);
     const items = orderDetail.items.map((item) => ({
       ...item,
       inventoryItems: item.inventoryItems.map((inventoryItem) => ({
@@ -357,6 +466,7 @@ export class PurchaseOrderService {
       ...orderDetail,
       items,
       purchaseItemsEditability,
+      purchaseItemsDeleteability,
       logisticsEvents,
       purchaseAfterSalesSummary: {
         totalPurchaseRefundedAmount,

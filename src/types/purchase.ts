@@ -88,6 +88,14 @@ export type OrderDto = {
     reasonCode: string | null;
     reason: string | null;
   };
+  purchaseItemsDeleteability: Record<
+    string,
+    {
+      deletable: boolean;
+      reasonCode: string | null;
+      reason: string | null;
+    }
+  >;
   logisticsEvents: LogisticsEventDto[];
   purchaseAfterSalesSummary: {
     totalPurchaseRefundedAmount: string;

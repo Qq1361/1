@@ -367,7 +367,9 @@ export function OrderDetail({ orderId }: { orderId: string }) {
               <CardTitle className="text-base">商品明细</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              {orderItems.map((item, index) => (
+              {orderItems.map((item, index) => {
+                const deleteability = order.purchaseItemsDeleteability?.[item.id];
+                return (
                 <div key={item.id} className="space-y-4">
                   {index ? <Separator /> : null}
                   <div className="flex items-start justify-between gap-4">
@@ -395,16 +397,19 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/20 p-3 text-sm">
                     <span>商品参考成交总额：{item.referenceAmount ? `¥ ${item.referenceAmount}` : "未填写"}</span>
                     <div className="flex gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => openEditItem(item)} disabled={!purchaseItemsEditability.editable}>
+                      <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => openEditItem(item)} disabled={!purchaseItemsEditability.editable}>
                         <Pencil />
                         编辑
                       </Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => setDeletingItem(item)} disabled={!purchaseItemsEditability.editable || orderItems.length <= 1}>
+                      <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => setDeletingItem(item)} disabled={!deleteability?.deletable} title={deleteability?.reason ?? undefined}>
                         <Trash2 />
                         删除
                       </Button>
                     </div>
                   </div>
+                  {!deleteability?.deletable && deleteability?.reason ? (
+                    <p className="text-xs text-amber-700">{deleteability.reason}</p>
+                  ) : null}
                   <div>
                     <div className="mb-2 flex items-center gap-2 text-xs font-medium">
                       <ImageIcon className="size-3.5" />
@@ -418,7 +423,8 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                     />
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
 
