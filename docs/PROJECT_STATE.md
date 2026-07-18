@@ -400,3 +400,9 @@ pnpm verify:m3a
 - `MISSING_TRACKING_NUMBER` keeps the existing 48-hour rule from `paidAt`; `TRACKING_NOT_RECEIVED_OVERDUE` starts only after a tracking number has existed for a full 120 hours.
 - `trackingNumberRecordedAt` is set once when a tracking number first changes from empty to non-empty. `manuallyReceivedAt` is the only receipt fact that ends the five-day reminder; provider or mock delivery does not end it.
 - No provider API is called. The risk flow creates no tracking events, inspections, inventory, refunds, sales changes, or SOLD writes. M6-A2 real acceptance remains paused and M6-A3 has not started.
+## M2-B batch inspection pass (completed)
+
+- `/inspections` supports selecting current pending inspection rows and one atomic “批量验货通过” action.
+- `POST /api/inspections/batch-pass` accepts only 1-50 unique `Inspection.id` values and reuses the existing inspection completion core in one Serializable transaction.
+- Every selected inspection creates one independent `InventoryItem`; identical names or SKUs are never merged. Any invalid, completed, non-pending, or cross-owner row rolls the entire batch back.
+- Batch mode is pass-only. Problem inspections remain on the existing single-item workflow. No purchase cost, refund, sale, logistics, or SOLD write is added.

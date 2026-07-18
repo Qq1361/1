@@ -522,3 +522,10 @@ pnpm verify:m3a           # M3-A 销售验证
 - [x] Workbench and daily report use one risk aggregation with masked tracking numbers.
 - [x] No logistics provider request, logistics event, inspection, inventory, refund, purchase-status, or SOLD write is performed by risk aggregation.
 - [x] `verify:m6-purchase-logistics-reminders` covers time boundaries, owner isolation, daily-report integration, masking, and exact fixture cleanup.
+## M2-B 批量验货通过
+
+- [x] 可选择当前页 1 至 50 条待验货 `Inspection` 并二次确认批量通过。
+- [x] 空数组、超过 50 条、重复 ID、非数组/非字符串、未知字段、错误实体和跨 owner 请求均被服务端拒绝。
+- [x] 批量通过复用单件验货的事务内完成逻辑；每件生成独立 Inspection 对应库存，重复名称/SKU 不合并。
+- [x] 任意已完成、已入库或非待验货项会让整批回滚，不产生半批库存；并发批量或单件/批量竞争不生成重复库存。
+- [x] 批量通过不修改采购成本、退款、销售或物流事实，也不写入 SOLD；问题件仍保留逐件入口。

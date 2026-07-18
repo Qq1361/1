@@ -489,3 +489,10 @@ pnpm verify:m3a
 4. Only `manuallyReceivedAt` stops the five-day reminder. Provider and MOCK delivered events are external observations and do not claim manual receipt.
 5. A purchase order can have at most one current logistics reminder: a tracking number selects the five-day rule, while a missing number selects the 48-hour rule.
 6. Workbench and daily reports consume the same server-side risk aggregation and show masked tracking numbers only.
+## 批量验货通过
+
+1. 待验货列表每一行对应一个 `Inspection`，不是按 `PurchaseOrderItem` 合并的数量行。
+2. 批量操作只允许 `PASS`，一次 1 至 50 件，ID 必须唯一；问题件继续逐件处理。
+3. 服务端在一个 `Serializable` 事务中重新校验 owner、待验货状态、已完成/已入库事实和已确认成本分摊；任意一件失败则整批回滚。
+4. 每件仍按原有单件逻辑创建独立 `InventoryItem`、独立成本快照和独立 `inspectionId`，相同商品名称或 SKU 不得合并。
+5. 批量验货不修改采购实付、成本分摊、退款、销售、物流状态或 `SOLD`。

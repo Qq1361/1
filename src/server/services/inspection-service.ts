@@ -170,14 +170,12 @@ export class InspectionService {
     });
   }
 
-  async complete(
+  private async completeTx(
     ownerId: string,
     id: string,
     input: Record<string, unknown> & { result: "PASS" | "PROBLEM" },
+    tx: Prisma.TransactionClient,
   ) {
-    try {
-      return await db.$transaction(
-        async (tx) => {
           const inspection = await tx.inspection.findFirst({
             where: { id, ownerId },
             include: {
@@ -256,7 +254,16 @@ export class InspectionService {
             },
           });
           return { inspection: updatedInspection, inventory };
-        },
+  }
+
+  async complete(
+    ownerId: string,
+    id: string,
+    input: Record<string, unknown> & { result: "PASS" | "PROBLEM" },
+  ) {
+    try {
+      return await db.$transaction(
+        (tx) => this.completeTx(ownerId, id, input, tx),
         { isolationLevel: "Serializable" },
       );
     } catch (error) {
@@ -269,6 +276,61 @@ export class InspectionService {
           "验货已经完成，请勿重复提交。",
           409,
         );
+      throw error;
+    }
+  }
+
+  async batchPass(ownerId: string, inspectionIds: string[]) {
+    if (inspectionIds.length === 0)
+      throw new ServiceError("BATCH_INSPECTION_EMPTY", "请至少选择一件待验货商品。", 400);
+    if (inspectionIds.length > 50)
+      throw new ServiceError("BATCH_INSPECTION_TOO_MANY", "一次最多验货通过 50 件商品。", 400);
+    if (new Set(inspectionIds).size !== inspectionIds.length)
+      throw new ServiceError("BATCH_INSPECTION_DUPLICATE_IDS", "不能重复选择同一件待验货商品。", 400);
+
+    try {
+      return await db.$transaction(
+        async (tx) => {
+          const completed: Array<{
+            inspection: { id: string };
+            inventory: { id: string };
+          }> = [];
+
+          for (const inspectionId of inspectionIds) {
+            const candidate = await tx.inspection.findFirst({
+              where: { id: inspectionId, ownerId },
+              select: {
+                status: true,
+                completedAt: true,
+                inventoryItem: { select: { id: true } },
+                purchaseOrderItem: { select: { purchaseOrder: { select: { status: true } } } },
+              },
+            });
+            if (!candidate)
+              throw new ServiceError("INSPECTION_NOT_FOUND", "待验货商品不存在。", 404);
+            if (candidate.completedAt || candidate.inventoryItem)
+              throw new ServiceError("INSPECTION_ALREADY_COMPLETED", "选中的商品已经完成验货，请刷新列表。", 409);
+            if (
+              !["PENDING", "IN_PROGRESS"].includes(candidate.status) ||
+              candidate.purchaseOrderItem.purchaseOrder.status !== "PENDING_INSPECTION"
+            )
+              throw new ServiceError("INSPECTION_NOT_PENDING", "选中的商品当前不能验货，请刷新列表。", 409);
+
+            completed.push(await this.completeTx(ownerId, inspectionId, { result: "PASS" }, tx));
+          }
+
+          return {
+            processedCount: completed.length,
+            inspectionIds: completed.map((item) => item.inspection.id),
+            inventoryItemIds: completed.map((item) => item.inventory.id),
+            skippedCount: 0,
+          };
+        },
+        { isolationLevel: "Serializable" },
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2002", "P2034"].includes(error.code))
+        throw new ServiceError("INSPECTION_BATCH_CONFLICT", "验货状态已变化，请刷新列表后重试。", 409);
       throw error;
     }
   }

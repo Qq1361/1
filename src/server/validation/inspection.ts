@@ -21,6 +21,12 @@ export const inspectionCompleteSchema = inspectionPatchSchema.extend({
   result: z.enum(["PASS", "PROBLEM"]),
 });
 
+export const inspectionBatchPassSchema = z
+  .object({
+    inspectionIds: z.array(z.string().cuid()),
+  })
+  .strict();
+
 export const inspectionListSchema = z.object({
   query: z.string().trim().max(100).optional(),
 });
