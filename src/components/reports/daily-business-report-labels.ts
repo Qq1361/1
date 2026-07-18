@@ -4,6 +4,8 @@ export type DailyReportBadge = {
 };
 
 export const dailyTodoLabels: Record<string, { title: string; description: string }> = {
+  purchaseMissingTracking: { title: "采购单超过 2 天未填写快递单号", description: "请补充快递单号后再继续跟进。" },
+  purchaseTrackingNotReceivedOverdue: { title: "快递单号已填写超过 5 天仍未确认收货", description: "请手动查询物流，并在确认收货后完成后续验货。" },
   purchaseAwaitingArrival: { title: "采购待到货", description: "已付款采购仍在等待到货或物流推进。" },
   purchaseAwaitingInspection: { title: "采购待验货", description: "已签收商品需要完成单件验货。" },
   problemItems: { title: "问题件待处理", description: "当前自有问题件需要人工判断后续处理。" },

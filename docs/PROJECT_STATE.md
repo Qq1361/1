@@ -394,3 +394,9 @@ pnpm verify:m3a
 - 当前只开放 `PURCHASE_INBOUND`；人工采购物流字段不会被 Provider 结果反向覆盖。
 - Provider 签收不会修改采购收货时间，不创建验货或库存，不推进 M1～M5 状态机。
 - 第一刀状态为 `IMPLEMENTED / LOCALLY VERIFIED`；真实账号、产品开通和真实单号验收仍为 `PENDING CONFIGURATION`。M6-A3 尚未开始。
+## M6-B1 Purchase logistics manual-overdue reminders (completed)
+
+- A shared read-only `PurchaseLogisticsRiskService` supplies both the workbench todo feed and daily-business report.
+- `MISSING_TRACKING_NUMBER` keeps the existing 48-hour rule from `paidAt`; `TRACKING_NOT_RECEIVED_OVERDUE` starts only after a tracking number has existed for a full 120 hours.
+- `trackingNumberRecordedAt` is set once when a tracking number first changes from empty to non-empty. `manuallyReceivedAt` is the only receipt fact that ends the five-day reminder; provider or mock delivery does not end it.
+- No provider API is called. The risk flow creates no tracking events, inspections, inventory, refunds, sales changes, or SOLD writes. M6-A2 real acceptance remains paused and M6-A3 has not started.

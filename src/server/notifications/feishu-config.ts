@@ -14,7 +14,10 @@ function trimEnvironmentValue(value: string | undefined) {
 
 function isAllowedWebhookUrl(value: URL) {
   if (value.protocol === "https:") return true;
-  return process.env.NODE_ENV !== "production" && value.protocol === "http:" && ["127.0.0.1", "localhost", "::1"].includes(value.hostname);
+  const allowLocalVerificationWebhook = process.env.FEISHU_DAILY_REPORT_TEST_ALLOW_LOCAL_WEBHOOK === "1";
+  return (process.env.NODE_ENV !== "production" || allowLocalVerificationWebhook)
+    && value.protocol === "http:"
+    && ["127.0.0.1", "localhost", "::1"].includes(value.hostname);
 }
 
 export function getFeishuDailyReportConfig(): FeishuDailyReportConfig {

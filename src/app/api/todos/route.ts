@@ -9,6 +9,7 @@ export async function GET() {
       data: todos,
       counts: {
         missingTracking: todos.filter((t) => t.type === "MISSING_TRACKING").length,
+        trackingNotReceivedOverdue: todos.filter((t) => t.type === "TRACKING_NOT_RECEIVED_OVERDUE").length,
         logisticsIssues: todos.filter((t) =>
           ["LOGISTICS_EXCEPTION", "LOGISTICS_STALLED"].includes(t.type),
         ).length,

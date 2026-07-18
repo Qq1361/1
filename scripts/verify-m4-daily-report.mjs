@@ -52,7 +52,9 @@ async function startTemporaryApp(extraEnv) {
   const port = await freePort();
   const logPath = path.join(os.tmpdir(), `resale-erp-m4-daily-${runId}-${port}.log`);
   const log = await fs.open(logPath, "w");
-  const child = spawn(process.execPath, [path.join(process.cwd(), "node_modules", "next", "dist", "bin", "next"), "dev", "--port", String(port)], {
+  // Use the production build so this isolated verifier can run while a user
+  // keeps their own `next dev` process active on port 3000.
+  const child = spawn(process.execPath, [path.join(process.cwd(), "node_modules", "next", "dist", "bin", "next"), "start", "--port", String(port)], {
     cwd: process.cwd(),
     env: { ...process.env, APP_BASE_URL: "", ...extraEnv },
     stdio: ["ignore", "pipe", "pipe"],
@@ -260,6 +262,7 @@ try {
   verificationApp = await startTemporaryApp({
     FEISHU_DAILY_REPORT_WEBHOOK_URL: `http://127.0.0.1:${mockPort}/hook`,
     FEISHU_DAILY_REPORT_SECRET: "m4-daily-verification-secret",
+    FEISHU_DAILY_REPORT_TEST_ALLOW_LOCAL_WEBHOOK: "1",
   });
   baseUrl = verificationApp.url;
   accessCookie = await establishSession(baseUrl);

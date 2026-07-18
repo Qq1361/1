@@ -7,6 +7,7 @@ import { resolveDailyReportPeriod, type DailyReportPeriod } from "./daily-busine
 import type { DailyBusinessReportDto, DailyReportPriority, DailyReportRisk, DailyReportTodo } from "./daily-business-report-types";
 import { getSalesAfterSaleFinancials } from "./sales-after-sales-financials";
 import { selectCurrentQuote } from "@/server/market/market-rules";
+import { purchaseLogisticsRiskService } from "@/server/services/purchase-logistics-risk-service";
 
 const ZERO = new Prisma.Decimal(0);
 const money = (value: Prisma.Decimal | null | undefined) => (value ?? ZERO).toDecimalPlaces(2).toFixed(2);
@@ -44,7 +45,7 @@ export async function getDailyBusinessReport(input: {
     getSalesSummary(ownerId, period),
     getPurchaseSummary(ownerId, period),
     getInventorySnapshot(ownerId),
-    getDailyTodos(ownerId),
+    getDailyTodos(ownerId, period),
     getRiskSummary(ownerId, period.generatedAt),
     getMarketSummary(ownerId, period),
   ]);
@@ -128,8 +129,8 @@ async function getInventorySnapshot(ownerId: string) {
   };
 }
 
-async function getDailyTodos(ownerId: string) {
-  const [arrivalOrders, inspections, problems, draftSales, unsettledSales, purchaseCases, saleCases, buyerReturns, returningItems, returnedItems] = await Promise.all([
+async function getDailyTodos(ownerId: string, period: DailyReportPeriod) {
+  const [arrivalOrders, inspections, problems, draftSales, unsettledSales, purchaseCases, saleCases, buyerReturns, returningItems, returnedItems, purchaseLogisticsRisks] = await Promise.all([
     db.purchaseOrder.findMany({ where: { ownerId, status: { in: ["PAID", "WAITING_SHIPMENT", "IN_TRANSIT"] } }, select: { id: true, orderNo: true, paidAt: true } }),
     db.inspection.findMany({ where: { ownerId, status: { in: ["PENDING", "IN_PROGRESS"] } }, select: { id: true, createdAt: true, purchaseOrderItem: { select: { name: true, purchaseOrder: { select: { id: true, orderNo: true } } } } } }),
     db.inventoryItem.findMany({ where: { ownerId, ownershipStatus: "OWNED", itemStatus: "PROBLEM" }, select: { id: true, inventoryCode: true, name: true, stockedAt: true } }),
@@ -140,10 +141,15 @@ async function getDailyTodos(ownerId: string) {
     db.saleAfterSaleCase.findMany({ where: { ownerId, status: "RETURN_RECEIVED" }, select: { id: true, caseNo: true, returnReceivedAt: true } }),
     db.inventoryItem.findMany({ where: { ownerId, ownershipStatus: "OWNED", itemStatus: "RETURNING" }, select: { id: true, inventoryCode: true, name: true, updatedAt: true } }),
     db.inventoryItem.findMany({ where: { ownerId, ownershipStatus: "OWNED", itemStatus: "RETURNED" }, select: { id: true, inventoryCode: true, name: true, updatedAt: true, shipmentLines: { where: { lineStatus: "RETURNED" }, orderBy: { createdAt: "desc" }, take: 1, select: { returnInspection: { select: { result: true } } } } } }),
+    purchaseLogisticsRiskService.list(ownerId, period.generatedAt),
   ]);
   const returnedAwaiting = returnedItems.filter((item) => !item.shipmentLines[0]?.returnInspection);
   const pendingDecision = returnedItems.filter((item) => item.shipmentLines[0]?.returnInspection?.result === "PENDING_DECISION");
+  const missingTracking = purchaseLogisticsRisks.filter((item) => item.type === "MISSING_TRACKING_NUMBER").map((item) => ({ ...item, id: item.purchaseOrderId }));
+  const trackingNotReceived = purchaseLogisticsRisks.filter((item) => item.type === "TRACKING_NOT_RECEIVED_OVERDUE").map((item) => ({ ...item, id: item.purchaseOrderId }));
   const items = [
+    todo("purchaseMissingTracking", "P2", missingTracking.length, "/purchases?todo=missingTracking", sample(missingTracking, (item) => item.orderNumber, (item) => item.referenceAt)),
+    todo("purchaseTrackingNotReceivedOverdue", "P1", trackingNotReceived.length, "/purchases?todo=trackingNotReceivedOverdue", sample(trackingNotReceived, (item) => `${item.orderNumber}${item.maskedTrackingNumber ? ` ${item.maskedTrackingNumber}` : ""}`, (item) => item.referenceAt)),
     todo("purchaseAwaitingArrival", "P2", arrivalOrders.length, "/purchases?status=IN_TRANSIT", sample(arrivalOrders, (item) => item.orderNo, (item) => item.paidAt)),
     todo("purchaseAwaitingInspection", "P2", inspections.length, "/inspections", sample(inspections, (item) => `${item.purchaseOrderItem.purchaseOrder.orderNo} ${item.purchaseOrderItem.name}`, (item) => item.createdAt)),
     todo("problemItems", "P2", problems.length, "/inventory?status=PROBLEM", sample(problems, (item) => `${item.inventoryCode} ${item.name}`, (item) => item.stockedAt)),

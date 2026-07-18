@@ -481,3 +481,11 @@ pnpm verify:m3a
 - `DELIVERED` 仅表示 Provider 显示已签收，不等于人工收货、验货或入库，不得写采购 `deliveredAt`、Inspection 或 InventoryItem。
 - 轨迹时间按 `Asia/Shanghai` 解释，事件升序保存；手机号和明显座机号写入前脱敏，原始请求、响应、AppKey 和 DataSign 不保存。
 - 未配置快递鸟时人工物流流程必须继续可用；真实账号验收前不得宣称生产可用或真实查询已通过。
+## M6-B1 Purchase logistics reminder rules
+
+1. A purchase order without a non-blank tracking number becomes `MISSING_TRACKING_NUMBER` after 48 complete hours from `paidAt`.
+2. A purchase order with a tracking number becomes `TRACKING_NOT_RECEIVED_OVERDUE` after 120 complete hours from the immutable first `trackingNumberRecordedAt`.
+3. Changing the carrier or tracking number does not reset `trackingNumberRecordedAt`; historical null values are not fabricated or backfilled.
+4. Only `manuallyReceivedAt` stops the five-day reminder. Provider and MOCK delivered events are external observations and do not claim manual receipt.
+5. A purchase order can have at most one current logistics reminder: a tracking number selects the five-day rule, while a missing number selects the 48-hour rule.
+6. Workbench and daily reports consume the same server-side risk aggregation and show masked tracking numbers only.

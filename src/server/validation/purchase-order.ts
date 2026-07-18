@@ -72,7 +72,7 @@ export const orderListQuerySchema = z.object({
     .enum(["UNALLOCATED", "DRAFT", "CONFIRMED"])
     .optional(),
   todo: z
-    .enum(["missingTracking", "logisticsIssues"])
+    .enum(["missingTracking", "trackingNotReceivedOverdue", "logisticsIssues"])
     .optional(),
   tracking: z
     .enum(["missing"])

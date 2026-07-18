@@ -5,6 +5,10 @@ import { ServiceError } from "@/server/errors";
 import { LocalStorageAdapter } from "@/server/adapters/storage/local-storage-adapter";
 import { isActivePurchaseAfterSaleStatus, sumDecimals } from "@/server/purchase-after-sales/purchase-after-sales-rules";
 import { getSalesAfterSaleFinancials } from "@/server/reports/sales-after-sales-financials";
+import {
+  purchaseLogisticsRiskService,
+  PURCHASE_LOGISTICS_RISK_TYPES,
+} from "@/server/services/purchase-logistics-risk-service";
 import type {
   OrderListQuery,
   PurchaseItemBatchInput,
@@ -370,7 +374,6 @@ export class PurchaseOrderService {
 
   async listOrders(ownerId: string, query: OrderListQuery) {
     const now = new Date();
-    const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
     const where: Prisma.PurchaseOrderWhereInput = {
       ownerId,
       status: query.status,
@@ -394,10 +397,14 @@ export class PurchaseOrderService {
           }
         : {}),
     };
-    if (query.todo === "missingTracking") {
-      where.status = { in: ["PAID", "WAITING_SHIPMENT"] };
-      where.trackingNo = null;
-      where.paidAt = { lte: cutoff };
+    if (query.todo === "missingTracking" || query.todo === "trackingNotReceivedOverdue") {
+      const riskType = query.todo === "missingTracking"
+        ? PURCHASE_LOGISTICS_RISK_TYPES.MISSING_TRACKING_NUMBER
+        : PURCHASE_LOGISTICS_RISK_TYPES.TRACKING_NOT_RECEIVED_OVERDUE;
+      const riskOrderIds = (await purchaseLogisticsRiskService.list(ownerId, now))
+        .filter((risk) => risk.type === riskType)
+        .map((risk) => risk.purchaseOrderId);
+      where.id = { in: riskOrderIds };
     } else if (query.todo === "logisticsIssues") {
       where.logisticsStatus = { in: ["EXCEPTION", "STALLED"] };
       where.status = { not: "CANCELLED" };

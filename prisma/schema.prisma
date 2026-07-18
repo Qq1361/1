@@ -400,8 +400,10 @@ model PurchaseOrder {
   shippingAmount            Decimal             @default(0) @db.Decimal(12, 2)
   carrierCode               String?
   trackingNo                String?
+  trackingNumberRecordedAt  DateTime?
   shippedAt                 DateTime?
   deliveredAt               DateTime?
+  manuallyReceivedAt        DateTime?
   logisticsStatus           LogisticsStatus     @default(NOT_SHIPPED)
   logisticsLastCheckedAt    DateTime?
   logisticsLastEventAt      DateTime?

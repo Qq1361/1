@@ -57,13 +57,19 @@ export class LogisticsService {
       );
     }
     const isNewTrackingNo = order.trackingNo !== input.trackingNo;
+    const shouldRestartTransit = isNewTrackingNo && !order.manuallyReceivedAt;
+    const firstTrackingNumberRecorded = !order.trackingNo?.trim() && Boolean(input.trackingNo.trim());
+    const now = new Date();
     const updated = await db.purchaseOrder.update({
       where: { id: orderId },
       data: {
         carrierCode: input.carrierCode,
         trackingNo: input.trackingNo,
-        shippedAt: input.shippedAt ?? order.shippedAt ?? new Date(),
-        ...(isNewTrackingNo
+        shippedAt: input.shippedAt ?? order.shippedAt ?? now,
+        ...(firstTrackingNumberRecorded && !order.trackingNumberRecordedAt
+          ? { trackingNumberRecordedAt: now }
+          : {}),
+        ...(shouldRestartTransit
           ? {
               status: "IN_TRANSIT",
               logisticsStatus: "IN_TRANSIT",
@@ -73,6 +79,7 @@ export class LogisticsService {
               logisticsLastEventText: null,
               logisticsExceptionType: null,
               logisticsExceptionMessage: null,
+              manuallyReceivedAt: null,
             }
           : {}),
       },
@@ -92,7 +99,7 @@ export class LogisticsService {
         422,
       );
     }
-    if (order.logisticsStatus === "DELIVERED") {
+    if (order.manuallyReceivedAt) {
       throw new ServiceError(
         "ALREADY_DELIVERED",
         "物流状态已经是已签收。",
@@ -118,6 +125,7 @@ export class LogisticsService {
           status: "PENDING_INSPECTION",
           logisticsStatus: "DELIVERED",
           deliveredAt: now,
+          manuallyReceivedAt: now,
           logisticsLastCheckedAt: now,
           logisticsLastEventAt: now,
           logisticsLastEventText: "用户手动标记已签收",

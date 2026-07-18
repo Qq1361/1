@@ -43,6 +43,7 @@ type ListResponse = {
 
 type TodoType =
   | "MISSING_TRACKING"
+  | "TRACKING_NOT_RECEIVED_OVERDUE"
   | "LOGISTICS_EXCEPTION"
   | "LOGISTICS_STALLED"
   | "PENDING_INSPECTION"
@@ -72,6 +73,7 @@ type TodosResponse = {
   }[];
   counts: {
     missingTracking: number;
+    trackingNotReceivedOverdue: number;
     logisticsIssues: number;
     pendingInspection: number;
     distanceTo395Within7Days: number;
@@ -97,6 +99,7 @@ type PlatformReturnSummary = {
 
 const EMPTY_TODO_COUNTS: TodosResponse["counts"] = {
   missingTracking: 0,
+  trackingNotReceivedOverdue: 0,
   logisticsIssues: 0,
   pendingInspection: 0,
   distanceTo395Within7Days: 0,
@@ -173,6 +176,7 @@ export default function Home() {
   const cards = [
     { label: "采购订单", value: orders?.total, icon: ReceiptText, href: "/purchases" },
     { label: "超48小时未填单号", value: todoCounts.missingTracking, icon: Truck, href: "/purchases?todo=missingTracking" },
+    { label: "填单号超5天未确认收货", value: todoCounts.trackingNotReceivedOverdue, icon: AlertTriangle, href: "/purchases?todo=trackingNotReceivedOverdue" },
     { label: "物流异常 / 停滞", value: todoCounts.logisticsIssues, icon: AlertTriangle, href: "/purchases?todo=logisticsIssues" },
     { label: "待验货", value: todoCounts.pendingInspection, icon: ClipboardCheck, href: "/inspections" },
     { label: "距395天不足7天", value: todoCounts.distanceTo395Within7Days, icon: Timer, href: "/inventory?reminder=DISTANCE_TO_395_WITHIN_7_DAYS" },

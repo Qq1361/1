@@ -613,3 +613,13 @@ M2-A 的采购 Mock 物流仍保留，暂未迁移。M6-A2 已选择快递鸟并
 - M6-A2 第一刀：`IMPLEMENTED / LOCALLY VERIFIED`。
 - 真实快递鸟账号、产品开通和真实单号验收：`PENDING CONFIGURATION`。
 - M6-A3 定时同步：尚未开始。
+## 21. M6-B1 Manual purchase logistics overdue reminders
+
+The manual logistics workflow remains the formal operating path. `PurchaseLogisticsRiskService` is read-only and does not invoke KDNIAO, MOCK, or any public logistics endpoint.
+
+- Missing tracking: `paidAt` plus 48 complete hours and a blank `trackingNo`.
+- Tracking overdue: `trackingNumberRecordedAt` plus 120 complete hours, a non-blank tracking number, and no `manuallyReceivedAt`.
+- `trackingNumberRecordedAt` is only written by the server when tracking changes from empty to non-empty. It is not reset by carrier edits, tracking replacement, or unrelated purchase edits, and no historical record is backfilled.
+- `manuallyReceivedAt` is set only by the existing manual-receipt operation. An external delivered event never ends the reminder.
+- The shared risk result is consumed by the workbench and daily report. Tracking numbers are masked outside the purchase detail edit surface.
+- M6-A2 real acceptance remains `CODE COMPLETE / REAL ACCEPTANCE PAUSED`; M6-A3 is not started.

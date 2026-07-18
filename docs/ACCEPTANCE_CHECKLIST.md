@@ -513,3 +513,11 @@ pnpm verify:m3a           # M3-A 销售验证
 - [x] 390px 页面无横向溢出，长轨迹自动换行，Provider 错误不导致详情页崩溃。
 - [x] Provider 查询不修改采购状态/收货时间，不创建 Inspection/InventoryItem，不新增 `SOLD` 写入。
 - [ ] 配置真实快递鸟账号并使用官方测试或正式单号完成真实响应验收。
+## M6-B1 Purchase logistics reminders
+
+- [x] Existing 48-hour missing-tracking reminder remains active.
+- [x] Five-day reminder uses a first-tracking timestamp, not `updatedAt`.
+- [x] Only manual receipt closes the five-day reminder; external delivered does not.
+- [x] Workbench and daily report use one risk aggregation with masked tracking numbers.
+- [x] No logistics provider request, logistics event, inspection, inventory, refund, purchase-status, or SOLD write is performed by risk aggregation.
+- [x] `verify:m6-purchase-logistics-reminders` covers time boundaries, owner isolation, daily-report integration, masking, and exact fixture cleanup.

@@ -4,9 +4,14 @@ import type {
 } from "@/generated/prisma/enums";
 import { db } from "@/server/db";
 import { isLegacyInventoryItemStatus } from "@/lib/inventory-item-status-contract";
+import {
+  calculatePurchaseLogisticsRisks,
+  type PurchaseLogisticsRisk,
+} from "@/server/services/purchase-logistics-risk-service";
 
 export type TodoType =
   | "MISSING_TRACKING"
+  | "TRACKING_NOT_RECEIVED_OVERDUE"
   | "LOGISTICS_EXCEPTION"
   | "LOGISTICS_STALLED"
   | "PENDING_INSPECTION"
@@ -52,6 +57,24 @@ export type TodoItem = {
   secondaryActions?: TodoAction[];
   availableActions?: AvailableAction[];
 };
+
+function purchaseLogisticsRiskToTodo(risk: PurchaseLogisticsRisk): TodoItem {
+  const overdue = risk.type === "TRACKING_NOT_RECEIVED_OVERDUE";
+  return {
+    id: `${risk.type}:${risk.purchaseOrderId}`,
+    type: overdue ? "TRACKING_NOT_RECEIVED_OVERDUE" : "MISSING_TRACKING",
+    severity: risk.severity,
+    orderId: risk.purchaseOrderId,
+    orderNo: risk.orderNumber,
+    title: overdue ? "快递单号已填写超过 5 天仍未确认收货" : "采购订单超过 2 天仍未填写快递单号",
+    description: overdue
+      ? `${risk.productSummary}${risk.carrier ? ` / ${risk.carrier}` : ""}${risk.maskedTrackingNumber ? ` / ${risk.maskedTrackingNumber}` : ""}，请手动查询物流。`
+      : `${risk.productSummary}，请补充快递单号。`,
+    occurredAt: risk.referenceAt.toISOString(),
+    reasonKey: `${risk.type}:${risk.maskedTrackingNumber ?? "NONE"}:${risk.referenceAt.toISOString()}`,
+    primaryAction: { label: overdue ? "查看采购订单" : "填写物流", href: risk.detailPath },
+  };
+}
 
 type TodoOrder = {
   id: string;
@@ -518,11 +541,15 @@ export class TodoService {
           id: true,
           orderNo: true,
           paidAt: true,
+          carrierCode: true,
           trackingNo: true,
+          trackingNumberRecordedAt: true,
+          manuallyReceivedAt: true,
           status: true,
           logisticsStatus: true,
           logisticsLastEventAt: true,
           logisticsExceptionMessage: true,
+          items: { select: { name: true, quantity: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
         },
       }),
       db.inventoryItem.findMany({
@@ -608,8 +635,10 @@ export class TodoService {
       });
     }
     const pendingInspectionCount = pendingInspections.length;
+    const logisticsRiskTodos = calculatePurchaseLogisticsRisks(orders, now).map(purchaseLogisticsRiskToTodo);
     const allTodos = [
-      ...calculateTodos(orders, pendingInspections),
+      ...calculateTodos(orders, pendingInspections, now).filter((todo) => todo.type !== "MISSING_TRACKING"),
+      ...logisticsRiskTodos,
       ...calculateInventoryTodos(inventory),
       ...calculatePlatformReturnTodos(platformReturnInventory),
     ]
