@@ -8,7 +8,7 @@
 - 第 25 条 migration `20260718033824_add_generic_logistics_tracking_foundation` 已新增通用 `LogisticsShipment` / `LogisticsTrackingEvent`、三组枚举、索引、外键和 CHECK；现有采购 `LogisticsEvent` 保持不变。
 - 已完成 Provider 合同和注册表、独立状态映射、保守运单号标准化、确定性本地 `MOCK` 及事件幂等 Service。五种 businessType 均执行 owner 归属校验。
 - 通用 Service 只写新物流表，不修改采购、平台寄送、平台退回、售后、库存、验货、退款、销售或日报状态。当前无公开 API/UI/任务/Webhook，无真实 Provider 或凭证。
-- 详见 [M6 真实物流 API 接入规格](./M6_LOGISTICS_API_INTEGRATION_SPEC.md)。M1～M5 保持 FROZEN；M6-A1 完成后暂停，M6-A2 尚未开始。
+- 详见 [M6 真实物流 API 接入规格](./M6_LOGISTICS_API_INTEGRATION_SPEC.md)。M1～M5 保持 FROZEN；M6-A2 已完成本地实现和验证，真实账号验收仍待配置，M6-A3 尚未开始。
 
 ## M5-A2 采购订单商品批量添加（已完成）
 
@@ -385,3 +385,12 @@ pnpm verify:m3a
 - 发送协调器使用短事务领取和落库，外部飞书请求不在数据库事务内；仅网络、超时和飞书 5xx 失败允许重试，发送前生成日报失败或空报告时不会发送。
 - `pnpm send:daily-report` 是一次性 CLI；Windows 任务计划脚本提供安装、执行、检查和卸载，日志不包含 Webhook、Secret 或日报正文。
 - 当前保证是本地数据库协调下的近似一次、至少一次发送，不宣称外部飞书端 exactly-once。M4-A7/A8 和 M4-C 尚未开始。
+
+## M6-A2 第一刀：快递鸟手动真实物流查询
+
+- M6-A1 通用物流底座提交 `117763c` 已作为同步基线。
+- 已实现快递鸟即时查询 Adapter、服务端配置、1002 签名、严格响应解析、北京时间轨迹、隐私脱敏、Provider Registry 和采购入库物流 API。
+- 采购详情新增独立“真实物流查询”，只在用户点击时查询；页面加载只读取本地配置和已保存轨迹。
+- 当前只开放 `PURCHASE_INBOUND`；人工采购物流字段不会被 Provider 结果反向覆盖。
+- Provider 签收不会修改采购收货时间，不创建验货或库存，不推进 M1～M5 状态机。
+- 第一刀状态为 `IMPLEMENTED / LOCALLY VERIFIED`；真实账号、产品开通和真实单号验收仍为 `PENDING CONFIGURATION`。M6-A3 尚未开始。

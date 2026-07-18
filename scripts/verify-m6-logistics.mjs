@@ -292,10 +292,18 @@ try {
   assert(shipments.length === 5, "all five business types register against their real models");
   assert(new Set(shipments.map((shipment) => shipment.trackingNumber)).size === 5, "each fixture keeps its original tracking number");
 
+  const idempotentRegistration = await service.registerShipment(ownerId, {
+    businessType: "PURCHASE_INBOUND",
+    businessId: created.purchaseOrderId,
+    provider: "MOCK",
+    carrierCode: "MOCK-CARRIER",
+    trackingNumber: `${runId}-05`,
+  });
+  assert(idempotentRegistration.id === shipments[0].id && idempotentRegistration.wasCreated === false, "same business binding is idempotent");
   await rejectsCode(
     () => service.registerShipment(ownerId, { businessType: "PURCHASE_INBOUND", businessId: created.purchaseOrderId, provider: "MOCK", carrierCode: "MOCK", trackingNumber: `${runId}-DUP` }),
-    "LOGISTICS_SHIPMENT_ALREADY_EXISTS",
-    "same business object cannot register twice",
+    "LOGISTICS_SHIPMENT_BINDING_CONFLICT",
+    "different binding on the same business object conflicts",
   );
   await rejectsCode(
     () => service.registerShipment(otherOwnerId, { businessType: "PURCHASE_INBOUND", businessId: created.purchaseOrderId, provider: "MOCK", carrierCode: "MOCK", trackingNumber: `${runId}-CROSS` }),
@@ -308,7 +316,7 @@ try {
     "missing business object is rejected",
   );
   await rejectsCode(
-    () => service.registerShipment(ownerId, { businessType: "PURCHASE_INBOUND", businessId: `${runId}-OTHER`, provider: "UNKNOWN", carrierCode: "MOCK", trackingNumber: `${runId}-UNKNOWN` }),
+    () => service.registerShipment(ownerId, { businessType: "PURCHASE_INBOUND", businessId: created.purchaseOrderId, provider: "UNKNOWN", carrierCode: "MOCK", trackingNumber: `${runId}-UNKNOWN` }),
     "LOGISTICS_PROVIDER_NOT_FOUND",
     "unknown provider is rejected",
   );

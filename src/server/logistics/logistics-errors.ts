@@ -19,5 +19,19 @@ export function logisticsConflictError(code: string, message: string) {
 }
 
 export function logisticsProviderServiceError(code: string, message: string, retryable: boolean) {
-  return new ServiceError(code, message, retryable ? 503 : 400);
+  const status = code === "LOGISTICS_PROVIDER_RATE_LIMITED"
+    ? 429
+    : code === "LOGISTICS_PROVIDER_TIMEOUT"
+      ? 504
+      : code === "LOGISTICS_PROVIDER_INVALID_RESPONSE" || code === "LOGISTICS_PROVIDER_REJECTED"
+        ? 502
+        : code === "LOGISTICS_PROVIDER_NOT_CONFIGURED"
+          || code === "LOGISTICS_PROVIDER_AUTH_FAILED"
+          || code === "LOGISTICS_PROVIDER_NETWORK_ERROR"
+          || code === "LOGISTICS_PROVIDER_CONFIGURATION_INVALID"
+          ? 503
+          : retryable
+            ? 503
+            : 400;
+  return new ServiceError(code, message, status);
 }

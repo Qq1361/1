@@ -1,6 +1,7 @@
 import { logisticsProviderServiceError, logisticsValidationError } from "./logistics-errors";
 import type { LogisticsProviderAdapter } from "./logistics-provider";
 import { normalizeProviderCode } from "./logistics-rules";
+import { KdniaoLogisticsProvider } from "./providers/kdniao-logistics-provider";
 import { MockLogisticsProvider } from "./providers/mock-logistics-provider";
 
 export class LogisticsProviderRegistry {
@@ -38,4 +39,5 @@ export class LogisticsProviderRegistry {
 
 export const logisticsProviderRegistry = new LogisticsProviderRegistry([
   new MockLogisticsProvider(),
+  new KdniaoLogisticsProvider(),
 ]);

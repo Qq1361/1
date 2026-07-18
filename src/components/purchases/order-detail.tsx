@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { AttachmentUploader } from "./attachment-uploader";
 import { DeleteOrderButton } from "./delete-order-button";
 import { LogisticsCard } from "./logistics-card";
+import { RealLogisticsCard } from "./real-logistics-card";
 import { AllocationBadge, PurchaseStatusBadge } from "./status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -332,6 +333,11 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                 logisticsEvents: response.events,
               })
             }
+          />
+          <RealLogisticsCard
+            orderId={order.id}
+            legacyCarrierCode={order.carrierCode}
+            legacyTrackingNumber={order.trackingNo}
           />
           <Card className="rounded-lg shadow-none">
             <CardHeader>

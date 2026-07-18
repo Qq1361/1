@@ -88,9 +88,24 @@ function providerFailure(error: unknown) {
 }
 
 function providerFailureMessage(code: string) {
-  return code === "LOGISTICS_PROVIDER_INVALID_RESPONSE"
-    ? "物流 Provider 返回数据无效。"
-    : "物流 Provider 查询失败，请稍后重试。";
+  const messages: Record<string, string> = {
+    LOGISTICS_PROVIDER_AUTH_FAILED: "真实物流 Provider 认证失败，请检查服务端配置。",
+    LOGISTICS_PROVIDER_RATE_LIMITED: "真实物流 Provider 查询次数已受限，请稍后重试。",
+    LOGISTICS_PROVIDER_TIMEOUT: "真实物流 Provider 查询超时，请稍后重试。",
+    LOGISTICS_PROVIDER_NETWORK_ERROR: "暂时无法连接真实物流 Provider，请稍后重试。",
+    LOGISTICS_PROVIDER_INVALID_RESPONSE: "真实物流 Provider 返回数据无效。",
+    LOGISTICS_PROVIDER_REJECTED: "真实物流 Provider 拒绝了本次查询。",
+  };
+  return messages[code] ?? "真实物流 Provider 查询失败，请稍后重试。";
+}
+
+function sameShipmentBinding(
+  shipment: { provider: string; carrierCode: string; normalizedTrackingNumber: string },
+  expected: { provider: string; carrierCode: string; normalizedTrackingNumber: string },
+) {
+  return shipment.provider === expected.provider
+    && shipment.carrierCode === expected.carrierCode
+    && shipment.normalizedTrackingNumber === expected.normalizedTrackingNumber;
 }
 
 export class GenericLogisticsService {
@@ -103,25 +118,33 @@ export class GenericLogisticsService {
     const businessType = parseBusinessType(input.businessType);
     const businessId = normalizeBusinessId(input.businessId);
     const providerCode = normalizeProviderCode(input.provider);
-    const provider = this.registry.get(providerCode);
     const carrierCode = normalizeCarrierCode(input.carrierCode);
-    if (provider.supportsCarrier && !provider.supportsCarrier(carrierCode)) {
-      throw logisticsValidationError("LOGISTICS_INVALID_CARRIER", "当前 Provider 不支持该快递公司。");
-    }
     const carrierName = normalizeOptionalText(input.carrierName, 100);
     const tracking = normalizeTrackingNumber(input.trackingNumber);
+    const expectedBinding = {
+      provider: providerCode,
+      carrierCode,
+      normalizedTrackingNumber: tracking.normalizedTrackingNumber,
+    };
 
     try {
       return await db.$transaction(async (tx) => {
         await assertOwnedBusinessObject(tx, ownerId, businessType, businessId);
+        const provider = this.registry.get(providerCode);
+        if (provider.supportsCarrier && !provider.supportsCarrier(carrierCode)) {
+          throw logisticsValidationError("LOGISTICS_INVALID_CARRIER", "当前 Provider 不支持该快递公司。");
+        }
         const existing = await tx.logisticsShipment.findUnique({
           where: { ownerId_businessType_businessId: { ownerId, businessType, businessId } },
-          select: { id: true },
         });
         if (existing) {
-          throw logisticsConflictError("LOGISTICS_SHIPMENT_ALREADY_EXISTS", "该业务对象已经注册通用物流记录。");
+          if (sameShipmentBinding(existing, expectedBinding)) return { ...existing, wasCreated: false };
+          throw logisticsConflictError(
+            "LOGISTICS_SHIPMENT_BINDING_CONFLICT",
+            "该业务对象已绑定其他真实物流单号，不能直接覆盖历史绑定。",
+          );
         }
-        return tx.logisticsShipment.create({
+        const shipment = await tx.logisticsShipment.create({
           data: {
             ownerId,
             businessType,
@@ -133,14 +156,39 @@ export class GenericLogisticsService {
             normalizedTrackingNumber: tracking.normalizedTrackingNumber,
           },
         });
+        return { ...shipment, wasCreated: true };
       });
     } catch (error) {
       if (error instanceof ServiceError) throw error;
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw logisticsConflictError("LOGISTICS_SHIPMENT_ALREADY_EXISTS", "该业务对象已经注册通用物流记录。");
+        const existing = await db.logisticsShipment.findUnique({
+          where: { ownerId_businessType_businessId: { ownerId, businessType, businessId } },
+        });
+        if (existing && sameShipmentBinding(existing, expectedBinding)) return { ...existing, wasCreated: false };
+        throw logisticsConflictError(
+          "LOGISTICS_SHIPMENT_BINDING_CONFLICT",
+          "该业务对象已绑定其他真实物流单号，不能直接覆盖历史绑定。",
+        );
       }
       throw error;
     }
+  }
+
+  async getShipmentForBusiness(ownerId: string, businessTypeInput: LogisticsBusinessType | string, businessIdInput: string) {
+    const businessType = parseBusinessType(businessTypeInput);
+    const businessId = normalizeBusinessId(businessIdInput);
+    return db.$transaction(async (tx) => {
+      await assertOwnedBusinessObject(tx, ownerId, businessType, businessId);
+      const shipment = await tx.logisticsShipment.findUnique({
+        where: { ownerId_businessType_businessId: { ownerId, businessType, businessId } },
+      });
+      if (!shipment) return { shipment: null, events: [] };
+      const events = await tx.logisticsTrackingEvent.findMany({
+        where: { ownerId, logisticsShipmentId: shipment.id },
+        orderBy: [{ eventTime: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      });
+      return { shipment, events };
+    });
   }
 
   async getShipment(ownerId: string, shipmentId: string) {

@@ -23,6 +23,7 @@
     "verify:m4-daily-report": "tsx scripts/verify-m4-daily-report.mjs",
     "verify:m5-purchase-items": "tsx scripts/verify-m5-purchase-items.mjs",
     "verify:m6-logistics": "tsx scripts/verify-m6-logistics.mjs",
+    "verify:m6-logistics-provider": "tsx scripts/verify-m6-logistics-provider.mjs",
     "send:daily-report": "tsx scripts/send-daily-business-report.ts",
     "verify:inventory-summary": "tsx scripts/verify-inventory-summary.mjs",
     "verify:item-status-contract": "tsx scripts/verify-item-status-contract.mjs",
