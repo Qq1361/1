@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LockKeyhole } from "lucide-react";
+import { Loader2, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,7 +57,7 @@ export function AccessForm() {
         </p>
       ) : null}
       <Button className="w-full" type="submit" disabled={pending}>
-        <LockKeyhole />
+        {pending ? <Loader2 className="animate-spin" /> : <LockKeyhole />}
         {pending ? "正在验证" : "进入系统"}
       </Button>
     </form>

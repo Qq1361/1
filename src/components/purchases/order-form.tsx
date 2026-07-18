@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
+import { ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ type FormItem = {
   notes: string;
   files: File[];
 };
+
+type FieldErrors = Record<string, string>;
 
 let itemSequence = 0;
 
@@ -39,10 +41,58 @@ function newItem(clientId = createItemClientId()): FormItem {
   };
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function SelectedFiles({
+  files,
+  label,
+  onRemove,
+}: {
+  files: File[];
+  label: string;
+  onRemove: (index: number) => void;
+}) {
+  if (!files.length) return null;
+
+  return (
+    <ul className="space-y-2" aria-label={label}>
+      {files.map((file, index) => (
+        <li
+          key={`${file.name}-${file.lastModified}-${index}`}
+          className="flex items-center gap-3 rounded-md border bg-background px-3 py-2 text-sm"
+        >
+          <span className="min-w-0 flex-1 truncate" title={file.name}>
+            {file.name}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {formatFileSize(file.size)}
+          </span>
+          <button
+            type="button"
+            className={buttonVariants({
+              variant: "ghost",
+              size: "icon-sm",
+              className: "h-11 w-11 sm:h-9 sm:w-9",
+            })}
+            onClick={() => onRemove(index)}
+            aria-label={`移除附件 ${file.name}`}
+          >
+            <X />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function OrderForm() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [orderFiles, setOrderFiles] = useState<File[]>([]);
   const [items, setItems] = useState<FormItem[]>([newItem("initial-item")]);
   const [form, setForm] = useState({
@@ -60,6 +110,15 @@ export function OrderForm() {
         item.clientId === clientId ? { ...item, ...patch } : item,
       ),
     );
+  }
+
+  function clearFieldError(field: string) {
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const remaining = { ...current };
+      delete remaining[field];
+      return remaining;
+    });
   }
 
   async function uploadFile(
@@ -86,33 +145,36 @@ export function OrderForm() {
     setFormError(null);
 
     const moneyPattern = /^\d{1,10}(\.\d{1,2})?$/;
-    if (!form.orderNo.trim()) {
-      setFormError("请填写闲鱼订单号。");
+    const errors: FieldErrors = {};
+    if (!form.orderNo.trim()) errors.orderNo = "请填写闲鱼订单号。";
+    if (!form.paidAt) errors.paidAt = "请选择付款日期。";
+    if (!moneyPattern.test(form.totalAmount.trim())) {
+      errors.totalAmount = "请输入最多两位小数的有效金额。";
+    }
+    if (!moneyPattern.test(form.shippingAmount.trim())) {
+      errors.shippingAmount = "请输入最多两位小数的有效金额。";
+    }
+    items.forEach((item) => {
+      if (!item.name.trim()) {
+        errors[`${item.clientId}-name`] = "请填写商品名称。";
+      }
+      if (
+        !Number.isInteger(item.quantity) ||
+        item.quantity < 1 ||
+        item.quantity > 999
+      ) {
+        errors[`${item.clientId}-quantity`] = "数量应为 1 到 999 的整数。";
+      }
+    });
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setFormError("请检查标记的字段后再创建订单。");
+      const firstField = Object.keys(errors)[0];
+      requestAnimationFrame(() => document.getElementById(firstField)?.focus());
       return;
     }
-    if (!form.paidAt) {
-      setFormError("请选择付款日期。");
-      return;
-    }
-    if (
-      !moneyPattern.test(form.totalAmount.trim()) ||
-      !moneyPattern.test(form.shippingAmount.trim())
-    ) {
-      setFormError("请输入有效金额，金额最多保留两位小数。");
-      return;
-    }
-    if (
-      items.some(
-        (item) =>
-          !item.name.trim() ||
-          !Number.isInteger(item.quantity) ||
-          item.quantity < 1 ||
-          item.quantity > 999,
-      )
-    ) {
-      setFormError("请填写每条商品明细的名称和有效数量。");
-      return;
-    }
+
+    setFieldErrors({});
 
     setSubmitting(true);
     try {
@@ -177,6 +239,18 @@ export function OrderForm() {
     }
   }
 
+  const totalItemQuantity = items.reduce(
+    (total, item) => total + (Number.isFinite(item.quantity) ? item.quantity : 0),
+    0,
+  );
+  const attachmentCount = orderFiles.length + items.reduce((total, item) => total + item.files.length, 0);
+  const totalValue = Number(form.totalAmount) + Number(form.shippingAmount);
+  const totalLabel =
+    /^\d{1,10}(\.\d{1,2})?$/.test(form.totalAmount.trim()) &&
+    /^\d{1,10}(\.\d{1,2})?$/.test(form.shippingAmount.trim())
+      ? `¥ ${totalValue.toFixed(2)}`
+      : "金额待填写";
+
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       {formError ? (
@@ -197,11 +271,19 @@ export function OrderForm() {
             <Input
               id="orderNo"
               value={form.orderNo}
-              onChange={(event) =>
-                setForm({ ...form, orderNo: event.target.value })
-              }
+              onChange={(event) => {
+                setForm({ ...form, orderNo: event.target.value });
+                clearFieldError("orderNo");
+              }}
+              aria-invalid={Boolean(fieldErrors.orderNo)}
+              aria-describedby={fieldErrors.orderNo ? "orderNo-error" : undefined}
               required
             />
+            {fieldErrors.orderNo ? (
+              <p id="orderNo-error" className="text-xs text-destructive" role="alert">
+                {fieldErrors.orderNo}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="sellerNickname">卖家昵称</Label>
@@ -220,11 +302,19 @@ export function OrderForm() {
               id="paidAt"
               type="date"
               value={form.paidAt}
-              onChange={(event) =>
-                setForm({ ...form, paidAt: event.target.value })
-              }
+              onChange={(event) => {
+                setForm({ ...form, paidAt: event.target.value });
+                clearFieldError("paidAt");
+              }}
+              aria-invalid={Boolean(fieldErrors.paidAt)}
+              aria-describedby={fieldErrors.paidAt ? "paidAt-error" : undefined}
               required
             />
+            {fieldErrors.paidAt ? (
+              <p id="paidAt-error" className="text-xs text-destructive" role="alert">
+                {fieldErrors.paidAt}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="totalAmount">商品金额</Label>
@@ -232,12 +322,20 @@ export function OrderForm() {
               id="totalAmount"
               inputMode="decimal"
               value={form.totalAmount}
-              onChange={(event) =>
-                setForm({ ...form, totalAmount: event.target.value })
-              }
+              onChange={(event) => {
+                setForm({ ...form, totalAmount: event.target.value });
+                clearFieldError("totalAmount");
+              }}
+              aria-invalid={Boolean(fieldErrors.totalAmount)}
+              aria-describedby={fieldErrors.totalAmount ? "totalAmount-error" : undefined}
               placeholder="0.00"
               required
             />
+            {fieldErrors.totalAmount ? (
+              <p id="totalAmount-error" className="text-xs text-destructive" role="alert">
+                {fieldErrors.totalAmount}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="shippingAmount">运费</Label>
@@ -245,11 +343,19 @@ export function OrderForm() {
               id="shippingAmount"
               inputMode="decimal"
               value={form.shippingAmount}
-              onChange={(event) =>
-                setForm({ ...form, shippingAmount: event.target.value })
-              }
+              onChange={(event) => {
+                setForm({ ...form, shippingAmount: event.target.value });
+                clearFieldError("shippingAmount");
+              }}
+              aria-invalid={Boolean(fieldErrors.shippingAmount)}
+              aria-describedby={fieldErrors.shippingAmount ? "shippingAmount-error" : undefined}
               required
             />
+            {fieldErrors.shippingAmount ? (
+              <p id="shippingAmount-error" className="text-xs text-destructive" role="alert">
+                {fieldErrors.shippingAmount}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="notes">订单备注</Label>
@@ -270,7 +376,7 @@ export function OrderForm() {
           <CardTitle className="text-base">商品明细</CardTitle>
           <button
             type="button"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className={buttonVariants({ variant: "outline", size: "sm", className: "h-11 sm:h-9" })}
             disabled={submitting}
             onClick={() => {
               setFormError(null);
@@ -291,10 +397,11 @@ export function OrderForm() {
                 <h3 className="text-sm font-medium">商品 {index + 1}</h3>
                 <button
                   type="button"
-                  className={buttonVariants({
-                    variant: "ghost",
-                    size: "icon-sm",
-                  })}
+                   className={buttonVariants({
+                     variant: "ghost",
+                     size: "icon-sm",
+                     className: "h-11 w-11 sm:h-9 sm:w-9",
+                   })}
                   disabled={items.length === 1 || submitting}
                   onClick={() =>
                     setItems((current) =>
@@ -311,18 +418,32 @@ export function OrderForm() {
               </div>
               <div className="grid gap-4 sm:grid-cols-[1fr_1fr_120px]">
                 <div className="space-y-2">
-                  <Label>商品名称</Label>
+                  <Label htmlFor={`${item.clientId}-name`}>商品名称</Label>
                   <Input
+                    id={`${item.clientId}-name`}
                     value={item.name}
-                    onChange={(event) =>
-                      updateItem(item.clientId, { name: event.target.value })
+                    onChange={(event) => {
+                      updateItem(item.clientId, { name: event.target.value });
+                      clearFieldError(`${item.clientId}-name`);
+                    }}
+                    aria-invalid={Boolean(fieldErrors[`${item.clientId}-name`])}
+                    aria-describedby={
+                      fieldErrors[`${item.clientId}-name`]
+                        ? `${item.clientId}-name-error`
+                        : undefined
                     }
                     required
                   />
+                  {fieldErrors[`${item.clientId}-name`] ? (
+                    <p id={`${item.clientId}-name-error`} className="text-xs text-destructive" role="alert">
+                      {fieldErrors[`${item.clientId}-name`]}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
-                  <Label>规格 / SKU</Label>
+                  <Label htmlFor={`${item.clientId}-sku`}>规格 / SKU</Label>
                   <Input
+                    id={`${item.clientId}-sku`}
                     value={item.skuText}
                     onChange={(event) =>
                       updateItem(item.clientId, { skuText: event.target.value })
@@ -330,24 +451,41 @@ export function OrderForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>数量</Label>
+                  <Label htmlFor={`${item.clientId}-quantity`}>数量</Label>
                   <Input
+                    id={`${item.clientId}-quantity`}
                     type="number"
                     min={1}
                     max={999}
                     value={item.quantity}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       updateItem(item.clientId, {
                         quantity: Number(event.target.value),
-                      })
+                      });
+                      clearFieldError(`${item.clientId}-quantity`);
+                    }}
+                    aria-invalid={Boolean(fieldErrors[`${item.clientId}-quantity`])}
+                    aria-describedby={
+                      fieldErrors[`${item.clientId}-quantity`]
+                        ? `${item.clientId}-quantity-error`
+                        : undefined
                     }
                     required
                   />
+                  {fieldErrors[`${item.clientId}-quantity`] ? (
+                    <p id={`${item.clientId}-quantity-error`} className="text-xs text-destructive" role="alert">
+                      {fieldErrors[`${item.clientId}-quantity`]}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>商品参考成交总额（可选）</Label>
+                <Label htmlFor={`${item.clientId}-reference-amount`}>
+                  商品参考成交总额（可选）
+                </Label>
                 <Input
+                  id={`${item.clientId}-reference-amount`}
+                  aria-describedby={`${item.clientId}-reference-help`}
                   inputMode="decimal"
                   value={item.referenceAmount}
                   onChange={(event) =>
@@ -355,11 +493,17 @@ export function OrderForm() {
                   }
                   placeholder="未填写"
                 />
-                <p className="text-xs text-muted-foreground">仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。</p>
+                <p
+                  id={`${item.clientId}-reference-help`}
+                  className="text-xs leading-5 text-muted-foreground"
+                >
+                  仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。
+                </p>
               </div>
               <div className="space-y-2">
-                <Label>商品备注</Label>
+                <Label htmlFor={`${item.clientId}-notes`}>商品备注</Label>
                 <Textarea
+                  id={`${item.clientId}-notes`}
                   value={item.notes}
                   onChange={(event) =>
                     updateItem(item.clientId, { notes: event.target.value })
@@ -368,13 +512,17 @@ export function OrderForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>商品图片</Label>
-                <label className="flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed bg-background text-sm text-muted-foreground">
+                <Label htmlFor={`${item.clientId}-files`}>商品图片</Label>
+                <label
+                  htmlFor={`${item.clientId}-files`}
+                  className="flex min-h-20 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed bg-background text-sm text-muted-foreground transition-colors hover:border-primary/45 hover:bg-accent/35 hover:text-foreground"
+                >
                   <ImagePlus className="size-4" />
                   {item.files.length
                     ? `已选择 ${item.files.length} 张`
                     : "选择商品图片"}
                   <input
+                    id={`${item.clientId}-files`}
                     className="sr-only"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -386,6 +534,15 @@ export function OrderForm() {
                     }
                   />
                 </label>
+                <SelectedFiles
+                  files={item.files}
+                  label={`商品 ${index + 1} 已选择的图片`}
+                  onRemove={(fileIndex) =>
+                    updateItem(item.clientId, {
+                      files: item.files.filter((_, currentIndex) => currentIndex !== fileIndex),
+                    })
+                  }
+                />
               </div>
             </div>
           ))}
@@ -397,12 +554,16 @@ export function OrderForm() {
           <CardTitle className="text-base">订单附件</CardTitle>
         </CardHeader>
         <CardContent>
-          <label className="flex min-h-24 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 text-sm text-muted-foreground">
+          <label
+            htmlFor="order-files"
+            className="flex min-h-24 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 text-sm text-muted-foreground transition-colors hover:border-primary/45 hover:bg-accent/35 hover:text-foreground"
+          >
             <ImagePlus className="size-4" />
             {orderFiles.length
               ? `已选择 ${orderFiles.length} 张`
               : "选择订单聊天记录或凭证图片"}
             <input
+              id="order-files"
               className="sr-only"
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -412,13 +573,25 @@ export function OrderForm() {
               }
             />
           </label>
+          <SelectedFiles
+            files={orderFiles}
+            label="已选择的订单附件"
+            onRemove={(fileIndex) =>
+              setOrderFiles((current) =>
+                current.filter((_, currentIndex) => currentIndex !== fileIndex),
+              )
+            }
+          />
         </CardContent>
       </Card>
 
-      <div className="sticky bottom-0 flex justify-end border-t bg-background/95 py-4 backdrop-blur">
+      <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:px-0">
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {items.length} 件商品 · 共 {totalItemQuantity} 件 · {attachmentCount} 个附件 · {totalLabel}
+        </p>
         <button
           type="submit"
-          className={buttonVariants({ size: "lg" })}
+          className={buttonVariants({ size: "lg", className: "w-full sm:w-auto" })}
           disabled={submitting}
         >
           {submitting ? <Loader2 className="animate-spin" /> : null}

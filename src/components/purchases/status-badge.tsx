@@ -18,7 +18,7 @@ export function AllocationBadge({
         status === "DRAFT"
           ? "bg-amber-100 text-amber-800"
           : status === "CONFIRMED"
-            ? "bg-emerald-700 text-white"
+            ? "bg-foreground text-background"
             : undefined
       }
     >
@@ -59,7 +59,7 @@ export function LogisticsStatusBadge({ status }: { status: string }) {
       variant={isIssue ? "destructive" : "outline"}
       className={
         status === "DELIVERED"
-          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+          ? "border-foreground/20 bg-secondary text-secondary-foreground"
           : undefined
       }
     >

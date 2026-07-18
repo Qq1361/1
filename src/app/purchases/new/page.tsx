@@ -11,7 +11,7 @@ export default function NewPurchasePage() {
       <div className="mb-5 space-y-2">
         <Link
           href="/purchases"
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
+          className={buttonVariants({ variant: "ghost", size: "sm", className: "h-11 sm:h-9" })}
         >
           <ArrowLeft />
           返回采购订单

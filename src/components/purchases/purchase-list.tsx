@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
@@ -53,8 +53,12 @@ export function PurchaseList() {
   const [allocationStatus, setAllocationStatus] = useState("");
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<ResponseData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const requestId = useRef(0);
 
   const load = useCallback(() => {
+    const currentRequest = ++requestId.current;
     const params = new URLSearchParams({ page: String(page) });
     if (query) params.set("query", query);
     if (status) params.set("status", status);
@@ -62,10 +66,24 @@ export function PurchaseList() {
       params.set("allocationStatus", allocationStatus);
     if (todoParam) params.set("todo", todoParam);
     if (trackingParam) params.set("tracking", trackingParam);
-    setResult(null);
+    setLoading(true);
+    setLoadError(null);
     fetch(`/api/purchase-orders?${params}`)
-      .then((response) => response.json())
-      .then(setResult);
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Failed to load purchase orders");
+        return response.json();
+      })
+      .then((data) => {
+        if (currentRequest === requestId.current) setResult(data);
+      })
+      .catch(() => {
+        if (currentRequest === requestId.current) {
+          setLoadError("采购订单加载失败，请重试。");
+        }
+      })
+      .finally(() => {
+        if (currentRequest === requestId.current) setLoading(false);
+      });
   }, [allocationStatus, page, query, status, todoParam, trackingParam]);
 
   useEffect(() => {
@@ -118,7 +136,7 @@ export function PurchaseList() {
           />
         </div>
         <select
-          className="h-8 rounded-lg border bg-background px-2.5 text-sm"
+          className="h-10 rounded-lg border border-input bg-card px-3 text-sm transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
           value={status}
           onChange={(event) => {
             setStatus(event.target.value);
@@ -132,7 +150,7 @@ export function PurchaseList() {
           <option value="CANCELLED">已取消</option>
         </select>
         <select
-          className="h-8 rounded-lg border bg-background px-2.5 text-sm"
+          className="h-10 rounded-lg border border-input bg-card px-3 text-sm transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
           value={trackingParam}
           onChange={(event) => {
             const v = event.target.value;
@@ -148,7 +166,7 @@ export function PurchaseList() {
           <option value="missing">未填快递单号</option>
         </select>
         <select
-          className="h-8 rounded-lg border bg-background px-2.5 text-sm"
+          className="h-10 rounded-lg border border-input bg-card px-3 text-sm transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
           value={allocationStatus}
           onChange={(event) => {
             setAllocationStatus(event.target.value);
@@ -163,16 +181,39 @@ export function PurchaseList() {
         </select>
       </div>
 
-      <Card className="rounded-lg shadow-none">
-        <CardContent className="p-0">
-          {!result ? (
-            <div className="space-y-2 p-4">
-              <Skeleton className="h-12" />
-              <Skeleton className="h-12" />
-              <Skeleton className="h-12" />
+      <Card className="relative overflow-hidden rounded-lg shadow-none">
+        {loading && result ? (
+          <div className="absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-foreground/10" aria-hidden="true">
+            <span className="route-progress block h-full w-full bg-foreground" />
+          </div>
+        ) : null}
+        <CardContent className="p-0" aria-busy={loading}>
+          {loading ? <span className="sr-only" aria-live="polite">正在更新采购订单</span> : null}
+          {loadError && result ? (
+            <div className="flex flex-col gap-2 border-b bg-destructive/5 px-4 py-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between" role="alert">
+              <span>采购订单更新失败，当前显示上一次结果。</span>
+              <Button variant="outline" size="sm" className="h-11 self-start sm:h-9" onClick={load}>
+                重试
+              </Button>
             </div>
+          ) : null}
+          {!result ? (
+            loadError ? (
+              <div className="flex flex-col items-center gap-3 px-4 py-16 text-center text-sm text-muted-foreground" role="alert">
+                <p>{loadError}</p>
+                <Button variant="outline" className="h-11 sm:h-9" onClick={load}>
+                  重试
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2 p-4">
+                <Skeleton className="h-12" />
+                <Skeleton className="h-12" />
+                <Skeleton className="h-12" />
+              </div>
+            )
           ) : result.data.length ? (
-            <>
+            <div className={`transition-opacity duration-[180ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${loading ? "opacity-55" : "opacity-100"}`}>
               <div className="hidden md:block">
                 <Table>
                   <TableHeader>
@@ -255,7 +296,7 @@ export function PurchaseList() {
                   </Link>
                 ))}
               </div>
-            </>
+            </div>
           ) : (
             <div className="py-16 text-center text-sm text-muted-foreground">
               没有符合条件的采购订单

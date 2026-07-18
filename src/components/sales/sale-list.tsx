@@ -54,11 +54,11 @@ export function SaleList() {
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input className="pl-9" placeholder="搜索销售单号、平台订单号、库存编号、商品名" value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} />
         </div>
-        <select className="h-8 rounded-lg border bg-background px-2.5 text-sm" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+        <select className="h-10 rounded-lg border border-input bg-card px-3 text-sm transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
           <option value="">全部状态</option>
           <option value="DRAFT">草稿</option><option value="CONFIRMED">已确认销售</option><option value="SETTLED">已到账</option><option value="CANCELLED">已取消</option>
         </select>
-        <select className="h-8 rounded-lg border bg-background px-2.5 text-sm" value={platformFilter} onChange={e => { setPlatformFilter(e.target.value); setPage(1); }}>
+        <select className="h-10 rounded-lg border border-input bg-card px-3 text-sm transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30" value={platformFilter} onChange={e => { setPlatformFilter(e.target.value); setPage(1); }}>
           <option value="">全部平台</option>
           <option value="DEWU">得物</option><option value="NINETY_FIVE">95分</option><option value="XIANYU">闲鱼</option><option value="OTHER">其他</option>
         </select>
