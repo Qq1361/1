@@ -1,12 +1,14 @@
 # 项目当前状态
 
-## M6-A0 真实物流 API 接入审计（设计已冻结，未实施）
+## M6-A1 通用物流底座（已完成）
 
 - 当前只有采购 M2-A `MockLogisticsAdapter`，不存在真实快递查询、订阅、Webhook 或通用定时同步；平台寄送、平台退回、采购售后和销售售后物流均由用户人工维护。
 - 现有 Mock 刷新在模拟签收时会推进采购到 `PENDING_INSPECTION` 并补建 Inspection。真实物流接入必须先拆分外部物流事实和 ERP 业务动作，外部签收不能直接完成验货、退款、平台入仓或库存恢复。
-- M6-A0 冻结为“聚合物流服务商 + 可替换 Provider Adapter + 本地 Windows 主动轮询”的优先路线。供应商账号、资质、套餐和附加查询参数尚未确认，未购买、注册或配置任何真实物流服务。
-- 后续建议新增通用 `LogisticsShipment` 和 `LogisticsTrackingEvent`；现有 `LogisticsEvent` 继续作为采购 Mock 历史兼容，不在 M6-A0 修改 schema。
-- M6-A0 只修改文档，不修改 schema、migration、源码、数据库、真实订单、飞书或 Windows 任务。详见 [M6 真实物流 API 接入规格](./M6_LOGISTICS_API_INTEGRATION_SPEC.md)。M1～M5 保持 FROZEN，M6-A1 尚未开始。
+- M6-A0 的“聚合物流服务商 + 可替换 Provider Adapter + 本地主动轮询”路线保持冻结。
+- 第 25 条 migration `20260718033824_add_generic_logistics_tracking_foundation` 已新增通用 `LogisticsShipment` / `LogisticsTrackingEvent`、三组枚举、索引、外键和 CHECK；现有采购 `LogisticsEvent` 保持不变。
+- 已完成 Provider 合同和注册表、独立状态映射、保守运单号标准化、确定性本地 `MOCK` 及事件幂等 Service。五种 businessType 均执行 owner 归属校验。
+- 通用 Service 只写新物流表，不修改采购、平台寄送、平台退回、售后、库存、验货、退款、销售或日报状态。当前无公开 API/UI/任务/Webhook，无真实 Provider 或凭证。
+- 详见 [M6 真实物流 API 接入规格](./M6_LOGISTICS_API_INTEGRATION_SPEC.md)。M1～M5 保持 FROZEN；M6-A1 完成后暂停，M6-A2 尚未开始。
 
 ## M5-A2 采购订单商品批量添加（已完成）
 

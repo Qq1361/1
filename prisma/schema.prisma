@@ -44,6 +44,36 @@ enum LogisticsStatus {
   UNKNOWN
 }
 
+enum LogisticsBusinessType {
+  PURCHASE_INBOUND
+  PLATFORM_OUTBOUND
+  PLATFORM_RETURN
+  PURCHASE_AFTER_SALE_RETURN
+  SALE_AFTER_SALE_RETURN
+}
+
+enum LogisticsTrackingStatus {
+  UNKNOWN
+  PENDING_PICKUP
+  PICKED_UP
+  IN_TRANSIT
+  ARRIVED_AT_DESTINATION
+  OUT_FOR_DELIVERY
+  DELIVERED
+  EXCEPTION
+  RETURNING
+  CANCELLED
+}
+
+enum LogisticsSyncStatus {
+  NEVER_SYNCED
+  PENDING
+  SYNCED
+  RETRYABLE_ERROR
+  TERMINAL_ERROR
+  STOPPED
+}
+
 enum InspectionStatus {
   PENDING
   IN_PROGRESS
@@ -268,6 +298,8 @@ model User {
   marketItems                 MarketItem[]
   marketQuotes                MarketQuote[]
   dailyBusinessReportDeliveries DailyBusinessReportDelivery[]
+  logisticsShipments          LogisticsShipment[]
+  logisticsTrackingEvents     LogisticsTrackingEvent[]
 
   @@map("users")
 }
@@ -450,6 +482,60 @@ model LogisticsEvent {
   @@index([ownerId, status])
   @@index([purchaseOrderId, eventTime])
   @@map("logistics_events")
+}
+
+model LogisticsShipment {
+  id                       String                  @id @default(cuid())
+  ownerId                  String
+  businessType             LogisticsBusinessType
+  businessId               String
+  provider                 String
+  carrierCode              String
+  carrierName              String?
+  trackingNumber           String
+  normalizedTrackingNumber String
+  currentStatus            LogisticsTrackingStatus @default(UNKNOWN)
+  rawStatusCode            String?
+  lastEventAt              DateTime?
+  lastSyncedAt             DateTime?
+  nextSyncAt               DateTime?
+  syncStatus               LogisticsSyncStatus     @default(NEVER_SYNCED)
+  failureCount             Int                     @default(0)
+  lastErrorCode            String?
+  deliveredAt              DateTime?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  owner  User                     @relation(fields: [ownerId], references: [id])
+  events LogisticsTrackingEvent[]
+
+  @@unique([ownerId, businessType, businessId])
+  @@index([ownerId, currentStatus])
+  @@index([provider, carrierCode, normalizedTrackingNumber])
+  @@index([syncStatus, nextSyncAt])
+  @@map("logistics_shipments")
+}
+
+model LogisticsTrackingEvent {
+  id                  String                  @id @default(cuid())
+  ownerId             String
+  logisticsShipmentId String
+  providerEventId     String?
+  dedupeKey           String
+  eventTime           DateTime
+  status              LogisticsTrackingStatus
+  location            String?
+  description         String
+  rawStatusCode       String?
+  createdAt           DateTime                @default(now())
+
+  owner    User              @relation(fields: [ownerId], references: [id])
+  shipment LogisticsShipment @relation(fields: [logisticsShipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([logisticsShipmentId, dedupeKey])
+  @@index([logisticsShipmentId, eventTime])
+  @@index([ownerId])
+  @@map("logistics_tracking_events")
 }
 
 model Inspection {

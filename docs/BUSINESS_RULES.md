@@ -16,6 +16,19 @@
 
 详细规则见 `docs/M6_LOGISTICS_API_INTEGRATION_SPEC.md`。
 
+## M6-A1 通用物流底座规则
+
+1. 通用物流记录以 `ownerId + businessType + businessId` 作为 V1 唯一边界，运单号不全局唯一。
+2. 当前只注册无网络的 `MOCK` Provider，不允许动态 URL、动态代码或客户端 Secret。
+3. Provider 结果必须经过状态映射、安全文本校验、时间校验和运单号一致性校验后才可写入。
+4. 未识别原始状态映射为 `UNKNOWN`，安全原始码可保留，但不能用于推进业务状态。
+5. 轨迹事件使用 shipment 内唯一 `dedupeKey` 幂等写入；重复同步不产生重复轨迹。
+6. Provider 失败不删除旧轨迹、不将已有状态重置为 `UNKNOWN`，只更新新物流表的同步错误事实。
+7. 通用 `DELIVERED` 只表示物流运输签收，不等于采购收货、验货、入库、平台入仓/上架、售后收货或退款完成。
+8. M6-A1 Service 只写 `LogisticsShipment` 和 `LogisticsTrackingEvent`，不调用 M1～M5 状态机，不写库存或 `SOLD`。
+9. M2-A 采购 Mock 物流和旧 `LogisticsEvent` 继续保留，本阶段不自动迁移或双写。
+10. 真实 Provider、公开 API/页面、定时同步、待办和日报联动分别属于 M6-A2～M6-A4。
+
 ## M5-A2 采购商品批量添加
 
 - 批量添加是采购明细维护能力，不是数量快捷录入：请求中的每一行固定对应一条数量为 1 的 `PurchaseOrderItem`，最多 50 行，相同商品名和 SKU 不合并。
