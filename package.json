@@ -23,6 +23,7 @@
     "verify:m4-market": "tsx scripts/verify-m4-market.mjs",
     "verify:m4-daily-report": "tsx scripts/verify-m4-daily-report.mjs",
     "verify:m5-purchase-items": "tsx scripts/verify-m5-purchase-items.mjs",
+    "verify:m5a3-entry-error-removal": "tsx scripts/verify-m5a3-entry-error-removal.mjs",
     "verify:m6-logistics": "tsx scripts/verify-m6-logistics.mjs",
     "verify:m6-logistics-provider": "tsx scripts/verify-m6-logistics-provider.mjs",
     "verify:m6-purchase-logistics-reminders": "tsx scripts/verify-m6-purchase-logistics-reminders.mjs",

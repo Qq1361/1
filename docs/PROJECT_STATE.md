@@ -22,6 +22,13 @@
 - 通用 Service 只写新物流表，不修改采购、平台寄送、平台退回、售后、库存、验货、退款、销售或日报状态。当前无公开 API/UI/任务/Webhook，无真实 Provider 或凭证。
 - 详见 [M6 真实物流 API 接入规格](./M6_LOGISTICS_API_INTEGRATION_SPEC.md)。M1～M5 保持 FROZEN；M6-A2 已完成本地实现和验证，真实账号验收仍待配置，M6-A3 尚未开始。
 
+## M5-A3 签收后移除误录采购商品（已完成）
+
+- 人工签收会按商品件预创建 `PENDING` 验货记录。当前 owner 在 `PENDING_INSPECTION` 状态可从订单详情使用“移除误录商品”；该入口只处理尚未发生任何人工验货事实的占位记录，且删除后必须至少保留一条采购商品明细。
+- `PurchaseOrderActionLog` 是独立于采购售后日志的最小审计模型。迁移 `20260720113000_add_purchase_order_action_logs` 仅增加该表、外键及 owner/order 时间索引；纠错写入 `PURCHASE_ITEM_REMOVED_AS_ENTRY_ERROR`，保留商品、SKU、原因、说明和前后数量快照，不回填历史。
+- Service 使用 owner 校验、订单行锁与 Serializable transaction，显式删除匹配的未处理占位 Inspection，再删除误录商品并写审计日志；不依赖 cascade。存在验货结果、开始/完成时间、备注、附件、库存、售后、退款、成本分摊或其他下游事实即拒绝。
+- 该操作不改订单实付、运费、付款时间、`deliveredAt`、`manuallyReceivedAt`、成本、退款、售后或 `SOLD`；不调用物流 API 或发送飞书。`pnpm verify:m5a3-entry-error-removal` 已覆盖 25 改 24、验货事实保护、日志回滚、并发、owner 隔离和副作用边界。
+
 ## M5-A2 采购订单商品批量添加（已完成）
 
 - 采购订单详情页已增加独立的“批量添加商品”入口；每批最多 50 行，每行固定创建一条数量为 1 的采购商品明细，相同商品和 SKU 不自动合并。

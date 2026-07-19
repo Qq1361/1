@@ -293,6 +293,7 @@ model User {
   purchaseRefundRecords       PurchaseRefundRecord[]
   purchaseRefundAllocations   PurchaseRefundAllocation[]
   purchaseAfterSaleActionLogs PurchaseAfterSaleActionLog[]
+  purchaseOrderActionLogs     PurchaseOrderActionLog[]
   platformReturnInspections   PlatformReturnInspection[]
   platformReturnActionLogs    PlatformReturnActionLog[]
   marketItems                 MarketItem[]
@@ -420,6 +421,7 @@ model PurchaseOrder {
   logisticsEvents LogisticsEvent[]
   afterSaleCases  PurchaseAfterSaleCase[]
   refundRecords   PurchaseRefundRecord[]
+  actionLogs      PurchaseOrderActionLog[]
 
   @@unique([ownerId, orderNo])
   @@index([ownerId, status])
@@ -449,6 +451,28 @@ model PurchaseOrderItem {
 
   @@index([purchaseOrderId])
   @@map("purchase_order_items")
+}
+
+model PurchaseOrderActionLog {
+  id                  String   @id @default(cuid())
+  ownerId             String
+  purchaseOrderId     String
+  purchaseOrderItemId String?
+  actionType          String
+  productNameSnapshot String?
+  skuSnapshot         String?
+  reasonCode          String?
+  note                String?
+  beforeItemCount     Int?
+  afterItemCount      Int?
+  createdAt           DateTime @default(now())
+
+  owner         User          @relation(fields: [ownerId], references: [id])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, createdAt(sort: Desc)])
+  @@index([purchaseOrderId, createdAt(sort: Desc)])
+  @@map("purchase_order_action_logs")
 }
 
 model Attachment {

@@ -65,6 +65,9 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const [batchRowErrors, setBatchRowErrors] = useState<string[][]>([]);
   const [savingBatch, setSavingBatch] = useState(false);
   const [deletingItem, setDeletingItem] = useState<OrderItemDto | null>(null);
+  const [removingAsEntryError, setRemovingAsEntryError] = useState(false);
+  const [entryErrorReason, setEntryErrorReason] = useState("");
+  const [entryErrorNote, setEntryErrorNote] = useState("");
   const [deleting, setDeleting] = useState(false);
 
   const loadOrder = useCallback(() => {
@@ -284,7 +287,13 @@ export function OrderDetail({ orderId }: { orderId: string }) {
     if (!deletingItem || !order) return;
     setDeleting(true);
     try {
-      const response = await fetch(`/api/purchases/${order.id}/items/${deletingItem.id}`, { method: "DELETE" });
+      const response = removingAsEntryError
+        ? await fetch(`/api/purchases/${order.id}/items/${deletingItem.id}/remove-entry-error`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: entryErrorReason, note: entryErrorNote }),
+          })
+        : await fetch(`/api/purchases/${order.id}/items/${deletingItem.id}`, { method: "DELETE" });
       if (!response.ok) {
         const error = (await response.json()) as ApiError;
         toast.error(error.message);
@@ -292,9 +301,10 @@ export function OrderDetail({ orderId }: { orderId: string }) {
       }
       setOrder((await response.json()) as OrderDto);
       setDeletingItem(null);
-      toast.success("商品明细已删除");
+      setRemovingAsEntryError(false);
+      toast.success(removingAsEntryError ? "误录商品已移除" : "商品明细已删除");
     } catch {
-      toast.error("删除商品明细失败，请重试。");
+      toast.error(removingAsEntryError ? "移除误录商品失败，请重试。" : "删除商品明细失败，请重试。");
     } finally {
       setDeleting(false);
     }
@@ -418,6 +428,8 @@ export function OrderDetail({ orderId }: { orderId: string }) {
             <CardContent className="space-y-5">
               {orderItems.map((item, index) => {
                 const deleteability = order.purchaseItemsDeleteability?.[item.id];
+                const canRemoveAsEntryError = deleteability?.entryErrorRemovable === true;
+                const canDeleteItem = deleteability?.deletable === true || canRemoveAsEntryError;
                 return (
                 <div key={item.id} className="space-y-4">
                   {index ? <Separator /> : null}
@@ -455,14 +467,19 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                         <Pencil />
                         编辑
                       </Button>
-                      <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => setDeletingItem(item)} disabled={!deleteability?.deletable} title={deleteability?.reason ?? undefined}>
+                      <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => {
+                        setDeletingItem(item);
+                        setRemovingAsEntryError(canRemoveAsEntryError);
+                        setEntryErrorReason("");
+                        setEntryErrorNote("");
+                      }} disabled={!canDeleteItem} title={canDeleteItem ? undefined : deleteability?.reason ?? deleteability?.entryErrorRemovalReason ?? undefined}>
                         <Trash2 />
-                        删除
+                        {canRemoveAsEntryError ? "移除误录商品" : "删除商品"}
                       </Button>
                     </div>
                   </div>
-                  {!deleteability?.deletable && deleteability?.reason ? (
-                    <p className="text-xs text-amber-700">{deleteability.reason}</p>
+                  {!canDeleteItem && (deleteability?.reason || deleteability?.entryErrorRemovalReason) ? (
+                    <p className="text-xs text-amber-700">{deleteability?.entryErrorRemovalReason ?? deleteability?.reason}</p>
                   ) : null}
                   <div>
                     <div className="mb-2 flex items-center gap-2 text-xs font-medium">
@@ -599,10 +616,43 @@ export function OrderDetail({ orderId }: { orderId: string }) {
             </DialogContent>
           </Dialog>
 
-          <AlertDialog open={deletingItem !== null} onOpenChange={(open) => !deleting && !open && setDeletingItem(null)}>
+          <AlertDialog open={deletingItem !== null} onOpenChange={(open) => {
+            if (!deleting && !open) {
+              setDeletingItem(null);
+              setRemovingAsEntryError(false);
+            }
+          }}>
             <AlertDialogContent>
-              <AlertDialogHeader><AlertDialogTitle>确认删除商品明细？</AlertDialogTitle><AlertDialogDescription>将删除“{deletingItem?.name}”数量 {deletingItem?.quantity} 的商品明细，订单实付和其他商品不会改变。</AlertDialogDescription></AlertDialogHeader>
-              <AlertDialogFooter><AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel><AlertDialogAction onClick={removeItem} disabled={deleting}>{deleting ? "删除中..." : "确认删除"}</AlertDialogAction></AlertDialogFooter>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{removingAsEntryError ? "确认移除误录商品？" : "确认删除商品明细？"}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {removingAsEntryError
+                    ? `采购单 ${order.orderNo} 中的“${deletingItem?.name}”（SKU：${deletingItem?.skuText || "未填写"}）将作为实际未收到的误录商品移除。仅未开始且没有结果、备注、附件、库存或下游依赖的待验货占位记录会一并撤销；订单实付不会改变。`
+                    : `将删除“${deletingItem?.name}”数量 ${deletingItem?.quantity} 的商品明细，订单实付和其他商品不会改变。`}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {removingAsEntryError ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="entry-error-removal-reason">移除原因</Label>
+                    <select id="entry-error-removal-reason" className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm" value={entryErrorReason} onChange={(event) => setEntryErrorReason(event.target.value)}>
+                      <option value="">请选择原因</option>
+                      <option value="DUPLICATE_ENTRY">重复录入</option>
+                      <option value="ACTUALLY_NOT_RECEIVED">实际未收到</option>
+                      <option value="WRONG_PRODUCT_ENTERED">商品录入错误</option>
+                      <option value="OTHER">其他</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="entry-error-removal-note">补充说明（可选）</Label>
+                    <Textarea id="entry-error-removal-note" value={entryErrorNote} maxLength={500} onChange={(event) => setEntryErrorNote(event.target.value)} placeholder="例如：实际收到 24 件，该行为重复录入。" />
+                  </div>
+                </div>
+              ) : null}
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+                <AlertDialogAction onClick={removeItem} disabled={deleting || (removingAsEntryError && !entryErrorReason)}>{deleting ? "处理中..." : removingAsEntryError ? "确认移除" : "确认删除"}</AlertDialogAction>
+              </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
 

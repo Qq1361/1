@@ -45,6 +45,18 @@ export const purchaseItemBatchSchema = z
   })
   .strict();
 
+export const purchaseItemEntryErrorRemovalSchema = z
+  .object({
+    reason: z.enum([
+      "DUPLICATE_ENTRY",
+      "ACTUALLY_NOT_RECEIVED",
+      "WRONG_PRODUCT_ENTERED",
+      "OTHER",
+    ]),
+    note: z.string().trim().max(500, "说明不能超过 500 个字符。").optional().or(z.literal("")),
+  })
+  .strict();
+
 const money = z
   .string()
   .trim()
@@ -150,4 +162,5 @@ export const trackingSchema = z.object({
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderSchema>;
 export type PurchaseItemMutationInput = z.infer<typeof purchaseItemMutationSchema>;
 export type PurchaseItemBatchInput = z.infer<typeof purchaseItemBatchSchema>;
+export type PurchaseItemEntryErrorRemovalInput = z.infer<typeof purchaseItemEntryErrorRemovalSchema>;
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;

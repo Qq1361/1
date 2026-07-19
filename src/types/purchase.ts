@@ -100,6 +100,9 @@ export type OrderDto = {
       deletable: boolean;
       reasonCode: string | null;
       reason: string | null;
+      entryErrorRemovable?: boolean;
+      entryErrorRemovalReasonCode?: string | null;
+      entryErrorRemovalReason?: string | null;
     }
   >;
   logisticsEvents: LogisticsEventDto[];

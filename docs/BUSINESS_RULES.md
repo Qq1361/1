@@ -511,3 +511,9 @@ pnpm verify:m3a
 3. 服务端在一个 `Serializable` 事务中重新校验 owner、待验货状态、已完成/已入库事实和已确认成本分摊；任意一件失败则整批回滚。
 4. 每件仍按原有单件逻辑创建独立 `InventoryItem`、独立成本快照和独立 `inspectionId`，相同商品名称或 SKU 不得合并。
 5. 批量验货不修改采购实付、成本分摊、退款、销售、物流状态或 `SOLD`。
+# M5-A3：签收后移除误录采购商品
+
+1. 人工签收后，系统为每件采购商品创建 `PENDING` Inspection。该记录只在从未开始、没有结果/时间/备注/附件、没有库存或售后依赖时可作为占位记录撤销。
+2. “移除误录商品”仅限当前 owner 的 `PENDING_INSPECTION` 订单，且订单至少保留一条商品。成本分摊、采购售后、退款、目标商品库存或任何真实验货事实均为不可逆锁定。
+3. Service 在同一 Serializable transaction 中显式删除对应占位 Inspection、删除商品并写 `PurchaseOrderActionLog(PURCHASE_ITEM_REMOVED_AS_ENTRY_ERROR)`；任一步失败全部回滚。
+4. 纠错不改变订单付款金额、付款时间、签收时间、成本、退款、售后、物流或 `SOLD`。不会删除已发生真实验货事实的 Inspection，也不会自动退款、创建售后或触发外部服务。

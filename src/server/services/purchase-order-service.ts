@@ -12,6 +12,7 @@ import {
 } from "@/server/services/purchase-logistics-risk-service";
 import type {
   OrderListQuery,
+  PurchaseItemEntryErrorRemovalInput,
   PurchaseItemBatchInput,
   PurchaseItemMutationInput,
   PurchaseOrderInput,
@@ -112,15 +113,42 @@ type PurchaseItemEditSnapshot = {
 };
 
 type PurchaseItemDeleteSnapshot = {
+  status: string;
   allocationStatus: string;
+  manuallyReceivedAt: Date | null;
+  deliveredAt: Date | null;
+  _count: { afterSaleCases: number; refundRecords: number };
+  inspectionAttachmentCounts: Map<string, number>;
   items: Array<{
     id: string;
+    name: string;
+    skuText: string | null;
+    quantity: number;
     allocatedTotalCost: Prisma.Decimal | null;
     _count: {
       inventoryItems: number;
-      inspections: number;
       afterSaleLines: number;
     };
+    inspections: Array<{
+      id: string;
+      status: string;
+      currentStep: number;
+      hasBox: boolean | null;
+      capCondition: string | null;
+      paintCondition: string | null;
+      leakageCondition: string | null;
+      isNew: boolean | null;
+      hasUsageTrace: boolean | null;
+      batchCode: string | null;
+      expiryDate: Date | null;
+      appearanceNotes: string | null;
+      result: string | null;
+      notes: string | null;
+      startedAt: Date | null;
+      completedAt: Date | null;
+      inventoryItem: { id: string } | null;
+      _count: { afterSaleLines: number };
+    }>;
   }>;
 };
 
@@ -128,7 +156,18 @@ type PurchaseItemDeleteability = {
   deletable: boolean;
   reasonCode: string | null;
   reason: string | null;
+  entryErrorRemovable?: boolean;
+  entryErrorRemovalReasonCode?: string | null;
+  entryErrorRemovalReason?: string | null;
 };
+
+type PurchaseOrderActionLogWriter = (
+  tx: Prisma.TransactionClient,
+  data: Prisma.PurchaseOrderActionLogUncheckedCreateInput,
+) => Promise<unknown>;
+
+const writePurchaseOrderActionLog: PurchaseOrderActionLogWriter = (tx, data) =>
+  tx.purchaseOrderActionLog.create({ data });
 
 function purchaseItemEditLockReason(order: PurchaseItemEditSnapshot) {
   if (!purchaseItemEditableStatuses.has(order.status) || order.deliveredAt) {
@@ -172,17 +211,125 @@ function purchaseItemDeleteLockReason(
       reason: "该采购订单已有成本分摊记录，商品明细已锁定。",
     };
   }
-  if (item._count.inspections > 0 || item._count.inventoryItems > 0 || item._count.afterSaleLines > 0) {
+  if (item.inspections.length > 0 || item._count.inventoryItems > 0 || item._count.afterSaleLines > 0) {
     return {
       deletable: false,
       reasonCode: "PURCHASE_ITEM_DOWNSTREAM_LOCKED",
       reason: "该商品已产生后续业务记录，不能删除。",
     };
   }
+  return { deletable: true, reasonCode: null, reason: null, entryErrorRemovable: false, entryErrorRemovalReasonCode: null, entryErrorRemovalReason: null };
+}
+
+function isUntouchedPendingInspection(
+  inspection: PurchaseItemDeleteSnapshot["items"][number]["inspections"][number],
+  attachmentCount: number,
+) {
+  return (
+    inspection.status === "PENDING" &&
+    inspection.currentStep === 1 &&
+    inspection.hasBox === null &&
+    inspection.capCondition === null &&
+    inspection.paintCondition === null &&
+    inspection.leakageCondition === null &&
+    inspection.isNew === null &&
+    inspection.hasUsageTrace === null &&
+    inspection.batchCode === null &&
+    inspection.expiryDate === null &&
+    inspection.appearanceNotes === null &&
+    inspection.result === null &&
+    inspection.notes === null &&
+    inspection.startedAt === null &&
+    inspection.completedAt === null &&
+    inspection.inventoryItem === null &&
+    inspection._count.afterSaleLines === 0 &&
+    attachmentCount === 0
+  );
+}
+
+function purchaseItemEntryErrorRemovalLockReason(
+  order: PurchaseItemDeleteSnapshot,
+  item: PurchaseItemDeleteSnapshot["items"][number],
+) {
+  if (order.items.length <= 1) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_LAST_ITEM_DELETE_FORBIDDEN",
+      reason: "采购订单至少需要保留一条商品，不能移除最后一件商品。",
+    };
+  }
+  if (order.status !== "PENDING_INSPECTION" || !order.manuallyReceivedAt) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_ENTRY_ERROR_REMOVE_FORBIDDEN",
+      reason: "仅人工签收后、尚未发生真实验货的待验货商品可移除为误录。",
+    };
+  }
+  if (order.allocationStatus !== "UNALLOCATED" || item.allocatedTotalCost !== null) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_COST_ALLOCATION_LOCKED",
+      reason: "该采购订单已有成本分摊记录，不能移除误录商品。",
+    };
+  }
+  if (order._count.afterSaleCases > 0 || item._count.afterSaleLines > 0) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_AFTER_SALE_LOCKED",
+      reason: "该采购订单存在采购售后依赖，不能移除误录商品。",
+    };
+  }
+  if (order._count.refundRecords > 0) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_REFUND_LOCKED",
+      reason: "该采购订单存在采购退款依赖，不能移除误录商品。",
+    };
+  }
+  if (item._count.inventoryItems > 0) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_INVENTORY_EXISTS",
+      reason: "该商品已生成库存，不能移除误录商品。",
+    };
+  }
+  if (!item.inspections.length) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_ENTRY_ERROR_REMOVE_FORBIDDEN",
+      reason: "未找到可安全撤销的待验货占位记录，不能移除商品。",
+    };
+  }
+  if (item.inspections.length !== item.quantity) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_ENTRY_ERROR_REMOVE_FORBIDDEN",
+      reason: "待验货记录与采购商品件数不一致，不能确认其为签收预创建记录。",
+    };
+  }
+  if (
+    item.inspections.some(
+      (inspection) =>
+        !isUntouchedPendingInspection(
+          inspection,
+          order.inspectionAttachmentCounts.get(inspection.id) ?? 0,
+        ),
+    )
+  ) {
+    return {
+      deletable: false,
+      reasonCode: "PURCHASE_ITEM_ALREADY_INSPECTED",
+      reason: "该商品已有验货结果、备注、附件或其他验货事实，不能移除。",
+    };
+  }
   return { deletable: true, reasonCode: null, reason: null };
 }
 
 export class PurchaseOrderService {
+  constructor(
+    private readonly actionLogWriter: PurchaseOrderActionLogWriter = writePurchaseOrderActionLog,
+  ) {}
+
   private async getPurchaseItemEditSnapshot(
     tx: Prisma.TransactionClient | typeof db,
     ownerId: string,
@@ -219,26 +366,73 @@ export class PurchaseOrderService {
     const order = await tx.purchaseOrder.findFirst({
       where: { id: orderId, ownerId },
       select: {
+        status: true,
         allocationStatus: true,
+        manuallyReceivedAt: true,
+        deliveredAt: true,
         items: {
           select: {
             id: true,
+            name: true,
+            skuText: true,
+            quantity: true,
             allocatedTotalCost: true,
             _count: {
               select: {
                 inventoryItems: true,
-                inspections: true,
                 afterSaleLines: true,
+              },
+            },
+            inspections: {
+              select: {
+                id: true,
+                status: true,
+                currentStep: true,
+                hasBox: true,
+                capCondition: true,
+                paintCondition: true,
+                leakageCondition: true,
+                isNew: true,
+                hasUsageTrace: true,
+                batchCode: true,
+                expiryDate: true,
+                appearanceNotes: true,
+                result: true,
+                notes: true,
+                startedAt: true,
+                completedAt: true,
+                inventoryItem: { select: { id: true } },
+                _count: { select: { afterSaleLines: true } },
               },
             },
           },
         },
+        _count: { select: { afterSaleCases: true, refundRecords: true } },
       },
     });
     if (!order) {
       throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
     }
-    return order;
+    const inspectionIds = order.items.flatMap((item) =>
+      item.inspections.map((inspection) => inspection.id),
+    );
+    const attachmentCounts = inspectionIds.length
+      ? await tx.attachment.groupBy({
+          by: ["entityId"],
+          where: {
+            ownerId,
+            entityType: "INSPECTION",
+            entityId: { in: inspectionIds },
+          },
+          _count: { _all: true },
+        })
+      : [];
+    return {
+      ...order,
+      inspectionAttachmentCounts: new Map(
+        attachmentCounts.map((entry) => [entry.entityId, entry._count._all]),
+      ),
+    };
   }
 
   private async assertPurchaseItemsEditable(
@@ -267,7 +461,19 @@ export class PurchaseOrderService {
   async getPurchaseItemsDeleteability(ownerId: string, orderId: string) {
     const order = await this.getPurchaseItemDeleteSnapshot(db, ownerId, orderId);
     return Object.fromEntries(
-      order.items.map((item) => [item.id, purchaseItemDeleteLockReason(order, item)]),
+      order.items.map((item) => {
+        const normal = purchaseItemDeleteLockReason(order, item);
+        const entryError = purchaseItemEntryErrorRemovalLockReason(order, item);
+        return [
+          item.id,
+          {
+            ...normal,
+            entryErrorRemovable: entryError.deletable,
+            entryErrorRemovalReasonCode: entryError.reasonCode,
+            entryErrorRemovalReason: entryError.reason,
+          },
+        ];
+      }),
     ) as Record<string, PurchaseItemDeleteability>;
   }
 
@@ -382,6 +588,107 @@ export class PurchaseOrderService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
         throw new ServiceError("PURCHASE_ITEM_DELETE_CONFLICT", "商品明细删除发生并发冲突，请刷新后重试。", 409);
+      }
+      throw error;
+    }
+    return this.getOrder(ownerId, orderId);
+  }
+
+  async removePurchaseItemAsEntryError(
+    ownerId: string,
+    orderId: string,
+    itemId: string,
+    input: PurchaseItemEntryErrorRemovalInput,
+  ) {
+    try {
+      await db.$transaction(async (tx) => {
+        const lockedOrders = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
+          SELECT "id" FROM "purchase_orders"
+          WHERE "id" = ${orderId} AND "ownerId" = ${ownerId}
+          FOR UPDATE
+        `);
+        if (!lockedOrders.length) {
+          throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
+        }
+
+        const order = await this.getPurchaseItemDeleteSnapshot(tx, ownerId, orderId);
+        const item = order.items.find((candidate) => candidate.id === itemId);
+        if (!item) {
+          throw new ServiceError("PURCHASE_ITEM_NOT_FOUND", "商品明细不存在。", 404);
+        }
+        const removeability = purchaseItemEntryErrorRemovalLockReason(order, item);
+        if (!removeability.deletable) {
+          throw new ServiceError(
+            removeability.reasonCode ?? "PURCHASE_ITEM_ENTRY_ERROR_REMOVE_FORBIDDEN",
+            removeability.reason ?? "该商品当前不能作为误录商品移除。",
+            409,
+          );
+        }
+
+        const placeholderInspectionIds = item.inspections.map((inspection) => inspection.id);
+        const removedPlaceholders = await tx.inspection.deleteMany({
+          where: {
+            id: { in: placeholderInspectionIds },
+            ownerId,
+            purchaseOrderItemId: item.id,
+            status: "PENDING",
+            currentStep: 1,
+            hasBox: null,
+            capCondition: null,
+            paintCondition: null,
+            leakageCondition: null,
+            isNew: null,
+            hasUsageTrace: null,
+            batchCode: null,
+            expiryDate: null,
+            appearanceNotes: null,
+            result: null,
+            notes: null,
+            startedAt: null,
+            completedAt: null,
+            inventoryItem: { is: null },
+            afterSaleLines: { none: {} },
+          },
+        });
+        if (removedPlaceholders.count !== placeholderInspectionIds.length) {
+          throw new ServiceError(
+            "PURCHASE_ITEM_DELETE_CONFLICT",
+            "待验货记录已发生变化，请刷新后重试。",
+            409,
+          );
+        }
+
+        const remainingInspectionCount = await tx.inspection.count({
+          where: {
+            ownerId,
+            purchaseOrderItemId: item.id,
+          },
+        });
+        if (remainingInspectionCount > 0) {
+          throw new ServiceError(
+            "PURCHASE_ITEM_ALREADY_INSPECTED",
+            "该商品存在不能撤销的验货记录，不能移除。",
+            409,
+          );
+        }
+
+        await tx.purchaseOrderItem.delete({ where: { id: item.id } });
+        await this.actionLogWriter(tx, {
+          ownerId,
+          purchaseOrderId: orderId,
+          purchaseOrderItemId: item.id,
+          actionType: "PURCHASE_ITEM_REMOVED_AS_ENTRY_ERROR",
+          productNameSnapshot: item.name,
+          skuSnapshot: item.skuText,
+          reasonCode: input.reason,
+          note: input.note?.trim() || null,
+          beforeItemCount: order.items.length,
+          afterItemCount: order.items.length - 1,
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+        throw new ServiceError("PURCHASE_ITEM_DELETE_CONFLICT", "商品明细纠错发生并发冲突，请刷新后重试。", 409);
       }
       throw error;
     }
