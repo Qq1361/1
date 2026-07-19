@@ -5,6 +5,15 @@ const referenceAmount = z
   .trim()
   .regex(/^\d{1,10}(\.\d{1,2})?$/, "商品参考成交总额格式无效");
 
+const dateOnly = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "日期必须是 YYYY-MM-DD 格式。");
+const shelfLifeMonths = z
+  .number()
+  .int("保质期月数必须是整数。")
+  .min(1, "保质期月数必须在 1 到 600 之间。")
+  .max(600, "保质期月数必须在 1 到 600 之间。");
+
 export const purchaseItemMutationSchema = z
   .object({
     name: z.string().trim().min(1, "商品名称不能为空").max(120),
@@ -12,6 +21,9 @@ export const purchaseItemMutationSchema = z
     quantity: z.coerce.number().int().min(1).max(999),
     notes: z.string().trim().max(1000).optional().or(z.literal("")),
     referenceAmount: referenceAmount.optional().or(z.literal("")),
+    productionDate: dateOnly.nullable().optional(),
+    shelfLifeMonths: shelfLifeMonths.nullable().optional(),
+    expiryDate: dateOnly.nullable().optional(),
   })
   .strict();
 
@@ -21,6 +33,9 @@ export const purchaseItemBatchRowSchema = purchaseItemMutationSchema
     skuText: z.string().trim().max(200).nullable().optional().or(z.literal("")),
     notes: z.string().trim().max(1000).nullable().optional().or(z.literal("")),
     referenceAmount: referenceAmount.nullable().optional().or(z.literal("")),
+    productionDate: dateOnly.nullable().optional(),
+    shelfLifeMonths: shelfLifeMonths.nullable().optional(),
+    expiryDate: dateOnly.nullable().optional(),
   })
   .strict();
 
@@ -43,6 +58,9 @@ export const orderItemSchema = z.object({
   quantity: z.coerce.number().int().min(1).max(999),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
   referenceAmount: referenceAmount.optional().or(z.literal("")),
+  productionDate: dateOnly.nullable().optional(),
+  shelfLifeMonths: shelfLifeMonths.nullable().optional(),
+  expiryDate: dateOnly.nullable().optional(),
 });
 
 export const purchaseOrderSchema = z.object({

@@ -134,13 +134,12 @@ export class InspectionService {
       delete inspectionData.result;
     }
 
-    if (isCompleted && inspection.inventoryItem && (storageLoc !== undefined || skuText !== undefined || inspectionData.expiryDate !== undefined || resultChange)) {
+    if (isCompleted && inspection.inventoryItem && (storageLoc !== undefined || skuText !== undefined || resultChange)) {
       // Sync changes to InventoryItem in a transaction
       return db.$transaction(async (tx) => {
         const invUpdate: Record<string, unknown> = {};
         if (storageLoc !== undefined) invUpdate.storageLocation = storageLoc.trim() || null;
         if (skuText !== undefined) invUpdate.skuText = normalizeSku(skuText);
-        if (inspectionData.expiryDate !== undefined) invUpdate.expiryDate = inspectionData.expiryDate;
         if (resultChange) {
           if (resultChange === "PROBLEM") {
             invUpdate.itemStatus = "PROBLEM";
@@ -224,7 +223,9 @@ export class InspectionService {
               name: inspection.purchaseOrderItem.name,
               skuText: normalizeSku((skuText as string | null | undefined) ?? inspection.purchaseOrderItem.skuText),
               unitCost: new Prisma.Decimal(costs[inspection.sequence - 1]),
-              expiryDate: updatedInspection.expiryDate,
+              productionDate: inspection.purchaseOrderItem.productionDate,
+              shelfLifeMonths: inspection.purchaseOrderItem.shelfLifeMonths,
+              expiryDate: inspection.purchaseOrderItem.expiryDate,
               storageLocation: (loc as string)?.trim() || null,
               itemStatus: result === "PASS" ? "STOCKED" : "PROBLEM",
               stockedAt: now,

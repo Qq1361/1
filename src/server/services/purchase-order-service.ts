@@ -1,4 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
+import { addCalendarMonthsClamped, formatDateOnly, parseDateOnly } from "@/lib/date-only";
 import { normalizeSku } from "@/lib/normalize-sku";
 import { db } from "@/server/db";
 import { ServiceError } from "@/server/errors";
@@ -26,19 +27,58 @@ function serializeOrder<T>(value: T): T {
     const lower = key.toLowerCase();
     return lower.includes("amount") || lower.includes("cost") || lower.includes("profit");
   };
-  function normalizeMoneyFields(current: unknown): unknown {
-    if (Array.isArray(current)) return current.map(normalizeMoneyFields);
+  function normalizeFields(current: unknown): unknown {
+    if (Array.isArray(current)) return current.map(normalizeFields);
     if (!current || typeof current !== "object") return current;
     return Object.fromEntries(
       Object.entries(current).map(([key, item]) => [
         key,
-        moneyKey(key) && typeof item === "string" && /^\d+(\.\d+)?$/.test(item)
+        (key === "productionDate" || key === "expiryDate") && typeof item === "string"
+          ? formatDateOnly(item) ?? item
+          : moneyKey(key) && typeof item === "string" && /^\d+(\.\d+)?$/.test(item)
           ? new Prisma.Decimal(item).toFixed(2)
-          : normalizeMoneyFields(item),
+          : normalizeFields(item),
       ]),
     );
   }
-  return normalizeMoneyFields(serialized) as T;
+  return normalizeFields(serialized) as T;
+}
+
+type ShelfLifeInput = {
+  productionDate?: string | null;
+  shelfLifeMonths?: number | null;
+  expiryDate?: string | null;
+};
+
+type ShelfLifeSnapshot = {
+  productionDate: Date | null;
+  shelfLifeMonths: number | null;
+  expiryDate: Date | null;
+};
+
+function resolveShelfLife(input: ShelfLifeInput, existing?: ShelfLifeSnapshot): ShelfLifeSnapshot {
+  const productionDate = input.productionDate === undefined
+    ? existing?.productionDate ?? null
+    : input.productionDate === null ? null : parseDateOnly(input.productionDate, "productionDate");
+  const shelfLifeMonths = input.shelfLifeMonths === undefined
+    ? existing?.shelfLifeMonths ?? null
+    : input.shelfLifeMonths;
+  let expiryDate = input.expiryDate === undefined
+    ? existing?.expiryDate ?? null
+    : input.expiryDate === null ? null : parseDateOnly(input.expiryDate, "expiryDate");
+
+  if (expiryDate === null && productionDate && shelfLifeMonths) {
+    expiryDate = addCalendarMonthsClamped(productionDate, shelfLifeMonths);
+  }
+  if (productionDate && expiryDate && expiryDate.getTime() < productionDate.getTime()) {
+    throw new ServiceError(
+      "SHELF_LIFE_DATE_ORDER_INVALID",
+      "到期日期不能早于生产日期。",
+      400,
+      { expiryDate: ["到期日期不能早于生产日期。"] },
+    );
+  }
+  return { productionDate, shelfLifeMonths, expiryDate };
 }
 
 const storage = new LocalStorageAdapter();
@@ -238,6 +278,7 @@ export class PurchaseOrderService {
   ) {
     await db.$transaction(async (tx) => {
       await this.assertPurchaseItemsEditable(tx, ownerId, orderId);
+      const shelfLife = resolveShelfLife(input);
       await tx.purchaseOrderItem.create({
         data: {
           purchaseOrderId: orderId,
@@ -245,6 +286,7 @@ export class PurchaseOrderService {
           skuText: normalizeSku(input.skuText),
           quantity: input.quantity,
           referenceAmount: input.referenceAmount ? new Prisma.Decimal(input.referenceAmount) : null,
+          ...shelfLife,
           notes: input.notes?.trim() || null,
         },
       });
@@ -268,6 +310,7 @@ export class PurchaseOrderService {
           referenceAmount: item.referenceAmount
             ? new Prisma.Decimal(item.referenceAmount)
             : null,
+          ...resolveShelfLife(item),
           notes: item.notes?.trim() || null,
         })),
       });
@@ -286,6 +329,14 @@ export class PurchaseOrderService {
       if (!order.items.some((item) => item.id === itemId)) {
         throw new ServiceError("PURCHASE_ITEM_NOT_FOUND", "商品明细不存在。", 404);
       }
+      const existing = await tx.purchaseOrderItem.findFirst({
+        where: { id: itemId, purchaseOrderId: orderId },
+        select: { productionDate: true, shelfLifeMonths: true, expiryDate: true },
+      });
+      if (!existing) {
+        throw new ServiceError("PURCHASE_ITEM_NOT_FOUND", "商品明细不存在。", 404);
+      }
+      const shelfLife = resolveShelfLife(input, existing);
       await tx.purchaseOrderItem.update({
         where: { id: itemId },
         data: {
@@ -293,6 +344,7 @@ export class PurchaseOrderService {
           skuText: normalizeSku(input.skuText),
           quantity: input.quantity,
           referenceAmount: input.referenceAmount ? new Prisma.Decimal(input.referenceAmount) : null,
+          ...shelfLife,
           notes: input.notes?.trim() || null,
         },
       });
@@ -354,6 +406,7 @@ export class PurchaseOrderService {
                 skuText: normalizeSku(item.skuText),
                 quantity: item.quantity,
                 referenceAmount: item.referenceAmount ? new Prisma.Decimal(item.referenceAmount) : null,
+                ...resolveShelfLife(item),
                 notes: item.notes || null,
               })),
             },

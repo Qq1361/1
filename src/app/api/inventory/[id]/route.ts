@@ -1,4 +1,5 @@
 import { DEFAULT_OWNER_ID } from "@/server/constants";
+import { serializeDateOnlyFields } from "@/lib/date-only";
 import { toErrorResponse } from "@/server/errors";
 import { inventoryService } from "@/server/services/inventory-service";
 import { ServiceError } from "@/server/errors";
@@ -9,7 +10,7 @@ type Context = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, context: Context) {
   try {
     return Response.json(
-      await inventoryService.get(DEFAULT_OWNER_ID, (await context.params).id),
+      serializeDateOnlyFields(await inventoryService.get(DEFAULT_OWNER_ID, (await context.params).id)),
     );
   } catch (error) {
     return toErrorResponse(error);
@@ -28,7 +29,7 @@ export async function PATCH(request: Request, context: Context) {
       );
     }
     return Response.json(
-      await inventoryService.update(DEFAULT_OWNER_ID, id, inventoryUpdateSchema.parse(input)),
+      serializeDateOnlyFields(await inventoryService.update(DEFAULT_OWNER_ID, id, inventoryUpdateSchema.parse(input))),
     );
   } catch (error) {
     return toErrorResponse(error);

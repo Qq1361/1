@@ -1,4 +1,5 @@
 import { DEFAULT_OWNER_ID } from "@/server/constants";
+import { serializeDateOnlyFields } from "@/lib/date-only";
 import { toErrorResponse } from "@/server/errors";
 import { inventoryService } from "@/server/services/inventory-service";
 import { inventoryListSchema } from "@/server/validation/inspection";
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     const query = inventoryListSchema.parse(
       rawQuery,
     );
-    return Response.json(await inventoryService.list(DEFAULT_OWNER_ID, query));
+    return Response.json(serializeDateOnlyFields(await inventoryService.list(DEFAULT_OWNER_ID, query)));
   } catch (error) {
     return toErrorResponse(error);
   }

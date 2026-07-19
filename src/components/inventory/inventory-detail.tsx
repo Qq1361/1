@@ -30,6 +30,8 @@ type Detail = {
   name: string;
   skuText: string | null;
   unitCost: string;
+  productionDate: string | null;
+  shelfLifeMonths: number | null;
   expiryDate: string | null;
   stockedAt: string;
   locationStatus: string;
@@ -188,7 +190,9 @@ export function InventoryDetail({ id }: { id: string }) {
             </div>
             <Info label="单件成本" text={`¥${item.unitCost}`} />
             <Info label="入库时间" text={new Date(item.stockedAt).toLocaleString("zh-CN")} />
-            <Info label="效期" text={item.expiryDate ? new Date(item.expiryDate).toLocaleDateString("zh-CN") : "未填写"} />
+            <Info label="生产日期" text={item.productionDate ?? "未填写"} />
+            <Info label="保质期" text={item.shelfLifeMonths ? `${item.shelfLifeMonths} 个月` : "未填写"} />
+            <Info label="到期日期" text={item.expiryDate ?? "未填写"} />
             <Info label="位置大类" text={locationStatusLabels[item.locationStatus] ?? item.locationStatus} />
             <Info label="资产归属" text={formatInventoryOwnershipStatus(item.ownershipStatus)} />
             <Info label="具体库位" text={item.storageLocation || "未填写"} />

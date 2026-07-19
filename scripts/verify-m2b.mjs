@@ -42,6 +42,7 @@ try {
           name: "M2-B 单件成本测试商品",
           skuText: "M2B-SKU",
           quantity: 3,
+          expiryDate: new Date(Date.now() + 380 * 86_400_000).toISOString().slice(0, 10),
           notes: "",
         },
       ],

@@ -35,6 +35,8 @@ type InventoryRow = {
   name: string;
   skuText: string | null;
   unitCost: string;
+  productionDate: string | null;
+  shelfLifeMonths: number | null;
   expiryDate: string | null;
   stockedAt: string;
   itemStatus: string;
@@ -45,11 +47,6 @@ type InventoryRow = {
 };
 
 const inventoryStatusOptions = SUPPORTED_INVENTORY_ITEM_STATUSES;
-
-function daysUntil(date: string | null) {
-  if (!date) return "未填写";
-  return `${Math.ceil((new Date(date).getTime() - Date.now()) / 86_400_000)} 天`;
-}
 
 function daysInStock(date: string) {
   return `${Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000))} 天`;
@@ -195,6 +192,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                     <span>库位 {item.storageLocation || "未填写"}</span>
                     <span>{formatSaleMode(item.saleMode)}</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">到期日期：{item.expiryDate ?? "—"}{item.expiryDate && item.expiryDate < new Date().toISOString().slice(0, 10) ? "（已过期）" : ""}</p>
                   <p className="text-xs text-muted-foreground">{formatInventoryOwnershipStatus(item.ownershipStatus)}</p>
                   <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "outline", className: "w-full" })}>
                     查看详情
@@ -213,7 +211,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                   <TableHead>库位</TableHead>
                   <TableHead>出售方式</TableHead>
                   <TableHead>成本</TableHead>
-                  <TableHead>剩余效期</TableHead>
+                  <TableHead>到期日期</TableHead>
                   <TableHead>入库天数</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead />
@@ -231,7 +229,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                     <TableCell className="text-xs">{item.storageLocation || "未填写"}</TableCell>
                     <TableCell className="text-xs">{formatSaleMode(item.saleMode)}</TableCell>
                     <TableCell>¥{item.unitCost}</TableCell>
-                    <TableCell>{daysUntil(item.expiryDate)}</TableCell>
+                    <TableCell className="text-xs">{item.expiryDate ?? "—"}{item.expiryDate && item.expiryDate < new Date().toISOString().slice(0, 10) ? <span className="ml-1 text-amber-700">已过期</span> : null}</TableCell>
                     <TableCell>{daysInStock(item.stockedAt)}</TableCell>
                     <TableCell>
                       <Badge variant={item.itemStatus === "PROBLEM" ? "destructive" : "secondary"}>

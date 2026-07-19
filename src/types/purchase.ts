@@ -4,6 +4,9 @@ export type OrderItemDto = {
   skuText: string | null;
   quantity: number;
   referenceAmount: string | null;
+  productionDate: string | null;
+  shelfLifeMonths: number | null;
+  expiryDate: string | null;
   allocatedTotalCost: string | null;
   notes: string | null;
   inventoryItems?: PurchaseInventoryItemDto[];
@@ -15,6 +18,9 @@ export type PurchaseInventoryItemDto = {
   name: string;
   skuText: string | null;
   unitCost: string;
+  productionDate: string | null;
+  shelfLifeMonths: number | null;
+  expiryDate: string | null;
   itemStatus: string;
   saleMode: string;
   storageLocation: string | null;

@@ -434,6 +434,9 @@ model PurchaseOrderItem {
   skuText            String?
   quantity           Int
   referenceAmount    Decimal? @db.Decimal(12, 2)
+  productionDate     DateTime? @db.Date
+  shelfLifeMonths    Int?
+  expiryDate         DateTime? @db.Date
   allocatedTotalCost Decimal? @db.Decimal(12, 2)
   notes              String?
   createdAt          DateTime @default(now())
@@ -582,7 +585,9 @@ model InventoryItem {
   name                String
   skuText             String?
   unitCost            Decimal                  @db.Decimal(12, 2)
-  expiryDate          DateTime?
+  productionDate      DateTime?                @db.Date
+  shelfLifeMonths     Int?
+  expiryDate          DateTime?                @db.Date
   locationStatus      LocationStatus           @default(LOCAL)
   storageLocation     String?
   saleMode            SaleMode                 @default(NONE)

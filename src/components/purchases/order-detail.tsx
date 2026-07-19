@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatItemStatus, formatPlatform, formatSaleStatus } from "@/lib/status-labels";
+import { calculateShelfLifeExpiryDate, isDateOnlyBefore } from "@/lib/shelf-life-form";
 import type { ApiError, OrderDto, OrderItemDto, PurchaseInventoryItemDto } from "@/types/purchase";
 
 type ItemDraft = {
@@ -27,17 +28,25 @@ type ItemDraft = {
   skuText: string;
   quantity: string;
   referenceAmount: string;
+  productionDate: string;
+  shelfLifeMonths: string;
+  expiryDate: string;
   notes: string;
 };
 
 type BatchItemDraft = Omit<ItemDraft, "quantity">;
 
 function emptyItemDraft(): ItemDraft {
-  return { name: "", skuText: "", quantity: "1", referenceAmount: "", notes: "" };
+  return { name: "", skuText: "", quantity: "1", referenceAmount: "", productionDate: "", shelfLifeMonths: "", expiryDate: "", notes: "" };
 }
 
 function emptyBatchItemDraft(): BatchItemDraft {
-  return { name: "", skuText: "", referenceAmount: "", notes: "" };
+  return { name: "", skuText: "", referenceAmount: "", productionDate: "", shelfLifeMonths: "", expiryDate: "", notes: "" };
+}
+
+function shelfLifeStatus(expiryDate: string | null) {
+  if (!expiryDate) return "未填写";
+  return expiryDate < new Date().toISOString().slice(0, 10) ? "已过期" : null;
 }
 
 export function OrderDetail({ orderId }: { orderId: string }) {
@@ -47,6 +56,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [itemDialog, setItemDialog] = useState<{ mode: "add" | "edit"; item?: OrderItemDto } | null>(null);
   const [itemDraft, setItemDraft] = useState<ItemDraft>(emptyItemDraft);
+  const [itemError, setItemError] = useState<string | null>(null);
   const [savingItem, setSavingItem] = useState(false);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchItems, setBatchItems] = useState<BatchItemDraft[]>([emptyBatchItemDraft()]);
@@ -88,6 +98,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
 
   function openAddItem() {
     setItemDraft(emptyItemDraft());
+    setItemError(null);
     setItemDialog({ mode: "add" });
   }
 
@@ -97,8 +108,12 @@ export function OrderDetail({ orderId }: { orderId: string }) {
       skuText: item.skuText ?? "",
       quantity: String(item.quantity),
       referenceAmount: item.referenceAmount ?? "",
+      productionDate: item.productionDate ?? "",
+      shelfLifeMonths: item.shelfLifeMonths ? String(item.shelfLifeMonths) : "",
+      expiryDate: item.expiryDate ?? "",
       notes: item.notes ?? "",
     });
+    setItemError(null);
     setItemDialog({ mode: "edit", item });
   }
 
@@ -164,6 +179,12 @@ export function OrderDetail({ orderId }: { orderId: string }) {
       if (item.referenceAmount.trim() && !/^\d{1,10}(\.\d{1,2})?$/.test(item.referenceAmount.trim())) {
         rowErrors.push("参考成交总额必须是非负且最多两位小数的金额。");
       }
+      if (item.shelfLifeMonths && (!/^\d+$/.test(item.shelfLifeMonths) || Number(item.shelfLifeMonths) < 1 || Number(item.shelfLifeMonths) > 600)) {
+        rowErrors.push("保质期月数必须是 1 到 600 的整数。");
+      }
+      if (isDateOnlyBefore(item.expiryDate, item.productionDate)) {
+        rowErrors.push("到期日期不能早于生产日期。");
+      }
       if (item.notes.trim().length > 1000) rowErrors.push("备注不能超过 1000 个字符。");
       return rowErrors;
     });
@@ -180,7 +201,14 @@ export function OrderDetail({ orderId }: { orderId: string }) {
       const response = await fetch(`/api/purchases/${order.id}/items/batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: batchItems }),
+        body: JSON.stringify({
+          items: batchItems.map((item) => ({
+            ...item,
+            productionDate: item.productionDate || null,
+            shelfLifeMonths: item.shelfLifeMonths ? Number(item.shelfLifeMonths) : null,
+            expiryDate: item.expiryDate || null,
+          })),
+        }),
       });
       const payload = await response.json() as OrderDto | (ApiError & { fieldErrors?: unknown });
       if (!response.ok) {
@@ -200,6 +228,24 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   async function saveItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!itemDialog || !order) return;
+    setItemError(null);
+
+    let invalidFieldId: "purchase-item-shelf-life-months" | "purchase-item-expiry-date" | null = null;
+    let validationError: string | null = null;
+    if (itemDraft.shelfLifeMonths && (!/^\d+$/.test(itemDraft.shelfLifeMonths) || Number(itemDraft.shelfLifeMonths) < 1 || Number(itemDraft.shelfLifeMonths) > 600)) {
+      invalidFieldId = "purchase-item-shelf-life-months";
+      validationError = "保质期月数必须是 1 到 600 的整数。";
+    } else if (isDateOnlyBefore(itemDraft.expiryDate, itemDraft.productionDate)) {
+      invalidFieldId = "purchase-item-expiry-date";
+      validationError = "到期日期不能早于生产日期。";
+    }
+
+    if (validationError) {
+      setItemError(validationError);
+      requestAnimationFrame(() => document.getElementById(invalidFieldId!)?.focus());
+      return;
+    }
+
     setSavingItem(true);
     try {
       const path = itemDialog.mode === "add"
@@ -213,6 +259,9 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           skuText: itemDraft.skuText,
           quantity: itemDraft.quantity,
           referenceAmount: itemDraft.referenceAmount,
+          productionDate: itemDraft.productionDate || null,
+          shelfLifeMonths: itemDraft.shelfLifeMonths ? Number(itemDraft.shelfLifeMonths) : null,
+          expiryDate: itemDraft.expiryDate || null,
           notes: itemDraft.notes,
         }),
       });
@@ -393,6 +442,11 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                       {item.notes}
                     </p>
                   ) : null}
+                  <div className="grid gap-2 rounded-md bg-muted/30 p-3 text-xs sm:grid-cols-3">
+                    <span>生产日期：{item.productionDate ?? "—"}</span>
+                    <span>保质期：{item.shelfLifeMonths ? `${item.shelfLifeMonths} 个月` : "—"}</span>
+                    <span>到期日期：{item.expiryDate ?? "—"}{shelfLifeStatus(item.expiryDate) ? `（${shelfLifeStatus(item.expiryDate)}）` : ""}</span>
+                  </div>
                   <InventorySalesList inventoryItems={item.inventoryItems ?? []} />
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/20 p-3 text-sm">
                     <span>商品参考成交总额：{item.referenceAmount ? `¥ ${item.referenceAmount}` : "未填写"}</span>
@@ -441,8 +495,16 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                   <div className="space-y-2"><Label htmlFor="purchase-item-quantity">数量</Label><Input id="purchase-item-quantity" type="number" min="1" max="999" step="1" value={itemDraft.quantity} onChange={(event) => setItemDraft({ ...itemDraft, quantity: event.target.value })} required /></div>
                   <div className="space-y-2"><Label htmlFor="purchase-item-reference">商品参考成交总额（可选）</Label><Input id="purchase-item-reference" inputMode="decimal" placeholder="未填写" value={itemDraft.referenceAmount} onChange={(event) => setItemDraft({ ...itemDraft, referenceAmount: event.target.value })} /></div>
                 </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2"><Label htmlFor="purchase-item-production-date">生产日期（可选）</Label><Input id="purchase-item-production-date" type="date" value={itemDraft.productionDate} onChange={(event) => setItemDraft({ ...itemDraft, productionDate: event.target.value })} /></div>
+                  <div className="space-y-2"><Label htmlFor="purchase-item-shelf-life-months">保质期月数（可选）</Label><Input id="purchase-item-shelf-life-months" type="number" inputMode="numeric" min="1" max="600" step="1" value={itemDraft.shelfLifeMonths} onChange={(event) => setItemDraft({ ...itemDraft, shelfLifeMonths: event.target.value })} /></div>
+                  <div className="space-y-2"><Label htmlFor="purchase-item-expiry-date">到期日期（可选）</Label><Input id="purchase-item-expiry-date" type="date" value={itemDraft.expiryDate} onChange={(event) => setItemDraft({ ...itemDraft, expiryDate: event.target.value })} /></div>
+                  <div className="flex items-end"><Button type="button" variant="outline" className="min-h-11 w-full" disabled={!calculateShelfLifeExpiryDate(itemDraft.productionDate, itemDraft.shelfLifeMonths) || savingItem} onClick={() => { const expiryDate = calculateShelfLifeExpiryDate(itemDraft.productionDate, itemDraft.shelfLifeMonths); if (expiryDate) setItemDraft({ ...itemDraft, expiryDate }); }}>重新计算到期日期</Button></div>
+                </div>
+                <p className="text-xs text-muted-foreground">同一商品行的全部数量共用这组保质期；不同批次请拆成独立商品行。</p>
                 <p className="text-xs text-muted-foreground">仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。</p>
                 <div className="space-y-2"><Label htmlFor="purchase-item-notes">备注</Label><Textarea id="purchase-item-notes" value={itemDraft.notes} onChange={(event) => setItemDraft({ ...itemDraft, notes: event.target.value })} /></div>
+                {itemError ? <p className="text-sm text-destructive" role="alert">{itemError}</p> : null}
                 <DialogFooter><Button type="button" variant="outline" onClick={() => setItemDialog(null)} disabled={savingItem}>取消</Button><Button type="submit" disabled={savingItem}>{savingItem ? <Loader2 className="animate-spin" /> : null}{savingItem ? "保存中..." : "保存"}</Button></DialogFooter>
               </form>
             </DialogContent>
@@ -485,6 +547,21 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                         <div className="space-y-2">
                           <Label htmlFor={`batch-item-reference-${index}`}>商品参考成交总额（可选）</Label>
                           <Input id={`batch-item-reference-${index}`} inputMode="decimal" placeholder="未填写" value={item.referenceAmount} onChange={(event) => updateBatchItem(index, { referenceAmount: event.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`batch-item-production-date-${index}`}>生产日期（可选）</Label>
+                          <Input id={`batch-item-production-date-${index}`} type="date" value={item.productionDate} onChange={(event) => updateBatchItem(index, { productionDate: event.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`batch-item-shelf-life-months-${index}`}>保质期月数（可选）</Label>
+                          <Input id={`batch-item-shelf-life-months-${index}`} type="number" inputMode="numeric" min="1" max="600" step="1" value={item.shelfLifeMonths} onChange={(event) => updateBatchItem(index, { shelfLifeMonths: event.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`batch-item-expiry-date-${index}`}>到期日期（可选）</Label>
+                          <Input id={`batch-item-expiry-date-${index}`} type="date" value={item.expiryDate} onChange={(event) => updateBatchItem(index, { expiryDate: event.target.value })} />
+                        </div>
+                        <div className="flex items-end">
+                          <Button type="button" variant="outline" className="min-h-11 w-full" disabled={!calculateShelfLifeExpiryDate(item.productionDate, item.shelfLifeMonths) || savingBatch} onClick={() => { const expiryDate = calculateShelfLifeExpiryDate(item.productionDate, item.shelfLifeMonths); if (expiryDate) updateBatchItem(index, { expiryDate }); }}>计算到期日期</Button>
                         </div>
                         <div className="space-y-2 sm:col-span-2">
                           <Label htmlFor={`batch-item-notes-${index}`}>备注（可选）</Label>

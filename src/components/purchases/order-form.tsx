@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { calculateShelfLifeExpiryDate, isDateOnlyBefore } from "@/lib/shelf-life-form";
 import type { ApiError, OrderDto } from "@/types/purchase";
 
 type FormItem = {
@@ -16,6 +17,9 @@ type FormItem = {
   skuText: string;
   quantity: number;
   referenceAmount: string;
+  productionDate: string;
+  shelfLifeMonths: string;
+  expiryDate: string;
   notes: string;
   files: File[];
 };
@@ -36,6 +40,9 @@ function newItem(clientId = createItemClientId()): FormItem {
     skuText: "",
     quantity: 1,
     referenceAmount: "",
+    productionDate: "",
+    shelfLifeMonths: "",
+    expiryDate: "",
     notes: "",
     files: [],
   };
@@ -165,6 +172,12 @@ export function OrderForm() {
       ) {
         errors[`${item.clientId}-quantity`] = "数量应为 1 到 999 的整数。";
       }
+      if (item.shelfLifeMonths && (!/^\d+$/.test(item.shelfLifeMonths) || Number(item.shelfLifeMonths) < 1 || Number(item.shelfLifeMonths) > 600)) {
+        errors[`${item.clientId}-shelf-life-months`] = "保质期月数必须是 1 到 600 的整数。";
+      }
+      if (isDateOnlyBefore(item.expiryDate, item.productionDate)) {
+        errors[`${item.clientId}-expiry-date`] = "到期日期不能早于生产日期。";
+      }
     });
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
@@ -190,6 +203,9 @@ export function OrderForm() {
             skuText: item.skuText,
             quantity: item.quantity,
             referenceAmount: item.referenceAmount,
+            productionDate: item.productionDate || null,
+            shelfLifeMonths: item.shelfLifeMonths ? Number(item.shelfLifeMonths) : null,
+            expiryDate: item.expiryDate || null,
             notes: item.notes,
           })),
         }),
@@ -500,6 +516,36 @@ export function OrderForm() {
                   仅作采购明细参考，订单实付和最终库存成本不会因此自动变化。
                 </p>
               </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor={`${item.clientId}-production-date`}>生产日期（可选）</Label>
+                  <Input id={`${item.clientId}-production-date`} type="date" value={item.productionDate} onChange={(event) => updateItem(item.clientId, { productionDate: event.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`${item.clientId}-shelf-life-months`}>保质期月数（可选）</Label>
+                  <Input id={`${item.clientId}-shelf-life-months`} type="number" inputMode="numeric" min="1" max="600" step="1" value={item.shelfLifeMonths} onChange={(event) => updateItem(item.clientId, { shelfLifeMonths: event.target.value })} />
+                  {fieldErrors[`${item.clientId}-shelf-life-months`] ? <p className="text-xs text-destructive">{fieldErrors[`${item.clientId}-shelf-life-months`]}</p> : null}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`${item.clientId}-expiry-date`}>到期日期（可选）</Label>
+                  <Input id={`${item.clientId}-expiry-date`} type="date" value={item.expiryDate} onChange={(event) => updateItem(item.clientId, { expiryDate: event.target.value })} />
+                  {fieldErrors[`${item.clientId}-expiry-date`] ? <p className="text-xs text-destructive">{fieldErrors[`${item.clientId}-expiry-date`]}</p> : null}
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    className={buttonVariants({ variant: "outline", className: "min-h-11 w-full" })}
+                    disabled={!calculateShelfLifeExpiryDate(item.productionDate, item.shelfLifeMonths) || submitting}
+                    onClick={() => {
+                      const expiryDate = calculateShelfLifeExpiryDate(item.productionDate, item.shelfLifeMonths);
+                      if (expiryDate) updateItem(item.clientId, { expiryDate });
+                    }}
+                  >
+                    计算到期日期
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">同一商品行的全部数量共用这组保质期；不同批次请拆成独立商品行。</p>
               <div className="space-y-2">
                 <Label htmlFor={`${item.clientId}-notes`}>商品备注</Label>
                 <Textarea
