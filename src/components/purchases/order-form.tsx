@@ -8,6 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  newBatchPurchaseItem,
+  PurchaseCreateBatchItems,
+  type BatchPurchaseItem,
+} from "@/components/purchases/purchase-create-batch-items";
 import { calculateShelfLifeExpiryDate, isDateOnlyBefore } from "@/lib/shelf-life-form";
 import type { ApiError, OrderDto } from "@/types/purchase";
 
@@ -102,6 +107,10 @@ export function OrderForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [orderFiles, setOrderFiles] = useState<File[]>([]);
   const [items, setItems] = useState<FormItem[]>([newItem("initial-item")]);
+  const [entryMode, setEntryMode] = useState<"SINGLE" | "BATCH">("SINGLE");
+  const [batchItems, setBatchItems] = useState<BatchPurchaseItem[]>([
+    newBatchPurchaseItem("initial-batch-item"),
+  ]);
   const [form, setForm] = useState({
     orderNo: "",
     sellerNickname: "",
@@ -161,7 +170,7 @@ export function OrderForm() {
     if (!moneyPattern.test(form.shippingAmount.trim())) {
       errors.shippingAmount = "请输入最多两位小数的有效金额。";
     }
-    items.forEach((item) => {
+    if (entryMode === "SINGLE") items.forEach((item) => {
       if (!item.name.trim()) {
         errors[`${item.clientId}-name`] = "请填写商品名称。";
       }
@@ -177,6 +186,26 @@ export function OrderForm() {
       }
       if (isDateOnlyBefore(item.expiryDate, item.productionDate)) {
         errors[`${item.clientId}-expiry-date`] = "到期日期不能早于生产日期。";
+      }
+    });
+    if (entryMode === "BATCH") batchItems.forEach((item) => {
+      const prefix = `batch-${item.clientId}`;
+      if (!item.name.trim()) {
+        errors[`${prefix}-name`] = "请填写商品名称。";
+      }
+      if (item.referenceAmount && !moneyPattern.test(item.referenceAmount.trim())) {
+        errors[`${prefix}-reference-amount`] = "请输入最多两位小数的有效金额。";
+      }
+      if (
+        item.shelfLifeMonths &&
+        (!/^\d+$/.test(item.shelfLifeMonths) ||
+          Number(item.shelfLifeMonths) < 1 ||
+          Number(item.shelfLifeMonths) > 600)
+      ) {
+        errors[`${prefix}-shelf-life-months`] = "保质期月数必须是 1 到 600 的整数。";
+      }
+      if (isDateOnlyBefore(item.expiryDate, item.productionDate)) {
+        errors[`${prefix}-expiry-date`] = "到期日期不能早于生产日期。";
       }
     });
     if (Object.keys(errors).length) {
@@ -197,17 +226,32 @@ export function OrderForm() {
         body: JSON.stringify({
           ...form,
           paidAt: new Date(`${form.paidAt}T00:00:00+08:00`).toISOString(),
-          items: items.map((item) => ({
-            clientId: item.clientId,
-            name: item.name,
-            skuText: item.skuText,
-            quantity: item.quantity,
-            referenceAmount: item.referenceAmount,
-            productionDate: item.productionDate || null,
-            shelfLifeMonths: item.shelfLifeMonths ? Number(item.shelfLifeMonths) : null,
-            expiryDate: item.expiryDate || null,
-            notes: item.notes,
-          })),
+          ...(entryMode === "BATCH"
+            ? {
+                entryMode: "BATCH",
+                batchItems: batchItems.map((item) => ({
+                  name: item.name,
+                  skuText: item.skuText,
+                  referenceAmount: item.referenceAmount || null,
+                  productionDate: item.productionDate || null,
+                  shelfLifeMonths: item.shelfLifeMonths ? Number(item.shelfLifeMonths) : null,
+                  expiryDate: item.expiryDate || null,
+                  notes: null,
+                })),
+              }
+            : {
+                items: items.map((item) => ({
+                  clientId: item.clientId,
+                  name: item.name,
+                  skuText: item.skuText,
+                  quantity: item.quantity,
+                  referenceAmount: item.referenceAmount,
+                  productionDate: item.productionDate || null,
+                  shelfLifeMonths: item.shelfLifeMonths ? Number(item.shelfLifeMonths) : null,
+                  expiryDate: item.expiryDate || null,
+                  notes: item.notes,
+                })),
+              }),
         }),
       });
       if (!response.ok) {
@@ -225,16 +269,18 @@ export function OrderForm() {
           failures.push(error instanceof Error ? error.message : file.name);
         }
       }
-      for (const [index, item] of items.entries()) {
-        for (const file of item.files) {
-          try {
-            await uploadFile(
-              "PURCHASE_ORDER_ITEM",
-              order.items[index].id,
-              file,
-            );
-          } catch (error) {
-            failures.push(error instanceof Error ? error.message : file.name);
+      if (entryMode === "SINGLE") {
+        for (const [index, item] of items.entries()) {
+          for (const file of item.files) {
+            try {
+              await uploadFile(
+                "PURCHASE_ORDER_ITEM",
+                order.items[index].id,
+                file,
+              );
+            } catch (error) {
+              failures.push(error instanceof Error ? error.message : file.name);
+            }
           }
         }
       }
@@ -255,11 +301,16 @@ export function OrderForm() {
     }
   }
 
-  const totalItemQuantity = items.reduce(
-    (total, item) => total + (Number.isFinite(item.quantity) ? item.quantity : 0),
-    0,
-  );
-  const attachmentCount = orderFiles.length + items.reduce((total, item) => total + item.files.length, 0);
+  const totalItemQuantity =
+    entryMode === "BATCH"
+      ? batchItems.length
+      : items.reduce(
+          (total, item) => total + (Number.isFinite(item.quantity) ? item.quantity : 0),
+          0,
+        );
+  const attachmentCount = orderFiles.length + (entryMode === "SINGLE"
+    ? items.reduce((total, item) => total + item.files.length, 0)
+    : 0);
   const totalValue = Number(form.totalAmount) + Number(form.shippingAmount);
   const totalLabel =
     /^\d{1,10}(\.\d{1,2})?$/.test(form.totalAmount.trim()) &&
@@ -388,9 +439,43 @@ export function OrderForm() {
       </Card>
 
       <Card className="rounded-lg shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base">录入方式</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="商品录入方式">
+            <button
+              type="button"
+              className={buttonVariants({ variant: entryMode === "SINGLE" ? "default" : "outline", className: "min-h-11" })}
+              disabled={submitting}
+              onClick={() => {
+                setEntryMode("SINGLE");
+                setFieldErrors({});
+                setFormError(null);
+              }}
+            >
+              普通录入
+            </button>
+            <button
+              type="button"
+              className={buttonVariants({ variant: entryMode === "BATCH" ? "default" : "outline", className: "min-h-11" })}
+              disabled={submitting}
+              onClick={() => {
+                setEntryMode("BATCH");
+                setFieldErrors({});
+                setFormError(null);
+              }}
+            >
+              批量录入
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-lg shadow-none">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">商品明细</CardTitle>
-          <button
+          {entryMode === "SINGLE" ? <button
             type="button"
             className={buttonVariants({ variant: "outline", size: "sm", className: "h-11 sm:h-9" })}
             disabled={submitting}
@@ -401,10 +486,10 @@ export function OrderForm() {
           >
             <Plus />
             添加商品
-          </button>
+          </button> : null}
         </CardHeader>
         <CardContent className="space-y-4">
-          {items.map((item, index) => (
+          {entryMode === "SINGLE" ? <>{items.map((item, index) => (
             <div
               key={item.clientId}
               className="space-y-4 rounded-lg border bg-muted/20 p-4"
@@ -591,7 +676,14 @@ export function OrderForm() {
                 />
               </div>
             </div>
-          ))}
+          ))}</> : <PurchaseCreateBatchItems
+            items={batchItems}
+            fieldErrors={fieldErrors}
+            submitting={submitting}
+            createClientId={createItemClientId}
+            onChange={setBatchItems}
+            onClearFieldError={clearFieldError}
+          />}
         </CardContent>
       </Card>
 

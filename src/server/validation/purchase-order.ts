@@ -63,7 +63,7 @@ export const orderItemSchema = z.object({
   expiryDate: dateOnly.nullable().optional(),
 });
 
-export const purchaseOrderSchema = z.object({
+const legacyPurchaseOrderSchema = z.object({
   orderNo: z.string().trim().min(1, "订单号不能为空").max(100),
   sellerNickname: z.string().trim().max(100).optional().or(z.literal("")),
   paidAt: z.coerce.date(),
@@ -72,6 +72,36 @@ export const purchaseOrderSchema = z.object({
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
   items: z.array(orderItemSchema).min(1, "至少添加一件商品").max(100),
 }).strict();
+
+const purchaseOrderBaseSchema = legacyPurchaseOrderSchema.omit({ items: true });
+
+const singlePurchaseOrderSchema = purchaseOrderBaseSchema.extend({
+  entryMode: z.literal("SINGLE").optional(),
+  items: z.array(orderItemSchema).min(1, "At least one purchase item is required").max(100),
+  batchItems: z.undefined().optional(),
+}).strict();
+
+const batchPurchaseOrderSchema = purchaseOrderBaseSchema.extend({
+  entryMode: z.literal("BATCH"),
+  items: z.undefined().optional(),
+  batchItems: z.array(purchaseItemBatchRowSchema).min(1).max(50),
+}).strict();
+
+export const purchaseOrderSchema = z
+  .union([singlePurchaseOrderSchema, batchPurchaseOrderSchema])
+  .transform((input) => ({
+    orderNo: input.orderNo,
+    sellerNickname: input.sellerNickname,
+    paidAt: input.paidAt,
+    totalAmount: input.totalAmount,
+    shippingAmount: input.shippingAmount,
+    notes: input.notes,
+    entryMode: input.entryMode ?? "SINGLE",
+    items:
+      input.entryMode === "BATCH"
+        ? input.batchItems.map((item) => ({ id: undefined, ...item, quantity: 1 }))
+        : input.items,
+  }));
 
 export const orderListQuerySchema = z.object({
   query: z.string().trim().max(100).optional(),

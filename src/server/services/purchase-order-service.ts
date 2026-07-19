@@ -404,7 +404,7 @@ export class PurchaseOrderService {
               create: input.items.map((item) => ({
                 name: item.name,
                 skuText: normalizeSku(item.skuText),
-                quantity: item.quantity,
+                quantity: input.entryMode === "BATCH" ? 1 : item.quantity,
                 referenceAmount: item.referenceAmount ? new Prisma.Decimal(item.referenceAmount) : null,
                 ...resolveShelfLife(item),
                 notes: item.notes || null,
