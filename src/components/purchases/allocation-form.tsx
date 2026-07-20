@@ -7,6 +7,16 @@ import { toast } from "sonner";
 import { AllocationBadge } from "./status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +30,9 @@ type Summary = {
   paidTotal: string;
   allocatedTotal: string;
   difference: string;
+  totalQuantity: number;
+  perUnitAverage: string | null;
+  allocationVersion: string;
   isBalanced: boolean;
   allocationStatus: "UNALLOCATED" | "DRAFT" | "CONFIRMED";
   items: {
@@ -27,6 +40,19 @@ type Summary = {
     name: string;
     quantity: number;
     allocatedTotalCost: string | null;
+  }[];
+};
+
+type EqualPreview = {
+  orderId: string;
+  totalAmount: string;
+  totalQuantity: number;
+  perUnitAverage: string;
+  allocationVersion: string;
+  allocations: {
+    itemId: string;
+    quantity: number;
+    allocatedTotalCost: string;
   }[];
 };
 
@@ -47,6 +73,9 @@ export function AllocationForm({ orderId }: { orderId: string }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [equalPreviewVersion, setEqualPreviewVersion] = useState<string | null>(null);
+  const [equalOverwriteOpen, setEqualOverwriteOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +122,46 @@ export function AllocationForm({ orderId }: { orderId: string }) {
     };
   }, [summary, values]);
 
+  async function applyEqualPreview() {
+    setPending(true);
+    try {
+      const response = await fetch(
+        `/api/purchase-orders/${orderId}/allocation/equal-preview`,
+        { method: "POST" },
+      );
+      const data = await response.json().catch(() => null) as EqualPreview | ApiError | null;
+      if (!response.ok || !data) {
+        toast.error((data as ApiError | null)?.message || "平均分摊计算失败，请稍后重试。");
+        return;
+      }
+      const preview = data as EqualPreview;
+      setValues(
+        Object.fromEntries(
+          preview.allocations.map((item) => [item.itemId, item.allocatedTotalCost]),
+        ),
+      );
+      setEqualPreviewVersion(preview.allocationVersion);
+      setDraftDirty(true);
+      setEqualOverwriteOpen(false);
+      toast.success("已按实际商品件数填入平均分摊，请检查后保存或确认。");
+    } catch {
+      toast.error("网络异常，平均分摊计算失败，请检查网络后重试。");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  function requestEqualPreview() {
+    const hasManualValues = summary?.items.some(
+      (item) => (values[item.id] ?? "").trim() !== "",
+    );
+    if (hasManualValues) {
+      setEqualOverwriteOpen(true);
+      return;
+    }
+    void applyEqualPreview();
+  }
+
   async function submit(action: "save" | "confirm" | "reopen") {
     setPending(true);
     try {
@@ -110,6 +179,8 @@ export function AllocationForm({ orderId }: { orderId: string }) {
                     itemId: item.id,
                     allocatedTotalCost: values[item.id] || null,
                   })),
+            expectedAllocationVersion:
+              action === "reopen" ? undefined : equalPreviewVersion ?? undefined,
           }),
         },
       );
@@ -124,7 +195,15 @@ export function AllocationForm({ orderId }: { orderId: string }) {
         toast.error((data as ApiError).message || "保存失败");
         return;
       }
-      setSummary(data as Summary);
+      const nextSummary = data as Summary;
+      setSummary(nextSummary);
+      setValues(
+        Object.fromEntries(
+          nextSummary.items.map((item) => [item.id, item.allocatedTotalCost ?? ""]),
+        ),
+      );
+      setEqualPreviewVersion(null);
+      setDraftDirty(false);
       toast.success(
         action === "confirm"
           ? "成本分摊已确认"
@@ -202,7 +281,7 @@ export function AllocationForm({ orderId }: { orderId: string }) {
 
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          ["实付总额", summary.paidTotal],
+          ["待分摊总金额", summary.paidTotal],
           ["已分摊", clientSummary.allocated],
           ["差额", clientSummary.difference],
         ].map(([label, value]) => (
@@ -213,6 +292,23 @@ export function AllocationForm({ orderId }: { orderId: string }) {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Card className="rounded-lg shadow-none">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">商品行数 / 实际商品总件数</p>
+            <p className="mt-1 text-xl font-semibold">
+              {summary.items.length} 行 / {summary.totalQuantity} 件
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-lg shadow-none">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">平均单件成本</p>
+            <p className="mt-1 text-xl font-semibold">¥ {summary.perUnitAverage ?? "—"}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="rounded-lg shadow-none">
@@ -240,12 +336,13 @@ export function AllocationForm({ orderId }: { orderId: string }) {
                   inputMode="decimal"
                   value={values[item.id] ?? ""}
                   disabled={confirmed}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setDraftDirty(true);
                     setValues((current) => ({
                       ...current,
                       [item.id]: event.target.value,
-                    }))
-                  }
+                    }));
+                  }}
                   placeholder="0.00"
                 />
               </div>
@@ -256,6 +353,18 @@ export function AllocationForm({ orderId }: { orderId: string }) {
 
       {!confirmed ? (
         <div className="sticky bottom-0 flex flex-col gap-2 border-t bg-background/95 py-4 backdrop-blur sm:flex-row sm:justify-end">
+          <div className="mr-auto flex items-center text-sm text-muted-foreground">
+            {draftDirty ? "当前分摊有未保存修改" : "平均分摊按实际商品件数计算"}
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="min-h-11"
+            onClick={requestEqualPreview}
+            disabled={pending}
+          >
+            一键平均分摊
+          </Button>
           <Button
             variant="outline"
             onClick={() => submit("save")}
@@ -273,6 +382,23 @@ export function AllocationForm({ orderId }: { orderId: string }) {
           </Button>
         </div>
       ) : null}
+
+      <AlertDialog open={equalOverwriteOpen} onOpenChange={setEqualOverwriteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>覆盖当前分摊金额？</AlertDialogTitle>
+            <AlertDialogDescription>
+              平均分摊将覆盖当前未确认的手工分摊金额，是否继续？不会自动保存或确认分摊。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>取消</AlertDialogCancel>
+            <AlertDialogAction disabled={pending} onClick={() => void applyEqualPreview()}>
+              继续平均分摊
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

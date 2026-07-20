@@ -153,6 +153,9 @@ PAID → WAITING_SHIPMENT → IN_TRANSIT → PENDING_INSPECTION → PARTIALLY_ST
 - 分摊合计 = paidTotal 才能确认
 - 一单一商品自动分摊确认
 - 单件成本 = allocatedTotalCost / quantity，余数归最后一件
+- 未确认草稿可请求“一键平均分摊”预览。平均单件成本 = `paidTotal / sum(PurchaseOrderItem.quantity)`，不得按商品行数平均，也不得使用 `referenceAmount`、退款或未建模费用改写既有分摊口径。
+- `allocatedTotalCost` 继续表示采购商品行总成本；平均预览必须将分级余数按 `createdAt`、`id` 的稳定顺序分到具体商品件，再汇总回所在商品行，所有行合计必须精确等于 `paidTotal`。
+- 平均预览只填充未保存页面输入，不自动保存、确认、创建验货或入库。商品数量或订单金额在预览后发生变化时，保存/确认必须拒绝旧预览；已确认分摊不可重新平均。
 
 ---
 

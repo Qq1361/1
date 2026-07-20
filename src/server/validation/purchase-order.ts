@@ -143,6 +143,7 @@ export const orderListQuerySchema = z.object({
 
 export const allocationSchema = z.object({
   action: z.enum(["save", "confirm", "reopen"]),
+  expectedAllocationVersion: z.string().max(10000).optional(),
   allocations: z
     .array(
       z.object({

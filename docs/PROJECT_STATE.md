@@ -29,6 +29,14 @@
 - Service 使用 owner 校验、订单行锁与 Serializable transaction，显式删除匹配的未处理占位 Inspection，再删除误录商品并写审计日志；不依赖 cascade。存在验货结果、开始/完成时间、备注、附件、库存、售后、退款、成本分摊或其他下游事实即拒绝。
 - 该操作不改订单实付、运费、付款时间、`deliveredAt`、`manuallyReceivedAt`、成本、退款、售后或 `SOLD`；不调用物流 API 或发送飞书。`pnpm verify:m5a3-entry-error-removal` 已覆盖 25 改 24、验货事实保护、日志回滚、并发、owner 隔离和副作用边界。
 
+## 成本分摊一键平均（已完成）
+
+- 未确认成本分摊草稿新增“一键平均分摊”。正式待分摊总额继续使用既有 `paidTotal = totalAmount + shippingAmount`；不使用 `referenceAmount`、采购退款、未建模其他费用或 JavaScript 浮点数重新定义金额口径。
+- 平均单件成本按 `sum(PurchaseOrderItem.quantity)` 计算，不能按商品行数平均。数据库继续保存每行 `allocatedTotalCost` 总额；数量大于 1 的行先按单件稳定分配分级余数，再汇总为行总额。
+- 服务端使用 Decimal 与整数分，按 `PurchaseOrderItem.createdAt`、`id` 稳定分配分级余数，保证所有行合计始终精确等于待分摊总额。预览带订单/商品版本，商品数量或金额在预览后变更时保存会返回冲突且不写草稿。
+- 页面显示待分摊总金额、商品行数、实际商品总件数、平均单件成本、当前分摊合计和差额。平均结果仅填入页面草稿；有非空未确认输入时需先确认覆盖，用户仍须手动保存草稿或确认分摊。已确认状态不显示该按钮。
+- 新增 `POST /api/purchase-orders/[id]/allocation/equal-preview` 和 `pnpm verify:m1-equal-cost-allocation`；验证覆盖按件数、分级余数稳定性、预览不落库、版本冲突、确认后拒绝重算和 owner 隔离。
+
 ## M5-A2 采购订单商品批量添加（已完成）
 
 - 采购订单详情页已增加独立的“批量添加商品”入口；每批最多 50 行，每行固定创建一条数量为 1 的采购商品明细，相同商品和 SKU 不自动合并。

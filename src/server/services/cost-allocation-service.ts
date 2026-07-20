@@ -7,6 +7,66 @@ export type AllocationValue = {
   allocatedTotalCost: string | null;
 };
 
+export type EqualAllocationItem = {
+  id: string;
+  quantity: number;
+  createdAt: Date;
+};
+
+export type EqualAllocation = {
+  itemId: string;
+  quantity: number;
+  allocatedTotalCost: string;
+};
+
+function centsToMoney(cents: bigint) {
+  const sign = cents < 0n ? "-" : "";
+  const absolute = cents < 0n ? -cents : cents;
+  return `${sign}${absolute / 100n}.${(absolute % 100n).toString().padStart(2, "0")}`;
+}
+
+export function calculateEqualPurchaseCostAllocation(
+  totalAmount: string,
+  shippingAmount: string,
+  items: EqualAllocationItem[],
+) {
+  const total = new Prisma.Decimal(totalAmount).plus(shippingAmount);
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  if (totalQuantity <= 0) {
+    throw new ServiceError("INVALID_ALLOCATION_QUANTITY", "采购商品总件数必须大于 0。", 422);
+  }
+
+  const totalCents = BigInt(total.mul(100).toFixed(0));
+  const quantity = BigInt(totalQuantity);
+  const baseUnitCents = totalCents / quantity;
+  const remainderCents = totalCents % quantity;
+  const orderedItems = [...items].sort(
+    (left, right) =>
+      left.createdAt.getTime() - right.createdAt.getTime() ||
+      left.id.localeCompare(right.id),
+  );
+  let unitIndex = 0n;
+  const allocations: EqualAllocation[] = orderedItems.map((item) => {
+    let lineCents = 0n;
+    for (let index = 0; index < item.quantity; index += 1) {
+      lineCents += baseUnitCents + (unitIndex < remainderCents ? 1n : 0n);
+      unitIndex += 1n;
+    }
+    return {
+      itemId: item.id,
+      quantity: item.quantity,
+      allocatedTotalCost: centsToMoney(lineCents),
+    };
+  });
+
+  return {
+    totalAmount: total.toFixed(2),
+    totalQuantity,
+    perUnitAverage: total.div(totalQuantity).toFixed(2),
+    allocations,
+  };
+}
+
 export function calculateAllocationSummary(
   totalAmount: string,
   shippingAmount: string,
@@ -36,7 +96,7 @@ export class CostAllocationService {
   async getSummary(ownerId: string, orderId: string) {
     const order = await db.purchaseOrder.findFirst({
       where: { id: orderId, ownerId },
-      include: { items: { orderBy: { createdAt: "asc" } } },
+      include: { items: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } },
     });
     if (!order) {
       throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
@@ -58,10 +118,60 @@ export class CostAllocationService {
         quantity: item.quantity,
         allocatedTotalCost: item.allocatedTotalCost?.toFixed(2) ?? null,
       })),
+      totalQuantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      perUnitAverage: order.items.reduce((sum, item) => sum + item.quantity, 0) > 0
+        ? new Prisma.Decimal(order.totalAmount).plus(order.shippingAmount).div(
+            order.items.reduce((sum, item) => sum + item.quantity, 0),
+          ).toFixed(2)
+        : null,
+      allocationVersion: JSON.stringify({
+        order: {
+          id: order.id,
+          allocationStatus: order.allocationStatus,
+          updatedAt: order.updatedAt.toISOString(),
+          totalAmount: order.totalAmount.toFixed(2),
+          shippingAmount: order.shippingAmount.toFixed(2),
+        },
+        items: order.items.map((item) => ({
+          id: item.id,
+          quantity: item.quantity,
+          updatedAt: item.updatedAt.toISOString(),
+        })),
+      }),
       ...calculateAllocationSummary(
         order.totalAmount.toFixed(2),
         order.shippingAmount.toFixed(2),
         allocations,
+      ),
+    };
+  }
+
+  async getEqualPreview(ownerId: string, orderId: string) {
+    const summary = await this.getSummary(ownerId, orderId);
+    if (summary.allocationStatus === "CONFIRMED") {
+      throw new ServiceError("ALLOCATION_ALREADY_CONFIRMED", "成本分摊已确认，不能重新平均。", 409);
+    }
+    const order = await db.purchaseOrder.findFirst({
+      where: { id: orderId, ownerId },
+      select: {
+        totalAmount: true,
+        shippingAmount: true,
+        items: {
+          select: { id: true, quantity: true, createdAt: true, updatedAt: true },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        },
+      },
+    });
+    if (!order) {
+      throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
+    }
+    return {
+      orderId,
+      allocationVersion: summary.allocationVersion,
+      ...calculateEqualPurchaseCostAllocation(
+        order.totalAmount.toFixed(2),
+        order.shippingAmount.toFixed(2),
+        order.items,
       ),
     };
   }
@@ -71,8 +181,19 @@ export class CostAllocationService {
     orderId: string,
     allocations: AllocationValue[],
     confirm: boolean,
+    expectedAllocationVersion?: string,
   ) {
     const summary = await this.getSummary(ownerId, orderId);
+    if (
+      expectedAllocationVersion &&
+      expectedAllocationVersion !== summary.allocationVersion
+    ) {
+      throw new ServiceError(
+        "ALLOCATION_PREVIEW_CONFLICT",
+        "采购商品或金额已变更，请刷新后重新平均分摊。",
+        409,
+      );
+    }
     const itemIds = new Set(summary.items.map((item) => item.id));
     if (
       allocations.length !== itemIds.size ||

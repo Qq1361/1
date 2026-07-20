@@ -31,6 +31,7 @@ export async function PUT(request: Request, context: Context) {
         id,
         input.allocations,
         input.action === "confirm",
+        input.expectedAllocationVersion,
       ),
     );
   } catch (error) {
