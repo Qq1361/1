@@ -35,6 +35,7 @@
     "verify:m7-purchase-create-batch": "tsx scripts/verify-m7-purchase-create-batch.mjs",
     "verify:m8-warehouse-foundation": "tsx scripts/verify-m8-warehouse-foundation.mjs",
     "verify:m8-warehouse-foundation-ui": "tsx scripts/verify-m8-warehouse-foundation-ui.mjs",
+    "verify:m8-inventory-bulk-management": "tsx scripts/verify-m8-inventory-bulk-management.mjs",
     "send:daily-report": "tsx scripts/send-daily-business-report.ts",
     "verify:inventory-summary": "tsx scripts/verify-inventory-summary.mjs",
     "verify:item-status-contract": "tsx scripts/verify-item-status-contract.mjs",

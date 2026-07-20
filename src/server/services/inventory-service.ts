@@ -30,12 +30,33 @@ function withDisplayStorageLocation<T extends {
 }
 
 export class InventoryService {
+  async selectAllMatching(
+    ownerId: string,
+    query: Parameters<InventoryService["list"]>[1],
+  ) {
+    const first = await this.list(ownerId, { ...query, page: 1, pageSize: 100 });
+    if (first.total > 200) {
+      throw new ServiceError(
+        "INVENTORY_BULK_TOO_MANY",
+        "当前筛选结果超过 200 件，请缩小筛选范围后再批量操作。",
+        422,
+      );
+    }
+    if (first.total <= first.data.length) return { inventoryItemIds: first.data.map((item) => item.id), total: first.total };
+    const second = await this.list(ownerId, { ...query, page: 2, pageSize: 100 });
+    return { inventoryItemIds: [...first.data, ...second.data].map((item) => item.id), total: first.total };
+  }
+
   async list(
     ownerId: string,
     query: {
       query?: string;
       itemStatus?: Prisma.EnumItemStatusFilter["equals"];
       saleMode?: Prisma.EnumSaleModeFilter["equals"];
+      warehouseId?: string;
+      condition?: Prisma.EnumInventoryConditionNullableFilter["equals"];
+      shelfLife?: "HAS_EXPIRY" | "NO_EXPIRY" | "EXPIRED";
+      sort?: "STOCKED_AT_DESC" | "STOCKED_AT_ASC" | "EXPIRY_DATE_ASC";
       locationStatus?: Prisma.EnumLocationStatusFilter["equals"];
       reminder?: string;
       productNameExact?: string;
@@ -50,6 +71,8 @@ export class InventoryService {
       ownerId,
       itemStatus: query.itemStatus,
       saleMode: query.saleMode,
+      warehouseId: query.warehouseId,
+      condition: query.condition,
       locationStatus: query.locationStatus,
       ...(query.productNameExact ? { name: query.productNameExact } : {}),
       ...(query.query
@@ -67,12 +90,20 @@ export class InventoryService {
           }
         : {}),
     };
+    if (query.shelfLife === "HAS_EXPIRY") where.expiryDate = { not: null };
+    if (query.shelfLife === "NO_EXPIRY") where.expiryDate = null;
+    if (query.shelfLife === "EXPIRED") where.expiryDate = { lte: now };
+    const orderBy: Prisma.InventoryItemOrderByWithRelationInput[] = query.sort === "STOCKED_AT_ASC"
+      ? [{ stockedAt: "asc" }, { id: "asc" }]
+      : query.sort === "EXPIRY_DATE_ASC"
+        ? [{ expiryDate: "asc" }, { id: "asc" }]
+        : [{ stockedAt: "desc" }, { id: "desc" }];
     const hasExactSkuFilter = Boolean(query.skuExact) || query.skuEmpty === true;
     if (hasExactSkuFilter && !query.reminder) {
       const requestedSku = normalizeSku(query.skuExact);
       const exactItems = await db.inventoryItem.findMany({
         where,
-        orderBy: { stockedAt: "desc" },
+        orderBy,
         include: locationInclude,
       });
       const data = exactItems.filter((item) =>
@@ -108,7 +139,7 @@ export class InventoryService {
       // Fetch all matching items + todos + reminder states in one transaction
       const allItems = await db.inventoryItem.findMany({
         where,
-        orderBy: { stockedAt: "desc" },
+        orderBy,
         include: locationInclude,
       });
       // Get reminder states to apply the same snooze/resolve filtering as /api/todos
@@ -156,7 +187,7 @@ export class InventoryService {
     const [data, total] = await db.$transaction([
       db.inventoryItem.findMany({
         where,
-        orderBy: { stockedAt: "desc" },
+        orderBy,
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
         include: locationInclude,

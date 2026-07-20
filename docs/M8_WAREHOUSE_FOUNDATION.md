@@ -28,6 +28,13 @@
 pnpm verify:m8-warehouse-foundation
 pnpm verify:m8-warehouse-foundation-ui
 pnpm verify:m2b-batch-inspection-details
+pnpm verify:m8-inventory-bulk-management
 ```
+
+## 库存列表批量维护（M8 第三阶段）
+
+- 列表复用一套选择状态：单件、当前页和当前筛选结果全选；同筛选下可跨页累计，搜索、筛选或排序发生变化会清空选择。第一版服务端最多返回并操作 200 件。
+- 批量调整仓位、设置成色、设置计划出售方式及修正保质期均先预览再确认。所有确认写入 `InventoryItemActionLog`，同次操作共享 batchId。
+- 仅未锁定的在库自有库存可参与。已售、销售关联、平台寄送/退回和售后关联会使整批不执行；不会变更采购快照、库存状态、成本、销售、退款、售后或物流状态。
 
 前者使用独立临时夹具验证租户隔离、唯一性、停用过滤、历史字段不变、结构化字段、引用保护和不写入 SOLD。第二个脚本在 1440px 与 390px 验证仓库管理页面及重命名交互；第三个脚本验证批量验货的结构化入库资料、保质期审计和原子回滚。

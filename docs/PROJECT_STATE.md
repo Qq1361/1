@@ -436,3 +436,8 @@ pnpm verify:m3a
 - The full draft requires warehouse, matching active location, and condition for every item. It creates independent structured `InventoryItem` records with copied or explicitly corrected shelf-life snapshots in one Serializable transaction.
 - Every selected inspection creates one independent `InventoryItem`; identical names or SKUs are never merged. Any invalid, completed, non-pending, cross-owner, inactive warehouse/location, or stale row rolls the entire batch back.
 - Batch mode is pass-only. Problem inspections remain on the existing single-item workflow. No purchase cost, refund, sale, logistics, or SOLD write is added. `pnpm verify:m2b-batch-inspection-details` covers the structured draft and transaction boundaries.
+## M8 第三阶段：库存批量维护（完成）
+
+- 库存列表支持单选、当前页全选、同一筛选结果全选（最多 200 件）与跨页保留选择；修改搜索、筛选或排序会清空旧选择。
+- 新批量操作均先服务端预览、再以 `Serializable` 事务确认：调整仓位、设置成色、设置计划出售方式及修正保质期；每件变更写入同批次 `InventoryItemActionLog`。
+- 已售、非在库、销售关联、平台寄送/退回或售后关联库存会锁定整批；不修改状态、成本、价格、采购、销售、售后、退款或物流事实。

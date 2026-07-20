@@ -525,3 +525,9 @@ pnpm verify:m3a
 2. “移除误录商品”仅限当前 owner 的 `PENDING_INSPECTION` 订单，且订单至少保留一条商品。成本分摊、采购售后、退款、目标商品库存或任何真实验货事实均为不可逆锁定。
 3. Service 在同一 Serializable transaction 中显式删除对应占位 Inspection、删除商品并写 `PurchaseOrderActionLog(PURCHASE_ITEM_REMOVED_AS_ENTRY_ERROR)`；任一步失败全部回滚。
 4. 纠错不改变订单付款金额、付款时间、签收时间、成本、退款、售后、物流或 `SOLD`。不会删除已发生真实验货事实的 Inspection，也不会自动退款、创建售后或触发外部服务。
+## M8 库存批量维护规则
+
+1. 批量元数据维护仅面向当前 owner 的 `STOCKED` 且 `OWNED` 库存，最多 200 件；任一项被销售、平台寄送/退回或售后事实锁定时，整批拒绝且不部分成功。
+2. 调整仓位必须同时指定启用、同 owner 且互相匹配的仓库与库位；历史自由文本 `storageLocation` 不会被清空。
+3. `saleMode` 仅表示计划出售方式，`NONE` 用于清除计划，不创建销售、寄送或上架，也不写 `PLATFORM_LISTED` 或 `SOLD`。
+4. 保质期修正采用显式保持、设置、清空或自动计算模式；日期为 date-only，且必须记录实物包装修正原因。采购商品快照不受影响。
