@@ -42,9 +42,27 @@ export class InventoryService {
         422,
       );
     }
-    if (first.total <= first.data.length) return { inventoryItemIds: first.data.map((item) => item.id), total: first.total };
+    const toSelectionItem = (item: (typeof first.data)[number]) => ({
+      id: item.id,
+      name: item.name,
+      skuText: item.skuText,
+      warehouseId: item.warehouseId,
+      itemStatus: item.itemStatus,
+    });
+    if (first.total <= first.data.length) {
+      return {
+        inventoryItemIds: first.data.map((item) => item.id),
+        items: first.data.map(toSelectionItem),
+        total: first.total,
+      };
+    }
     const second = await this.list(ownerId, { ...query, page: 2, pageSize: 100 });
-    return { inventoryItemIds: [...first.data, ...second.data].map((item) => item.id), total: first.total };
+    const items = [...first.data, ...second.data];
+    return {
+      inventoryItemIds: items.map((item) => item.id),
+      items: items.map(toSelectionItem),
+      total: first.total,
+    };
   }
 
   async list(
