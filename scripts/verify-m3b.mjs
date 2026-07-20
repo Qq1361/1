@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { chromium } from "@playwright/test";
+import { launchAcceptanceBrowser } from "./lib/browser-acceptance.mjs";
 import fs from "node:fs/promises";
 import { Prisma } from "../src/generated/prisma/client.ts";
 import { db } from "../src/server/db.ts";
@@ -666,7 +666,7 @@ try {
   const productPageResponse = await fetch(`${baseUrl}/reports/sales/products`, { headers: accessCookie ? { Cookie: accessCookie } : {} });
   assert(productPageResponse.ok, `/reports/sales/products should return 200, got ${productPageResponse.status}`);
 
-  browser = await chromium.launch({ headless: true });
+  browser = await launchAcceptanceBrowser();
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
   await authenticate(page, "/reports/sales");

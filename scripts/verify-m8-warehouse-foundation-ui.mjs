@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { chromium } from "@playwright/test";
+import { launchAcceptanceBrowser } from "./lib/browser-acceptance.mjs";
 import { db } from "../src/server/db.ts";
 import { DEFAULT_OWNER_ID } from "../src/server/constants.ts";
 
@@ -21,7 +21,7 @@ try {
   warehouseId = warehouse.id;
   warehouseName = warehouse.name;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchAcceptanceBrowser();
   try {
     for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
       const context = await browser.newContext({ viewport });

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
-import { chromium } from "@playwright/test";
+import { launchAcceptanceBrowser } from "./lib/browser-acceptance.mjs";
 import { db } from "../src/server/db.ts";
 import { DEFAULT_OWNER_ID } from "../src/server/constants.ts";
 
@@ -29,7 +29,7 @@ try {
     data: { ownerId: DEFAULT_OWNER_ID, purchaseOrderItemId: order.items[0].id, sequence: 1 },
   });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchAcceptanceBrowser();
   try {
     for (const viewport of [
       { width: 1440, height: 900 },

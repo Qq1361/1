@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
-import { chromium } from "@playwright/test";
+import { launchAcceptanceBrowser } from "./lib/browser-acceptance.mjs";
 import { Prisma } from "../src/generated/prisma/client.ts";
 import { db } from "../src/server/db.ts";
 import { ServiceError } from "../src/server/errors.ts";
@@ -356,7 +356,7 @@ async function httpAndBrowserVerification() {
   const disabledBusiness = await fetch(`${baseUrl}/api/logistics/shipments?businessType=PLATFORM_RETURN&businessId=${order.id}`, { headers });
   assert(disabledBusiness.status === 400 && (await disabledBusiness.json()).error.code === "LOGISTICS_BUSINESS_TYPE_NOT_ENABLED", "HTTP API rejects business types outside PURCHASE_INBOUND");
 
-  browser = await chromium.launch({ headless: true });
+  browser = await launchAcceptanceBrowser();
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const [cookieName, cookieValue] = cookie.split("=");
   await context.addCookies([{ name: cookieName, value: cookieValue, url: baseUrl }]);

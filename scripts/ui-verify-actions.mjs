@@ -1,11 +1,11 @@
 // Browser UI verification: action matrix on real pages
-import { chromium } from "@playwright/test";
+import { launchAcceptanceBrowser } from "./lib/browser-acceptance.mjs";
 
 const BASE = "http://127.0.0.1:3000";
 const ok = (l) => console.log("  ✅ " + l);
 const fail = (l, d) => console.log("  ❌ " + l + ": " + d);
 
-const browser = await chromium.launch({ headless: true });
+const browser = await launchAcceptanceBrowser();
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
 const errors = [];
 page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });

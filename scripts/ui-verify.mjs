@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+import { launchAcceptanceBrowser } from "./lib/browser-acceptance.mjs";
 import { mkdirSync } from "node:fs";
 
 const SCREENSHOT_DIR = "scripts/ui-screenshots";
@@ -9,7 +9,7 @@ const results = [];
 function ok(l) { results.push("✅ "+l); console.log("  ✅ "+l); }
 function fail(l,d) { results.push("❌ "+l+": "+d); console.log("  ❌ "+l+": "+d); }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await launchAcceptanceBrowser();
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
 const page = await ctx.newPage();
 const errors = [];

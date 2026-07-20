@@ -3,7 +3,7 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
-import { chromium } from "@playwright/test";
+import { launchAcceptanceBrowser } from "./lib/browser-acceptance.mjs";
 import { Prisma } from "../src/generated/prisma/client.ts";
 import { PlatformReturnInspectionResult } from "../src/generated/prisma/enums.ts";
 import { db } from "../src/server/db.ts";
@@ -510,7 +510,7 @@ async function createLifecycleFixture() {
 
 async function verifyPlatformReturnUiFlows(httpFixture, lifecycleFixture) {
   const [cookieName, cookieValue] = accessCookie.split("=");
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchAcceptanceBrowser();
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addCookies([{ name: cookieName, value: cookieValue, url: verificationBaseUrl }]);
   const page = await context.newPage();
