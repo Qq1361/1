@@ -431,7 +431,8 @@ pnpm verify:m3a
 - No provider API is called. The risk flow creates no tracking events, inspections, inventory, refunds, sales changes, or SOLD writes. M6-A2 real acceptance remains paused and M6-A3 has not started.
 ## M2-B batch inspection pass (completed)
 
-- `/inspections` supports selecting current pending inspection rows and one atomic “批量验货通过” action.
-- `POST /api/inspections/batch-pass` accepts only 1-50 unique `Inspection.id` values and reuses the existing inspection completion core in one Serializable transaction.
-- Every selected inspection creates one independent `InventoryItem`; identical names or SKUs are never merged. Any invalid, completed, non-pending, or cross-owner row rolls the entire batch back.
-- Batch mode is pass-only. Problem inspections remain on the existing single-item workflow. No purchase cost, refund, sale, logistics, or SOLD write is added.
+- `/inspections` supports selecting current pending inspection rows and a modal “批量验货并入库” action. The modal always prepares fresh server data before submission and requires explicit confirmation.
+- `POST /api/inspections/batch-pass/prepare` returns owner-scoped pending inspections and active warehouse/location options. `POST /api/inspections/batch-pass` accepts the full per-item inventory draft; the legacy ID-only body remains API-compatible but has no user-visible entry.
+- The full draft requires warehouse, matching active location, and condition for every item. It creates independent structured `InventoryItem` records with copied or explicitly corrected shelf-life snapshots in one Serializable transaction.
+- Every selected inspection creates one independent `InventoryItem`; identical names or SKUs are never merged. Any invalid, completed, non-pending, cross-owner, inactive warehouse/location, or stale row rolls the entire batch back.
+- Batch mode is pass-only. Problem inspections remain on the existing single-item workflow. No purchase cost, refund, sale, logistics, or SOLD write is added. `pnpm verify:m2b-batch-inspection-details` covers the structured draft and transaction boundaries.

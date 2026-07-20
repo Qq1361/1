@@ -27,6 +27,33 @@ export const inspectionBatchPassSchema = z
   })
   .strict();
 
+const batchInspectionItemSchema = z
+  .object({
+    inspectionId: z.string().cuid(),
+    sku: z.string().max(200).nullable(),
+    warehouseId: z.string().cuid(),
+    storageLocationId: z.string().cuid(),
+    condition: z.string(),
+    saleMode: z.string().nullable(),
+    productionDate: z.string().nullable(),
+    shelfLifeMonths: z.number().int().nullable(),
+    expiryDate: z.string().nullable(),
+    note: z.string().trim().max(2000).nullable(),
+    shelfLifeChangeReason: z.string().trim().max(500).nullable(),
+  })
+  .strict();
+
+export const inspectionBatchPreparationSchema = z
+  .object({ inspectionIds: z.array(z.string().cuid()) })
+  .strict();
+
+export const inspectionBatchPassDetailsSchema = z
+  .object({
+    items: z.array(batchInspectionItemSchema),
+    commonNote: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict();
+
 export const inspectionListSchema = z.object({
   query: z
     .string()

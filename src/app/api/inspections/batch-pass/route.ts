@@ -2,12 +2,16 @@ import { DEFAULT_OWNER_ID } from "@/server/constants";
 import { serializeDateOnlyFields } from "@/lib/date-only";
 import { toErrorResponse } from "@/server/errors";
 import { inspectionService } from "@/server/services/inspection-service";
-import { inspectionBatchPassSchema } from "@/server/validation/inspection";
+import { inspectionBatchPassDetailsSchema, inspectionBatchPassSchema } from "@/server/validation/inspection";
 
 export async function POST(request: Request) {
   try {
-    const input = inspectionBatchPassSchema.parse(await request.json());
-    return Response.json(serializeDateOnlyFields(await inspectionService.batchPass(DEFAULT_OWNER_ID, input.inspectionIds)));
+    const payload = await request.json();
+    const detailed = inspectionBatchPassDetailsSchema.safeParse(payload);
+    const result = detailed.success
+      ? await inspectionService.batchPassWithDetails(DEFAULT_OWNER_ID, detailed.data.items, detailed.data.commonNote)
+      : await inspectionService.batchPass(DEFAULT_OWNER_ID, inspectionBatchPassSchema.parse(payload).inspectionIds);
+    return Response.json(serializeDateOnlyFields(result));
   } catch (error) {
     return toErrorResponse(error);
   }
