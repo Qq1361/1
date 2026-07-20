@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -17,6 +18,11 @@ import {
   Undo2,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  isSafeWarehouseReturnPath,
+  WAREHOUSE_PAGE_PATH,
+  WAREHOUSE_RETURN_STORAGE_KEY,
+} from "@/lib/warehouse-back-navigation";
 import {
   Sheet,
   SheetContent,
@@ -113,6 +119,35 @@ function Navigation({ pathname }: { pathname: string }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const previousPathRef = useRef(pathname);
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      if (pathname === WAREHOUSE_PAGE_PATH) {
+        const referrer = document.referrer;
+        const parsed = referrer ? new URL(referrer) : null;
+        const referrerPath = parsed?.origin === window.location.origin
+          ? `${parsed.pathname}${parsed.search}`
+          : null;
+        if (isSafeWarehouseReturnPath(referrerPath)) {
+          sessionStorage.setItem(WAREHOUSE_RETURN_STORAGE_KEY, JSON.stringify({ path: referrerPath, source: "referrer" }));
+        } else {
+          sessionStorage.removeItem(WAREHOUSE_RETURN_STORAGE_KEY);
+        }
+      }
+      previousPathRef.current = pathname;
+      return;
+    }
+
+    const previousPath = previousPathRef.current;
+    if (pathname === WAREHOUSE_PAGE_PATH && isSafeWarehouseReturnPath(previousPath)) {
+      sessionStorage.setItem(WAREHOUSE_RETURN_STORAGE_KEY, JSON.stringify({ path: previousPath, source: "history" }));
+    }
+    previousPathRef.current = pathname;
+  }, [pathname]);
+
   if (pathname === "/access") {
     return <>{children}</>;
   }

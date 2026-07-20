@@ -34,6 +34,26 @@ try {
         await page.waitForURL(/\/inventory\/warehouses/);
       }
       await page.getByRole("heading", { name: "仓库与库位" }).waitFor();
+      const backButton = page.getByRole("button", { name: "返回库存" });
+      await backButton.waitFor();
+      if (viewport.width === 390) {
+        const backBox = await backButton.boundingBox();
+        if (!backBox || backBox.height < 44) throw new Error("Mobile warehouse back button must be at least 44px high.");
+        if (!(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))) throw new Error("Mobile warehouse page has horizontal overflow.");
+      }
+      await backButton.click();
+      await page.waitForURL(/\/inventory(?:\?.*)?$/);
+      await page.getByRole("link", { name: "仓库与库位" }).click();
+      await page.waitForURL(/\/inventory\/warehouses$/);
+      await page.getByRole("button", { name: "返回库存" }).click();
+      await page.waitForURL(/\/inventory(?:\?.*)?$/);
+
+      await page.goto(`${baseUrl}/purchases`, { waitUntil: "networkidle" });
+      await page.goto(`${baseUrl}/inventory/warehouses`, { waitUntil: "networkidle", referer: `${baseUrl}/purchases` });
+      await page.getByRole("button", { name: "返回库存" }).click();
+      await page.waitForURL(/\/purchases(?:\?.*)?$/);
+
+      await page.goto(`${baseUrl}/inventory/warehouses`, { waitUntil: "networkidle" });
       const card = page.getByText(warehouseName).locator("xpath=ancestor::*[contains(@class, 'overflow-hidden')]");
       await card.waitFor();
       if (viewport.width === 1440) {

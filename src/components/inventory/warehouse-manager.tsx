@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,6 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import {
+  parseWarehouseReturnTarget,
+  WAREHOUSE_PAGE_PATH,
+  WAREHOUSE_RETURN_STORAGE_KEY,
+  type WarehouseReturnTarget,
+} from "@/lib/warehouse-back-navigation";
 
 type Location = { id: string; name: string; isActive: boolean };
 type Warehouse = {
@@ -32,11 +40,17 @@ async function request(url: string, init?: RequestInit) {
 }
 
 export function WarehouseManager() {
+  const router = useRouter();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [name, setName] = useState("");
   const [locationNames, setLocationNames] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<EditingTarget>(null);
   const [editingName, setEditingName] = useState("");
+  const returnTargetRef = useRef<WarehouseReturnTarget | null>(null);
+
+  useEffect(() => {
+    returnTargetRef.current = parseWarehouseReturnTarget(sessionStorage.getItem(WAREHOUSE_RETURN_STORAGE_KEY));
+  }, []);
 
   const load = async () => {
     const data = await request("/api/inventory/warehouses");
@@ -86,9 +100,24 @@ export function WarehouseManager() {
     });
   };
 
+  const returnToInventory = () => {
+    const returnTarget = returnTargetRef.current;
+    if (returnTarget?.source === "history") {
+      window.setTimeout(() => {
+        if (window.location.pathname === WAREHOUSE_PAGE_PATH) router.replace("/inventory");
+      }, 300);
+      router.back();
+      return;
+    }
+    router.push(returnTarget?.path ?? "/inventory");
+  };
+
   return <div className="space-y-5">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+      <div className="space-y-1">
+        <Button type="button" variant="ghost" size="sm" className="min-h-11 self-start px-3" onClick={returnToInventory}>
+          <ArrowLeft /> 返回库存
+        </Button>
         <p className="text-sm text-muted-foreground">结构化库存位置</p>
         <h1 className="text-2xl font-semibold">仓库与库位</h1>
       </div>
