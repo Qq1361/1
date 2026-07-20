@@ -6,6 +6,7 @@ import { InventoryList } from "@/components/inventory/inventory-list";
 import { InventoryAssetSummary } from "@/components/inventory/inventory-asset-summary";
 import { InventorySkuSummary } from "@/components/inventory/inventory-sku-summary";
 import { buttonVariants } from "@/components/ui/button";
+import Link from "next/link";
 
 export function InventoryPageContent() {
   const searchParams = useSearchParams();
@@ -51,6 +52,7 @@ export function InventoryPageContent() {
             SKU 汇总
           </button>
         </div>
+        <Link href="/inventory/warehouses" className={buttonVariants({ variant: "outline", className: "min-h-11" })}>仓库与库位</Link>
       </div>
       <InventoryAssetSummary />
       {tab === "summary" ? <InventorySkuSummary /> : <InventoryList />}

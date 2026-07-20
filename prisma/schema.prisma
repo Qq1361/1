@@ -259,6 +259,14 @@ enum DailyBusinessReportDeliveryStatus {
   FAILED
 }
 
+enum InventoryCondition {
+  NEW
+  LIKE_NEW
+  LIGHTLY_USED
+  USED
+  FLAWED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -270,6 +278,8 @@ model User {
   logisticsEvents             LogisticsEvent[]
   inspections                 Inspection[]
   inventoryItems              InventoryItem[]
+  warehouses                  Warehouse[]
+  warehouseLocations          WarehouseLocation[]
   reminderStates              ReminderState[]
   inventoryActionLogs         InventoryActionLog[]
   todoResolutions             TodoResolution[]
@@ -614,6 +624,9 @@ model InventoryItem {
   expiryDate          DateTime?                @db.Date
   locationStatus      LocationStatus           @default(LOCAL)
   storageLocation     String?
+  warehouseId         String?
+  storageLocationId   String?
+  condition           InventoryCondition?
   saleMode            SaleMode                 @default(NONE)
   itemStatus          ItemStatus
   ownershipStatus     InventoryOwnershipStatus @default(OWNED)
@@ -624,6 +637,8 @@ model InventoryItem {
   updatedAt           DateTime                 @updatedAt
 
   owner                  User                    @relation(fields: [ownerId], references: [id])
+  warehouse              Warehouse?              @relation("InventoryWarehouse", fields: [warehouseId], references: [id], onDelete: Restrict)
+  warehouseLocation      WarehouseLocation?      @relation("InventoryStorageLocation", fields: [storageLocationId], references: [id], onDelete: Restrict)
   purchaseOrderItem      PurchaseOrderItem       @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
   inspection             Inspection              @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   actionLogs             InventoryActionLog[]
@@ -637,7 +652,45 @@ model InventoryItem {
   @@index([ownerId, itemStatus])
   @@index([ownerId, ownershipStatus])
   @@index([ownerId, locationStatus, saleMode])
+  @@index([ownerId, warehouseId])
+  @@index([ownerId, storageLocationId])
   @@map("inventory_items")
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner          User                @relation(fields: [ownerId], references: [id])
+  locations      WarehouseLocation[]
+  inventoryItems InventoryItem[]     @relation("InventoryWarehouse")
+
+  @@unique([ownerId, name])
+  @@index([ownerId, isActive])
+  @@map("warehouses")
+}
+
+model WarehouseLocation {
+  id          String   @id @default(cuid())
+  ownerId     String
+  warehouseId String
+  name        String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner          User          @relation(fields: [ownerId], references: [id])
+  warehouse      Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  inventoryItems InventoryItem[] @relation("InventoryStorageLocation")
+
+  @@unique([warehouseId, name])
+  @@index([ownerId, isActive])
+  @@index([warehouseId, isActive])
+  @@map("warehouse_locations")
 }
 
 model PurchaseAfterSaleCase {

@@ -13,6 +13,22 @@ function money(value: Prisma.Decimal) {
   return value.toDecimalPlaces(2).toFixed(2);
 }
 
+const locationInclude = {
+  warehouse: { select: { name: true } },
+  warehouseLocation: { select: { name: true } },
+} satisfies Prisma.InventoryItemInclude;
+
+function withDisplayStorageLocation<T extends {
+  storageLocation: string | null;
+  warehouse?: { name: string } | null;
+  warehouseLocation?: { name: string } | null;
+}>(item: T) {
+  const structuredLocation = item.warehouse && item.warehouseLocation
+    ? `${item.warehouse.name} / ${item.warehouseLocation.name}`
+    : item.warehouse?.name ?? item.warehouseLocation?.name;
+  return { ...item, displayStorageLocation: structuredLocation ?? item.storageLocation ?? "未设置" };
+}
+
 export class InventoryService {
   async list(
     ownerId: string,
@@ -43,6 +59,8 @@ export class InventoryService {
               { skuText: { contains: query.query, mode: "insensitive" } },
               { inventoryCode: { contains: query.query, mode: "insensitive" } },
               { storageLocation: { contains: query.query, mode: "insensitive" } },
+              { warehouse: { name: { contains: query.query, mode: "insensitive" } } },
+              { warehouseLocation: { name: { contains: query.query, mode: "insensitive" } } },
               { purchaseOrderItem: { purchaseOrder: { orderNo: { contains: query.query, mode: "insensitive" } } } },
               { purchaseOrderItem: { purchaseOrder: { sellerNickname: { contains: query.query, mode: "insensitive" } } } },
             ],
@@ -55,6 +73,7 @@ export class InventoryService {
       const exactItems = await db.inventoryItem.findMany({
         where,
         orderBy: { stockedAt: "desc" },
+        include: locationInclude,
       });
       const data = exactItems.filter((item) =>
         query.skuEmpty ? normalizeSku(item.skuText) === null : normalizeSku(item.skuText) === requestedSku,
@@ -62,7 +81,7 @@ export class InventoryService {
       const total = data.length;
       const start = (query.page - 1) * query.pageSize;
       return {
-        data: data.slice(start, start + query.pageSize),
+        data: data.slice(start, start + query.pageSize).map(withDisplayStorageLocation),
         total,
         page: query.page,
         totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
@@ -90,6 +109,7 @@ export class InventoryService {
       const allItems = await db.inventoryItem.findMany({
         where,
         orderBy: { stockedAt: "desc" },
+        include: locationInclude,
       });
       // Get reminder states to apply the same snooze/resolve filtering as /api/todos
       const [reminderStates, todoResolutions] = await Promise.all([
@@ -129,7 +149,7 @@ export class InventoryService {
         return true;
       });
       const total = filtered.length;
-      const data = filtered.slice((query.page - 1) * query.pageSize, query.page * query.pageSize);
+      const data = filtered.slice((query.page - 1) * query.pageSize, query.page * query.pageSize).map(withDisplayStorageLocation);
       return { data, total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
     }
 
@@ -139,10 +159,11 @@ export class InventoryService {
         orderBy: { stockedAt: "desc" },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
+        include: locationInclude,
       }),
       db.inventoryItem.count({ where }),
     ]);
-    return { data, total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+    return { data: data.map(withDisplayStorageLocation), total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
   }
 
   async skuSummary(

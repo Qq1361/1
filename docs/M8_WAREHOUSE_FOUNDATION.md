@@ -1,0 +1,25 @@
+# M8 仓库与库存成色基础
+
+本阶段只建立仓库、库位和库存成色的数据基础，以及仓库管理页面。不会改变采购商品数量、验货、入库、销售、售后、退款、物流或 SOLD 状态机。
+
+## 数据规则
+
+- `Warehouse` 的名称在同一 owner 内唯一；`WarehouseLocation` 的名称在同一仓库内唯一。
+- 新数据可关联 `InventoryItem.warehouseId`、`storageLocationId` 和 `condition`。成色枚举为：全新、近全新、轻微使用、使用痕迹、瑕疵。
+- 保留原有 `InventoryItem.storageLocation` 自由文本字段和全部历史值，不做回填或迁移。历史展示优先级为结构化仓库/库位、旧自由文本、未设置。
+- 只有当前 owner 可以读取或修改仓库、库位；服务端会拒绝跨 owner 的仓库或库位操作。
+- 停用仓库/库位仍会保留在历史展示中，但 `GET /api/inventory/warehouses?activeOnly=true` 不返回它们，停用仓库不能新增库位。
+- 不提供删除 API。数据库对被库存引用的仓库/库位使用 `RESTRICT`，因此不能通过级联删除丢失历史库存。
+
+## 管理入口
+
+库存页提供“仓库与库位”入口，对应 `/inventory/warehouses`。页面支持创建、重命名、启用/停用仓库和库位；不会转移库存或批量修改库存。
+
+## 验证
+
+```powershell
+pnpm verify:m8-warehouse-foundation
+pnpm verify:m8-warehouse-foundation-ui
+```
+
+前者使用独立临时夹具验证租户隔离、唯一性、停用过滤、历史字段不变、结构化字段、引用保护和不写入 SOLD。后者在 1440px 与 390px 验证仓库管理页面及重命名交互。

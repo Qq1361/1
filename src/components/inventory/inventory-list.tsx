@@ -42,6 +42,7 @@ type InventoryRow = {
   itemStatus: string;
   locationStatus: string;
   storageLocation: string | null;
+  displayStorageLocation: string;
   saleMode: string;
   ownershipStatus: string;
 };
@@ -189,7 +190,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <span>成本 ¥{item.unitCost}</span>
-                    <span>库位 {item.storageLocation || "未填写"}</span>
+                    <span>库位 {item.displayStorageLocation}</span>
                     <span>{formatSaleMode(item.saleMode)}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">到期日期：{item.expiryDate ?? "—"}{item.expiryDate && item.expiryDate < new Date().toISOString().slice(0, 10) ? "（已过期）" : ""}</p>
@@ -226,7 +227,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                       <p>{item.name}</p>
                       <p className="text-xs text-muted-foreground">{item.skuText || "无 SKU"}</p>
                     </TableCell>
-                    <TableCell className="text-xs">{item.storageLocation || "未填写"}</TableCell>
+                    <TableCell className="text-xs">{item.displayStorageLocation}</TableCell>
                     <TableCell className="text-xs">{formatSaleMode(item.saleMode)}</TableCell>
                     <TableCell>¥{item.unitCost}</TableCell>
                     <TableCell className="text-xs">{item.expiryDate ?? "—"}{item.expiryDate && item.expiryDate < new Date().toISOString().slice(0, 10) ? <span className="ml-1 text-amber-700">已过期</span> : null}</TableCell>
