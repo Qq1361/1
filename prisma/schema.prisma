@@ -282,6 +282,7 @@ model User {
   warehouseLocations          WarehouseLocation[]
   reminderStates              ReminderState[]
   inventoryActionLogs         InventoryActionLog[]
+  inventoryItemActionLogs     InventoryItemActionLog[]
   todoResolutions             TodoResolution[]
   shipmentBatches             PlatformShipmentBatch[]
   shipmentGroups              PlatformShipmentGroup[]
@@ -647,6 +648,7 @@ model InventoryItem {
   saleLines              SaleLine[]
   saleAfterSaleLines     SaleAfterSaleLine[]
   purchaseAfterSaleLines PurchaseAfterSaleLine[]
+  metadataActionLogs      InventoryItemActionLog[]
 
   @@unique([ownerId, inventoryCode])
   @@index([ownerId, itemStatus])
@@ -874,6 +876,26 @@ model InventoryActionLog {
   @@index([ownerId, inventoryItemId, createdAt(sort: Desc)])
   @@index([ownerId, purchaseOrderId])
   @@map("inventory_action_logs")
+}
+
+model InventoryItemActionLog {
+  id              String   @id @default(cuid())
+  ownerId         String
+  inventoryItemId String
+  batchId         String?
+  actionType      String
+  beforeData      Json
+  afterData       Json
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  owner         User          @relation(fields: [ownerId], references: [id])
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, createdAt(sort: Desc)])
+  @@index([inventoryItemId, createdAt(sort: Desc)])
+  @@index([ownerId, batchId])
+  @@map("inventory_item_action_logs")
 }
 
 model TodoResolution {
