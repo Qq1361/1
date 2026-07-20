@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
@@ -93,13 +93,15 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedMetadata, setSelectedMetadata] = useState<Record<string, SelectedInventoryMeta>>({});
+  const selectedIdsRef = useRef<string[]>([]);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkSkuText, setBulkSkuText] = useState("");
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [allowMixedProducts, setAllowMixedProducts] = useState(false);
   const [includeHistorical, setIncludeHistorical] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
-  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  // A concrete operation owns its dialog.  There is no generic field-patch dialog.
+  const [maintenanceDialog, setMaintenanceDialog] = useState<BulkOperation | null>(null);
   const [operation, setOperation] = useState<BulkOperation>("MOVE_LOCATION");
   const [targetWarehouseId, setTargetWarehouseIdState] = useState("");
   const [targetLocationId, setTargetLocationIdState] = useState("");
@@ -139,7 +141,24 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
     const body = await response.json();
     if (!response.ok) { setError(body?.message ?? "库存加载失败。"); return; }
     setError(null); setResult(body);
+    // A refresh may follow another tab deleting or transferring an item.  Retain
+    // cross-page selections that still exist, but drop only IDs that became stale.
+    const idsAtRequest = selectedIdsRef.current;
+    if (idsAtRequest.length) {
+      void fetch("/api/inventory/selection-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inventoryItemIds: idsAtRequest }) })
+        .then(async (selectionResponse) => selectionResponse.ok ? selectionResponse.json() : null)
+        .then((selection) => {
+          if (!selection) return;
+          const validIds = new Set<string>(selection.inventoryItemIds);
+          const queriedIds = new Set(idsAtRequest);
+          setSelectedIds((current) => current.filter((id) => !queriedIds.has(id) || validIds.has(id)));
+          setSelectedMetadata((current) => Object.fromEntries(Object.entries(current).filter(([id]) => !queriedIds.has(id) || validIds.has(id))));
+        })
+        .catch(() => undefined);
+    }
   }, [query, status, warehouseId, condition, saleMode, shelfLife, sort, page, reminderParam, productNameExact, skuExact, skuEmpty]);
+
+  useEffect(() => { selectedIdsRef.current = selectedIds; }, [selectedIds]);
 
   useEffect(() => {
     const timer = setTimeout(load, 200);
@@ -219,7 +238,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
       const response = await fetch("/api/inventory/bulk-update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inventoryItemIds: selectedIds, operation, payload: buildOperationPayload(), reason: shelfReason || null, confirmMixedProducts: confirmMixed, selectionFingerprint: preview.selectionFingerprint }) });
       const body = await response.json().catch(() => null);
       if (!response.ok) { setError(body?.message ?? "批量维护失败，请重新预览。"); return; }
-      setMaintenanceOpen(false); setPreview(null); clearSelection(); await load(); setError(`已更新 ${body.updatedCount} 件库存。`);
+      setMaintenanceDialog(null); setPreview(null); clearSelection(); await load(); setError(`已更新 ${body.updatedCount} 件库存。`);
     } finally { setBulkPending(false); }
   }
   async function submitBulkSku() {
@@ -295,7 +314,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {selectedIds.length ? <div className="space-y-3 rounded-lg border bg-muted/30 p-3 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2"><span>已选择 {selectedIds.length} 件库存（商品 {selectionStats.products}，仓库 {selectionStats.warehouses}，状态 {selectionStats.statuses}）</span><button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} onClick={clearSelection}>取消选择</button></div>
-        <div className="flex gap-2 overflow-x-auto pb-1"><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={toggleCurrentPage}>{pageAllSelected ? "取消当前页" : "全选当前页"}</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => void selectAllMatching()}>全选当前筛选结果</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => setBulkOpen(true)}>批量设置 SKU / 色号</button>{([ ["MOVE_LOCATION", "批量调整仓位"], ["SET_CONDITION", "批量设置成色"], ["SET_SALE_MODE", "批量设置计划出售方式"], ["SET_SHELF_LIFE", "批量修正保质期"] ] as const).map(([nextOperation, label]) => <button key={nextOperation} type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setOperation(nextOperation); setPreview(null); setMaintenanceOpen(true); }}>{label}</button>)}</div>
+       <div className="flex gap-2 overflow-x-auto pb-1"><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={toggleCurrentPage}>{pageAllSelected ? "取消当前页" : "全选当前页"}</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => void selectAllMatching()}>全选当前筛选结果</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => setBulkOpen(true)}>批量设置 SKU / 色号</button>{([ ["MOVE_LOCATION", "批量调整仓位"], ["SET_CONDITION", "批量设置成色"], ["SET_SALE_MODE", "批量设置计划出售方式"], ["SET_SHELF_LIFE", "批量修正保质期"] ] as const).map(([nextOperation, label]) => <button key={nextOperation} type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setOperation(nextOperation); setPreview(null); setMaintenanceDialog(nextOperation); }}>{label}</button>)}</div>
       </div> : result?.data.length ? <div className="flex flex-wrap gap-2"><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={toggleCurrentPage}>全选当前页</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => void selectAllMatching()}>全选当前筛选结果</button></div> : null}
       {!result ? (
         <Skeleton className="h-48" />
@@ -305,7 +324,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
             {result.data.map((item) => (
               <Card key={item.id} className="rounded-lg shadow-none">
                 <CardContent className="space-y-3 p-4">
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelected(item)} /> 选择此库存</label>
+                  <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelected(item)} /> 选择此库存</label>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium">{item.name}</p>
@@ -380,7 +399,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
         </div>
       )}
       {result && result.totalPages > 1 ? <div className="flex items-center justify-between text-sm"><span>第 {result.page} / {result.totalPages} 页，共 {result.total} 件</span><div className="flex gap-2"><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={result.page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>上一页</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} disabled={result.page >= result.totalPages} onClick={() => setPage((value) => value + 1)}>下一页</button></div></div> : null}
-      <Dialog open={maintenanceOpen} onOpenChange={(open) => { setMaintenanceOpen(open); if (!open) setPreview(null); }}>
+      <Dialog key={maintenanceDialog ?? "closed"} open={maintenanceDialog !== null} onOpenChange={(open) => { if (!open) { setMaintenanceDialog(null); setPreview(null); } }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader><DialogTitle>{operation === "MOVE_LOCATION" ? "批量调整仓位" : operation === "SET_CONDITION" ? "批量设置成色" : operation === "SET_SALE_MODE" ? "批量设置计划出售方式" : "批量修正保质期"}</DialogTitle></DialogHeader>
           <div className="space-y-4 text-sm">
@@ -392,7 +411,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
             {(operation === "SET_CONDITION" || operation === "SET_SHELF_LIFE") ? <label className="flex gap-2"><input type="checkbox" checked={confirmMixed} onChange={(event) => { setConfirmMixed(event.target.checked); setPreview(null); }} />我确认跨商品或 SKU 应用相同规则</label> : null}
             {preview ? <div className="space-y-2 rounded-md border p-3"><p>预览：将变更 {preview.changedCount} 件；涉及 {preview.productSkuCount} 个商品 / SKU、{preview.warehouseCount} 个仓库。</p>{preview.blockedItems.length ? <div className="rounded bg-destructive/10 p-2 text-destructive">{preview.blockedItems.map((item) => <p key={item.inventoryCode}>{item.inventoryCode}：{item.reason}</p>)}</div> : <><p className="text-emerald-700">未发现锁定库存，确认后将整批提交。</p><div className="max-h-48 space-y-2 overflow-y-auto">{preview.changes.filter((change) => change.changed).map((change) => <div key={change.inventoryCode} className="rounded-md bg-muted/50 p-2 text-xs"><p className="font-medium">{change.inventoryCode}</p><p>变更前：{Object.entries(change.before).map(([key, value]) => `${key}: ${String(value ?? "—")}`).join("；")}</p><p>变更后：{Object.entries(change.after).map(([key, value]) => `${key}: ${String(value ?? "—")}`).join("；")}</p></div>)}</div></>}</div> : null}
           </div>
-          <DialogFooter><button type="button" className={buttonVariants({ variant: "outline" })} disabled={bulkPending || previewPending} onClick={() => setMaintenanceOpen(false)}>取消</button>{!preview ? <button type="button" className={buttonVariants()} disabled={previewPending || !selectedIds.length} onClick={() => void requestPreview()}>{previewPending ? "正在预览…" : "预览变更"}</button> : <button type="button" className={buttonVariants()} disabled={bulkPending || preview.blockedItems.length > 0} onClick={() => void submitMaintenance()}>{bulkPending ? "正在提交…" : "确认并批量更新"}</button>}</DialogFooter>
+          <DialogFooter><button type="button" className={buttonVariants({ variant: "outline" })} disabled={bulkPending || previewPending} onClick={() => setMaintenanceDialog(null)}>取消</button>{!preview ? <button type="button" className={buttonVariants()} disabled={previewPending || !selectedIds.length} onClick={() => void requestPreview()}>{previewPending ? "正在预览…" : "预览变更"}</button> : <button type="button" className={buttonVariants()} disabled={bulkPending || preview.blockedItems.length > 0} onClick={() => void submitMaintenance()}>{bulkPending ? "正在提交…" : "确认并批量更新"}</button>}</DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>

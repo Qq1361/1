@@ -4,6 +4,7 @@ const inventoryCondition = z.enum(["NEW", "LIKE_NEW", "LIGHTLY_USED", "USED", "F
 const saleMode = z.enum(["NONE", "DEWU_LIGHTNING", "DEWU_STANDARD", "NINETY_FIVE", "XIANYU", "OTHER"]);
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期必须是 YYYY-MM-DD 格式。");
 const itemIds = z.array(z.string().cuid()).min(1).max(200);
+export const inventorySelectionStatusSchema = z.object({ inventoryItemIds: itemIds }).strict();
 const common = {
   inventoryItemIds: itemIds,
   reason: z.string().trim().max(500).nullable().optional(),
