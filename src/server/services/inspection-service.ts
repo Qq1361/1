@@ -55,30 +55,47 @@ export class InspectionService {
     });
   }
 
-  async list(ownerId: string, query?: string) {
-    const inspections = await db.inspection.findMany({
-      where: {
-        ownerId,
-        status: { in: ["PENDING", "IN_PROGRESS"] },
-        purchaseOrderItem: {
-          purchaseOrder: { status: "PENDING_INSPECTION" },
-          ...(query
-            ? {
-                OR: [
-                  { name: { contains: query, mode: "insensitive" } },
-                  { skuText: { contains: query, mode: "insensitive" } },
-                  {
-                    purchaseOrder: {
-                      orderNo: { contains: query, mode: "insensitive" },
-                    },
-                  },
-                ],
-              }
-            : {}),
-        },
+  async list(
+    ownerId: string,
+    filters: { query?: string; page?: number; pageSize?: number } = {},
+  ) {
+    const query = filters.query?.trim();
+    const page = Math.max(1, filters.page ?? 1);
+    const pageSize = Math.min(50, Math.max(1, filters.pageSize ?? 20));
+    const where: Prisma.InspectionWhereInput = {
+      ownerId,
+      status: { in: ["PENDING", "IN_PROGRESS"] },
+      purchaseOrderItem: {
+        purchaseOrder: { ownerId, status: "PENDING_INSPECTION" },
       },
+      ...(query
+        ? {
+            OR: [
+              { purchaseOrderItem: { name: { contains: query, mode: "insensitive" } } },
+              { purchaseOrderItem: { skuText: { contains: query, mode: "insensitive" } } },
+              {
+                purchaseOrderItem: {
+                  purchaseOrder: { orderNo: { contains: query, mode: "insensitive" } },
+                },
+              },
+              {
+                purchaseOrderItem: {
+                  purchaseOrder: { sellerNickname: { contains: query, mode: "insensitive" } },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+    const total = await db.inspection.count({ where });
+    const totalPages = Math.ceil(total / pageSize);
+    const currentPage = totalPages ? Math.min(page, totalPages) : 1;
+    const inspections = await db.inspection.findMany({
+      where,
       include: { purchaseOrderItem: { include: { purchaseOrder: true } } },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
     });
     const pendingOrders = await db.purchaseOrder.findMany({
       where: { ownerId, status: "PENDING_INSPECTION" },
@@ -94,7 +111,14 @@ export class InspectionService {
         ),
       0,
     );
-    return { data: inspections, missingCount };
+    return {
+      data: inspections,
+      missingCount,
+      page: currentPage,
+      pageSize,
+      total,
+      totalPages,
+    };
   }
 
   async get(ownerId: string, id: string) {

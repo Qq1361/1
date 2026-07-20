@@ -28,7 +28,14 @@ export const inspectionBatchPassSchema = z
   .strict();
 
 export const inspectionListSchema = z.object({
-  query: z.string().trim().max(100).optional(),
+  query: z
+    .string()
+    .refine((value) => !/[\u0000-\u001F\u007F]/.test(value), "搜索内容不能包含控制字符")
+    .transform((value) => value.trim())
+    .pipe(z.string().max(100))
+    .optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
 
 export const inventoryListSchema = z.object({

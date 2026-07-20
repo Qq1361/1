@@ -28,15 +28,21 @@ type Row = {
     name: string;
     skuText: string | null;
     quantity: number;
-    purchaseOrder: { orderNo: string };
+    purchaseOrder: { orderNo: string; sellerNickname: string | null };
   };
 };
 
 export function InspectionList() {
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [result, setResult] = useState<{
     data: Row[];
     missingCount: number;
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
   } | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [confirmBatch, setConfirmBatch] = useState(false);
@@ -45,11 +51,13 @@ export function InspectionList() {
   const load = useCallback(async () => {
     const params = new URLSearchParams();
     if (query) params.set("query", query);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
     const response = await fetch(`/api/inspections?${params}`);
     const payload = await response.json().catch(() => null);
     if (!response.ok) throw new Error(payload?.message || "待验货数据加载失败");
     setResult(payload);
-  }, [query]);
+  }, [page, pageSize, query]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -124,10 +132,11 @@ export function InspectionList() {
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
         <Input
           className="pl-9"
-          placeholder="搜索订单号、商品名或 SKU"
+          placeholder="搜索采购订单号、商品、SKU 或卖家昵称"
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
+            setPage(1);
             setSelectedIds([]);
           }}
         />
@@ -175,6 +184,9 @@ export function InspectionList() {
                     {inspection.purchaseOrderItem.purchaseOrder.orderNo} · 第{" "}
                     {inspection.sequence}/{inspection.purchaseOrderItem.quantity} 件
                   </p>
+                  <p className="break-words text-xs text-muted-foreground">
+                    卖家：{inspection.purchaseOrderItem.purchaseOrder.sellerNickname || "—"}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {inspection.purchaseOrderItem.skuText || "无 SKU"} · 步骤{" "}
                     {inspection.currentStep}/6
@@ -190,6 +202,47 @@ export function InspectionList() {
               </CardContent>
             </Card>
           ))}
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">共 {result.total} 件待验货商品</p>
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
+              <select
+                className="h-11 rounded-md border bg-background px-3 text-sm"
+                aria-label="每页待验货数量"
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setPage(1);
+                  setSelectedIds([]);
+                }}
+              >
+                <option value={20}>每页 20 件</option>
+                <option value={50}>每页 50 件</option>
+              </select>
+              <Button
+                variant="outline"
+                disabled={page <= 1 || batchPending}
+                onClick={() => {
+                  setPage((current) => current - 1);
+                  setSelectedIds([]);
+                }}
+              >
+                上一页
+              </Button>
+              <span className="whitespace-nowrap text-sm text-muted-foreground">
+                {page} / {result.totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                disabled={page >= result.totalPages || batchPending}
+                onClick={() => {
+                  setPage((current) => current + 1);
+                  setSelectedIds([]);
+                }}
+              >
+                下一页
+              </Button>
+            </div>
           </div>
         </>
       ) : (
