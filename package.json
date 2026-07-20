@@ -37,6 +37,7 @@
     "verify:m8-warehouse-foundation-ui": "tsx scripts/verify-m8-warehouse-foundation-ui.mjs",
     "verify:m8-inventory-bulk-management": "tsx scripts/verify-m8-inventory-bulk-management.mjs",
     "verify:m8-inventory-bulk-browser": "tsx scripts/verify-m8-inventory-bulk-browser.mjs",
+    "verify:m8-manual-storage-location": "tsx scripts/verify-m8-manual-storage-location.mjs",
     "send:daily-report": "tsx scripts/send-daily-business-report.ts",
     "verify:inventory-summary": "tsx scripts/verify-inventory-summary.mjs",
     "verify:item-status-contract": "tsx scripts/verify-item-status-contract.mjs",

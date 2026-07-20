@@ -528,7 +528,7 @@ pnpm verify:m3a
 ## M8 库存批量维护规则
 
 1. 批量元数据维护仅面向当前 owner 的 `STOCKED` 且 `OWNED` 库存，最多 200 件；任一项被销售、平台寄送/退回或售后事实锁定时，整批拒绝且不部分成功。
-2. 调整仓位必须同时指定启用、同 owner 且互相匹配的仓库与库位；历史自由文本 `storageLocation` 不会被清空。
+2. 调整仓位必须显式指定 `locationMode`。`STANDARD` 使用启用、同 owner 且匹配的仓库与标准库位，并清空 `storageLocation`；`MANUAL` 使用启用、同 owner 的仓库和非空自由文本库位，并清空 `storageLocationId`。手动库位不会创建 `WarehouseLocation`，仓库没有标准库位时仍可使用手动模式。
 3. `saleMode` 仅表示计划出售方式，`NONE` 用于清除计划，不创建销售、寄送或上架，也不写 `PLATFORM_LISTED` 或 `SOLD`。
 4. 保质期修正采用显式保持、设置、清空或自动计算模式；日期为 date-only，且必须记录实物包装修正原因。采购商品快照不受影响。
 5. 批量 SKU/色号必须服务端逐件预览后再以指纹确认；默认仅补空 SKU，覆盖已有 SKU、跨商品处理和包含已售库存档案均须显式确认。该能力只修改库存档案 SKU 与审计日志，不回写 `SaleLine.skuSnapshot`，不修改库存状态、成本或下游业务事实。

@@ -24,10 +24,16 @@ function withDisplayStorageLocation<T extends {
   warehouse?: { name: string } | null;
   warehouseLocation?: { name: string } | null;
 }>(item: T) {
-  const structuredLocation = item.warehouse && item.warehouseLocation
+  const displayStorageLocation = item.warehouse && item.warehouseLocation
     ? `${item.warehouse.name} / ${item.warehouseLocation.name}`
-    : item.warehouse?.name ?? item.warehouseLocation?.name;
-  return { ...item, displayStorageLocation: structuredLocation ?? item.storageLocation ?? "未设置" };
+    : item.warehouse && item.storageLocation
+      ? `${item.warehouse.name} / ${item.storageLocation}`
+      : item.storageLocation
+        ? item.storageLocation
+        : item.warehouse
+          ? `${item.warehouse.name} / 未填写库位`
+          : "未设置";
+  return { ...item, displayStorageLocation };
 }
 
 type BulkSkuInput = {

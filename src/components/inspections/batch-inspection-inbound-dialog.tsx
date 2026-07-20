@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -35,6 +36,8 @@ type PreparedItem = {
 type Draft = {
   sku: string;
   warehouseId: string;
+  locationMode: "MANUAL" | "STANDARD";
+  storageLocation: string;
   storageLocationId: string;
   condition: string;
   saleMode: string | null;
@@ -64,6 +67,8 @@ const saleModes = [
 const emptyDraft = (item: PreparedItem): Draft => ({
   sku: item.sku ?? "",
   warehouseId: "",
+  locationMode: "MANUAL",
+  storageLocation: "",
   storageLocationId: "",
   condition: "",
   saleMode: null,
@@ -97,7 +102,7 @@ export function BatchInspectionInboundDialog({
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [common, setCommon] = useState<Pick<Draft, "warehouseId" | "storageLocationId" | "condition" | "saleMode" | "note">>({ warehouseId: "", storageLocationId: "", condition: "", saleMode: null, note: "" });
+  const [common, setCommon] = useState<Pick<Draft, "warehouseId" | "locationMode" | "storageLocation" | "storageLocationId" | "condition" | "saleMode" | "note">>({ warehouseId: "", locationMode: "MANUAL", storageLocation: "", storageLocationId: "", condition: "", saleMode: null, note: "" });
   const [appliedCommonNote, setAppliedCommonNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -118,7 +123,7 @@ export function BatchInspectionInboundDialog({
       setRefreshRequired(false);
       setErrors({});
       setConfirming(false);
-      setCommon({ warehouseId: "", storageLocationId: "", condition: "", saleMode: null, note: "" });
+      setCommon({ warehouseId: "", locationMode: "MANUAL", storageLocation: "", storageLocationId: "", condition: "", saleMode: null, note: "" });
       setAppliedCommonNote("");
       try {
         const response = await fetch("/api/inspections/batch-pass/prepare", {
@@ -158,14 +163,16 @@ export function BatchInspectionInboundDialog({
   }
 
   function applyCommon() {
-    if (common.warehouseId && !common.storageLocationId) {
-      setErrors({ common: "请选择要应用的标准库位。" });
+    if (!common.warehouseId || (common.locationMode === "MANUAL" ? !common.storageLocation.trim() : !common.storageLocationId)) {
+      setErrors({ common: "请选择仓库并填写手动库位，或选择标准库位。" });
       return;
     }
     setDrafts((current) => Object.fromEntries(prepared.map((item) => [item.inspectionId, {
       ...current[item.inspectionId],
-      warehouseId: common.warehouseId || current[item.inspectionId].warehouseId,
-      storageLocationId: common.storageLocationId || current[item.inspectionId].storageLocationId,
+      warehouseId: common.warehouseId,
+      locationMode: common.locationMode,
+      storageLocation: common.locationMode === "MANUAL" ? common.storageLocation : "",
+      storageLocationId: common.locationMode === "STANDARD" ? common.storageLocationId : "",
       condition: common.condition || current[item.inspectionId].condition,
       saleMode: common.saleMode ?? current[item.inspectionId].saleMode,
       note: common.note || current[item.inspectionId].note,
@@ -179,7 +186,7 @@ export function BatchInspectionInboundDialog({
     const next: Record<string, string> = {};
     for (const item of prepared) {
       const draft = drafts[item.inspectionId];
-      if (!draft.warehouseId || !draft.storageLocationId || !draft.condition) {
+      if (!draft.warehouseId || !draft.condition || (draft.locationMode === "MANUAL" ? !draft.storageLocation.trim() : !draft.storageLocationId)) {
         next[item.inspectionId] = "仓库、库位和成色均为必填项。";
       } else if (hasShelfLifeChange(item, draft) && !draft.shelfLifeChangeReason.trim()) {
         next[item.inspectionId] = "保质期资料与采购录入不一致，请说明实物修正依据。";
@@ -207,7 +214,9 @@ export function BatchInspectionInboundDialog({
               inspectionId: item.inspectionId,
               sku: draft.sku.trim() || null,
               warehouseId: draft.warehouseId,
-              storageLocationId: draft.storageLocationId,
+              locationMode: draft.locationMode,
+              storageLocation: draft.locationMode === "MANUAL" ? draft.storageLocation.trim() : null,
+              storageLocationId: draft.locationMode === "STANDARD" ? draft.storageLocationId : null,
               condition: draft.condition,
               saleMode: draft.saleMode,
               productionDate: draft.productionDate || null,
@@ -246,12 +255,14 @@ export function BatchInspectionInboundDialog({
               <div className="mb-3"><h3 className="font-medium">应用于全部选中商品</h3><p className="mt-1 text-xs text-muted-foreground">不会立即保存；确认“应用到全部”后才会覆盖对应的逐件草稿字段。</p></div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 <Field label="仓库"><select className="h-11 w-full rounded-md border bg-background px-3" value={common.warehouseId} onChange={(event) => setCommon((current) => ({ ...current, warehouseId: event.target.value, storageLocationId: "" }))}><option value="">选择仓库</option>{warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}</select></Field>
-                <Field label="标准库位"><select className="h-11 w-full rounded-md border bg-background px-3 disabled:bg-muted" disabled={!common.warehouseId} value={common.storageLocationId} onChange={(event) => setCommon((current) => ({ ...current, storageLocationId: event.target.value }))}><option value="">选择库位</option>{commonLocations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></Field>
+                <Field label="库位录入方式"><select className="h-11 w-full rounded-md border bg-background px-3" value={common.locationMode} onChange={(event) => setCommon((current) => ({ ...current, locationMode: event.target.value as "MANUAL" | "STANDARD", storageLocation: "", storageLocationId: "" }))}><option value="MANUAL">手动填写</option><option value="STANDARD">标准库位</option></select></Field>
+                {common.locationMode === "MANUAL" ? <Field label="手动库位"><Input value={common.storageLocation} onChange={(event) => setCommon((current) => ({ ...current, storageLocation: event.target.value }))} placeholder="例如 货架2-第3层" /></Field> : <Field label="标准库位"><select className="h-11 w-full rounded-md border bg-background px-3 disabled:bg-muted" disabled={!common.warehouseId} value={common.storageLocationId} onChange={(event) => setCommon((current) => ({ ...current, storageLocationId: event.target.value }))}><option value="">选择库位</option>{commonLocations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></Field>}
                 <Field label="成色"><select className="h-11 w-full rounded-md border bg-background px-3" value={common.condition} onChange={(event) => setCommon((current) => ({ ...current, condition: event.target.value }))}><option value="">选择成色</option>{conditions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                 <Field label="计划出售方式"><select className="h-11 w-full rounded-md border bg-background px-3" value={common.saleMode ?? ""} onChange={(event) => setCommon((current) => ({ ...current, saleMode: event.target.value || null }))}><option value="">不覆盖</option>{saleModes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                 <Field label="公共备注"><Input value={common.note} onChange={(event) => setCommon((current) => ({ ...current, note: event.target.value }))} placeholder="可选" /></Field>
               </div>
               {errors.common ? <p className="mt-2 text-sm text-destructive">{errors.common}</p> : null}
+              {!warehouses.length ? <p className="mt-2 text-sm text-destructive">暂无启用仓库，请先前往 <Link className="underline" href="/inventory/warehouses">仓库管理</Link> 创建或启用仓库。</p> : null}
               <Button type="button" className="mt-3 min-h-11" variant="outline" onClick={applyCommon}>应用到全部</Button>
             </section>
             <section className="space-y-3">
@@ -272,7 +283,8 @@ export function BatchInspectionInboundDialog({
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       <Field label="SKU"><Input value={draft.sku} onChange={(event) => updateDraft(item.inspectionId, { sku: event.target.value })} placeholder="可留空" /></Field>
                       <Field label="仓库 *"><select className="h-11 w-full rounded-md border bg-background px-3" aria-invalid={!draft.warehouseId} value={draft.warehouseId} onChange={(event) => updateDraft(item.inspectionId, { warehouseId: event.target.value })}><option value="">选择仓库</option>{warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}</select></Field>
-                      <Field label="标准库位 *"><select className="h-11 w-full rounded-md border bg-background px-3 disabled:bg-muted" aria-invalid={!draft.storageLocationId} disabled={!draft.warehouseId} value={draft.storageLocationId} onChange={(event) => updateDraft(item.inspectionId, { storageLocationId: event.target.value })}><option value="">选择库位</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></Field>
+                      <Field label="库位录入方式"><select className="h-11 w-full rounded-md border bg-background px-3" value={draft.locationMode} onChange={(event) => updateDraft(item.inspectionId, { locationMode: event.target.value as "MANUAL" | "STANDARD", storageLocation: "", storageLocationId: "" })}><option value="MANUAL">手动填写</option><option value="STANDARD">标准库位</option></select></Field>
+                      {draft.locationMode === "MANUAL" ? <Field label="手动库位 *"><Input aria-invalid={!draft.storageLocation.trim()} value={draft.storageLocation} onChange={(event) => updateDraft(item.inspectionId, { storageLocation: event.target.value })} placeholder="例如 货架2-第3层" /></Field> : <Field label="标准库位 *"><select className="h-11 w-full rounded-md border bg-background px-3 disabled:bg-muted" aria-invalid={!draft.storageLocationId} disabled={!draft.warehouseId} value={draft.storageLocationId} onChange={(event) => updateDraft(item.inspectionId, { storageLocationId: event.target.value })}><option value="">选择库位</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></Field>}
                       <Field label="成色 *"><select className="h-11 w-full rounded-md border bg-background px-3" aria-invalid={!draft.condition} value={draft.condition} onChange={(event) => updateDraft(item.inspectionId, { condition: event.target.value })}><option value="">选择成色</option>{conditions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                       <Field label="计划出售方式"><select className="h-11 w-full rounded-md border bg-background px-3" value={draft.saleMode ?? ""} onChange={(event) => updateDraft(item.inspectionId, { saleMode: event.target.value || null })}><option value="">不规划</option>{saleModes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
                       <Field label="生产日期"><Input type="date" value={draft.productionDate} onChange={(event) => updateDraft(item.inspectionId, { productionDate: event.target.value })} /></Field>

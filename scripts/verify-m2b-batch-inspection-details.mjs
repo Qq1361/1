@@ -29,7 +29,7 @@ async function fixture(label, count = 1, owner = ownerId) {
 }
 
 function details(inspections, warehouseId, storageLocationId, extra = {}) {
-  return inspections.map((inspection) => ({ inspectionId: inspection.id, sku: "2c0", warehouseId, storageLocationId, condition: "LIKE_NEW", saleMode: "NONE", productionDate: "2026-01-31", shelfLifeMonths: 12, expiryDate: "2027-01-31", note: null, shelfLifeChangeReason: null, ...extra }));
+  return inspections.map((inspection) => ({ inspectionId: inspection.id, sku: "2c0", warehouseId, locationMode: "STANDARD", storageLocationId, storageLocation: null, condition: "LIKE_NEW", saleMode: "NONE", productionDate: "2026-01-31", shelfLifeMonths: 12, expiryDate: "2027-01-31", note: null, shelfLifeChangeReason: null, ...extra }));
 }
 
 try {

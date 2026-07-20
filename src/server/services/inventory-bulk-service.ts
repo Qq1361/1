@@ -19,10 +19,12 @@ type InventoryForBulk = Prisma.InventoryItemGetPayload<{ include: typeof invento
 type DatabaseClient = Prisma.TransactionClient | typeof db;
 type BulkChange = { before: Record<string, unknown>; after: Record<string, unknown>; update: Prisma.InventoryItemUpdateInput };
 type LocationTarget = {
+  locationMode: "MANUAL" | "STANDARD";
   warehouseId: string;
   warehouseName: string;
-  storageLocationId: string;
-  storageLocationName: string;
+  storageLocationId: string | null;
+  storageLocationName: string | null;
+  storageLocation: string | null;
 };
 
 const allowedStatuses = new Set<ItemStatus>(["STOCKED"]);
@@ -36,6 +38,8 @@ function snapshot(item: InventoryForBulk) {
     warehouseName: item.warehouse?.name ?? null,
     storageLocationId: item.storageLocationId,
     storageLocationName: item.warehouseLocation?.name ?? null,
+    storageLocation: item.storageLocation,
+    locationMode: item.storageLocationId ? "STANDARD" : item.warehouseId && item.storageLocation ? "MANUAL" : null,
     condition: item.condition,
     saleMode: item.saleMode,
     productionDate: formatDateOnly(item.productionDate),
@@ -77,21 +81,35 @@ function lockReason(item: InventoryForBulk): string | null {
   return null;
 }
 
-async function assertLocationTarget(client: DatabaseClient, ownerId: string, warehouseId: string, storageLocationId: string) {
-  const [warehouse, location] = await Promise.all([
-    client.warehouse.findFirst({ where: { id: warehouseId }, select: { id: true, name: true, ownerId: true, isActive: true } }),
-    client.warehouseLocation.findFirst({ where: { id: storageLocationId }, select: { id: true, name: true, ownerId: true, warehouseId: true, isActive: true } }),
-  ]);
+async function assertLocationTarget(client: DatabaseClient, ownerId: string, payload: Extract<InventoryBulkOperationInput, { operation: "MOVE_LOCATION" }> ["payload"]) {
+  const warehouse = await client.warehouse.findFirst({ where: { id: payload.warehouseId }, select: { id: true, name: true, ownerId: true, isActive: true } });
   if (!warehouse || warehouse.ownerId !== ownerId) throw new ServiceError("WAREHOUSE_NOT_FOUND", "目标仓库不存在或无权访问。", 404);
   if (!warehouse.isActive) throw new ServiceError("WAREHOUSE_INACTIVE", "目标仓库已停用。", 409);
+  if (payload.locationMode === "MANUAL") {
+    const storageLocation = payload.storageLocation.trim();
+    if (!storageLocation || storageLocation.length > 100 || /[\u0000-\u001F\u007F]/.test(storageLocation)) {
+      throw new ServiceError("MANUAL_STORAGE_LOCATION_INVALID", "手动库位格式无效。", 422);
+    }
+    return {
+      locationMode: "MANUAL",
+      warehouseId: warehouse.id,
+      warehouseName: warehouse.name,
+      storageLocationId: null,
+      storageLocationName: null,
+      storageLocation,
+    } satisfies LocationTarget;
+  }
+  const location = await client.warehouseLocation.findFirst({ where: { id: payload.storageLocationId }, select: { id: true, name: true, ownerId: true, warehouseId: true, isActive: true } });
   if (!location || location.ownerId !== ownerId) throw new ServiceError("WAREHOUSE_LOCATION_NOT_FOUND", "目标库位不存在或无权访问。", 404);
   if (!location.isActive) throw new ServiceError("WAREHOUSE_LOCATION_INACTIVE", "目标库位已停用。", 409);
   if (location.warehouseId !== warehouse.id) throw new ServiceError("WAREHOUSE_LOCATION_MISMATCH", "所选库位不属于目标仓库。", 409);
   return {
+    locationMode: "STANDARD",
     warehouseId: warehouse.id,
     warehouseName: warehouse.name,
     storageLocationId: location.id,
     storageLocationName: location.name,
+    storageLocation: null,
   } satisfies LocationTarget;
 }
 
@@ -115,15 +133,20 @@ function calculateChange(item: InventoryForBulk, input: InventoryBulkOperationIn
       ...before,
       warehouseId: locationTarget.warehouseId,
       warehouseName: locationTarget.warehouseName,
+      locationMode: locationTarget.locationMode,
       storageLocationId: locationTarget.storageLocationId,
       storageLocationName: locationTarget.storageLocationName,
+      storageLocation: locationTarget.storageLocation,
     };
     return {
       before,
       after,
       update: {
         warehouse: { connect: { id: input.payload.warehouseId } },
-        warehouseLocation: { connect: { id: input.payload.storageLocationId } },
+        warehouseLocation: locationTarget.locationMode === "STANDARD"
+          ? { connect: { id: locationTarget.storageLocationId! } }
+          : { disconnect: true },
+        storageLocation: locationTarget.storageLocation,
       },
     };
   }
@@ -189,7 +212,7 @@ function blockedItems(items: InventoryForBulk[]) {
 
 async function validateOperation(client: DatabaseClient, ownerId: string, input: InventoryBulkOperationInput): Promise<LocationTarget | null> {
   if (input.operation === "MOVE_LOCATION") {
-    return assertLocationTarget(client, ownerId, input.payload.warehouseId, input.payload.storageLocationId);
+    return assertLocationTarget(client, ownerId, input.payload);
   }
   return null;
 }

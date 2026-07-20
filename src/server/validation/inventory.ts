@@ -31,11 +31,33 @@ const expiryDateMode = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("AUTO") }).strict(),
 ]);
 
+const manualStorageLocation = z
+  .string()
+  .trim()
+  .min(1, "手动库位不能为空。")
+  .max(100, "手动库位最多 100 个字符。")
+  .refine((value) => !/[\u0000-\u001F\u007F]/.test(value), "手动库位不能包含控制字符。");
+
+const locationTarget = z.discriminatedUnion("locationMode", [
+  z.object({
+    locationMode: z.literal("MANUAL"),
+    warehouseId: z.string().cuid(),
+    storageLocation: manualStorageLocation,
+    storageLocationId: z.null().optional(),
+  }).strict(),
+  z.object({
+    locationMode: z.literal("STANDARD"),
+    warehouseId: z.string().cuid(),
+    storageLocationId: z.string().cuid(),
+    storageLocation: z.null().optional(),
+  }).strict(),
+]);
+
 export const inventoryBulkOperationSchema = z.discriminatedUnion("operation", [
   z.object({
     ...common,
     operation: z.literal("MOVE_LOCATION"),
-    payload: z.object({ warehouseId: z.string().cuid(), storageLocationId: z.string().cuid() }).strict(),
+    payload: locationTarget,
   }).strict(),
   z.object({
     ...common,

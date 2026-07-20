@@ -146,8 +146,56 @@ async function createFixture(label, warehouseId, storageLocationId, itemStatus =
   return inventory;
 }
 
+async function createBatchInspectionFixture(label, count = 1) {
+  const order = await db.purchaseOrder.create({
+    data: {
+      ownerId,
+      orderNo: `${runId}-${label}`,
+      paidAt: new Date("2026-07-20T00:00:00Z"),
+      totalAmount: `${count * 10}.00`,
+      shippingAmount: "0.00",
+      status: "PENDING_INSPECTION",
+      allocationStatus: "CONFIRMED",
+      allocationConfirmedAt: new Date(),
+      items: {
+        create: Array.from({ length: count }, (_, index) => ({
+          name: `${runId}-${label}-${index + 1}`,
+          quantity: 1,
+          allocatedTotalCost: "10.00",
+        })),
+      },
+    },
+    include: { items: true },
+  });
+  created.orderIds.push(order.id);
+  const inspections = await Promise.all(order.items.map((item) => db.inspection.create({
+    data: { ownerId, purchaseOrderItemId: item.id, sequence: 1, status: "PENDING" },
+  })));
+  created.inspectionIds.push(...inspections.map((inspection) => inspection.id));
+  return { order, inspections, itemNames: order.items.map((item) => item.name) };
+}
+
 async function waitForText(page, text) {
   await page.getByText(text, { exact: false }).first().waitFor({ state: "visible", timeout: 15_000 });
+}
+
+async function waitForBodyText(page, text) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    if ((await page.locator("body").innerText()).includes(text)) return;
+    await sleep(100);
+  }
+  throw new Error(`Expected page text was not rendered: ${text}`);
+}
+
+async function waitForInventories(inspectionIds) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    const inventory = await db.inventoryItem.findMany({ where: { inspectionId: { in: inspectionIds } } });
+    if (inventory.length === inspectionIds.length) return inventory;
+    await sleep(100);
+  }
+  return db.inventoryItem.findMany({ where: { inspectionId: { in: inspectionIds } } });
 }
 
 async function selectAcrossPages(page) {
@@ -167,6 +215,39 @@ async function previewAndConfirm(page) {
   assert(!(await page.locator("body").innerText()).includes("已选择 21 件库存"), "successful batch confirmation closes the dialog and clears the selection");
 }
 
+async function completeManualBatchInspection(page, fixture, warehouse) {
+  await page.goto(`${baseUrl}/inspections`, { waitUntil: "networkidle" });
+  const search = page.getByPlaceholder("搜索采购订单号、商品、SKU 或卖家昵称");
+  await search.fill(fixture.order.orderNo);
+  await sleep(350);
+  for (const name of fixture.itemNames) {
+    await page.getByLabel(`选择 ${name}`).check();
+  }
+  await page.getByRole("button", { name: "批量验货通过" }).click();
+  const dialog = page.getByRole("dialog", { name: "批量验货并入库" });
+  await dialog.waitFor({ state: "visible", timeout: 15_000 });
+  const common = dialog.locator("section").filter({ hasText: "应用于全部选中商品" }).first();
+  const commonSelects = common.locator("select");
+  assert(await commonSelects.nth(1).inputValue() === "MANUAL", "batch inspection defaults to manual storage locations");
+  await commonSelects.nth(0).selectOption(warehouse.id);
+  const manualInput = common.getByPlaceholder("例如 货架2-第3层");
+  await manualInput.fill("货架2-第3层");
+  await commonSelects.nth(2).selectOption("LIKE_NEW");
+  await common.getByRole("button", { name: "应用到全部" }).click();
+  const firstCard = dialog.locator("article").first();
+  assert(await firstCard.locator("select").nth(0).inputValue() === warehouse.id && await firstCard.getByPlaceholder("例如 货架2-第3层").inputValue() === "货架2-第3层", "applying common manual data updates each inspection draft before submission");
+  await dialog.getByRole("button", { name: "确认验货并入库" }).click();
+  const confirmation = page.getByRole("alertdialog", { name: "确认验货并入库？" });
+  await confirmation.getByRole("button", { name: "确认验货并入库" }).click();
+  await dialog.waitFor({ state: "hidden", timeout: 15_000 });
+  const inventory = await waitForInventories(fixture.inspections.map((inspection) => inspection.id));
+  created.inventoryIds.push(...inventory.map((item) => item.id));
+  assert(inventory.length === fixture.inspections.length && inventory.every((item) => item.warehouseId === warehouse.id && item.storageLocation === "货架2-第3层" && item.storageLocationId === null), "batch inspection UI creates one manual-location inventory record per selected inspection");
+  await page.goto(`${baseUrl}/inventory?query=${encodeURIComponent(fixture.order.orderNo)}`, { waitUntil: "networkidle" });
+  await waitForBodyText(page, `${warehouse.name} / 货架2-第3层`);
+  assert((await page.locator("body").innerText()).includes(`${warehouse.name} / 货架2-第3层`), "inventory list displays the manual warehouse and location text after batch inspection");
+}
+
 async function verifyBrowserFlows(fixture) {
   const [cookieName, cookieValue] = accessCookie.split("=");
   const browser = await launchAcceptanceBrowser();
@@ -174,6 +255,7 @@ async function verifyBrowserFlows(fixture) {
   const page = await context.newPage();
   await context.addCookies([{ name: cookieName, value: cookieValue, url: baseUrl }]);
   try {
+    await completeManualBatchInspection(page, fixture.desktopInspection, fixture.sourceWarehouse);
     await selectAcrossPages(page);
     const pageTwoText = await page.locator("body").innerText();
     assert(pageTwoText.includes("商品 21") && pageTwoText.includes("仓库 1") && pageTwoText.includes("状态 1"), "cross-page selection aggregates product, warehouse, and status statistics");
@@ -188,6 +270,8 @@ async function verifyBrowserFlows(fixture) {
     await page.getByRole("button", { name: "批量调整仓位" }).click();
     await page.locator("#bulk-target-warehouse").click();
     await page.getByRole("option", { name: fixture.targetWarehouse.name, exact: true }).click();
+    await page.locator("#bulk-location-mode").click();
+    await page.getByRole("option", { name: "标准库位", exact: true }).click();
     await page.locator("#bulk-target-location").click();
     await page.getByRole("option", { name: fixture.targetLocation.name, exact: true }).click();
     await previewAndConfirm(page);
@@ -195,6 +279,17 @@ async function verifyBrowserFlows(fixture) {
     assert(moved.every((item) => item.warehouseId === fixture.targetWarehouse.id && item.storageLocationId === fixture.targetLocation.id), "location flow updates every selected fixture through preview and confirmation");
     const moveLogs = await db.inventoryItemActionLog.findMany({ where: { inventoryItemId: { in: fixture.inventoryIds }, actionType: "MOVE_LOCATION" } });
     assert(moveLogs.length === fixture.inventoryIds.length && moveLogs.every((log) => log.beforeData.warehouseName === fixture.sourceWarehouse.name && log.afterData.warehouseName === fixture.targetWarehouse.name && log.afterData.storageLocationName === fixture.targetLocation.name), "location audit snapshots retain warehouse and location names");
+
+    await selectAcrossPages(page);
+    await page.getByRole("button", { name: "批量调整仓位" }).click();
+    await page.locator("#bulk-target-warehouse").click();
+    await page.getByRole("option", { name: fixture.sourceWarehouse.name, exact: true }).click();
+    await page.locator("#bulk-target-manual-location").fill("货架9-第2层");
+    await previewAndConfirm(page);
+    const manuallyMoved = await db.inventoryItem.findMany({ where: { id: { in: fixture.inventoryIds } } });
+    assert(manuallyMoved.every((item) => item.warehouseId === fixture.sourceWarehouse.id && item.storageLocationId === null && item.storageLocation === "货架9-第2层"), "manual location flow clears standard locations without creating warehouse locations");
+    const manualLogs = await db.inventoryItemActionLog.findMany({ where: { inventoryItemId: { in: fixture.inventoryIds }, actionType: "MOVE_LOCATION" } });
+    assert(manualLogs.length === fixture.inventoryIds.length * 2 && manualLogs.some((log) => log.afterData.locationMode === "MANUAL" && log.afterData.storageLocation === "货架9-第2层"), "manual location preview and audit snapshots record the selected mode and text");
 
     await selectAcrossPages(page);
     await page.getByRole("button", { name: "批量设置成色" }).click();
@@ -243,6 +338,8 @@ async function verifyBrowserFlows(fixture) {
     await page.getByRole("button", { name: "批量调整仓位" }).click();
     await page.locator("#bulk-target-warehouse").click();
     await page.getByRole("option", { name: fixture.sourceWarehouse.name, exact: true }).click();
+    await page.locator("#bulk-location-mode").click();
+    await page.getByRole("option", { name: "标准库位", exact: true }).click();
     await page.locator("#bulk-target-location").click();
     await page.getByRole("option", { name: fixture.sourceLocation.name, exact: true }).click();
     await page.getByRole("button", { name: "预览变更" }).click();
@@ -250,6 +347,38 @@ async function verifyBrowserFlows(fixture) {
     assert(await page.getByRole("button", { name: "确认并批量更新" }).isDisabled(), "a locked inventory item prevents any batch confirmation");
     const editableAfterLockedPreview = await db.inventoryItem.findUniqueOrThrow({ where: { id: fixture.editable.id } });
     assert(editableAfterLockedPreview.warehouseId === fixture.targetWarehouse.id, "locked batch preview performs zero writes to editable inventory");
+
+    const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const mobile = await mobileContext.newPage();
+    await mobileContext.addCookies([{ name: cookieName, value: cookieValue, url: baseUrl }]);
+    try {
+      await mobile.goto(`${baseUrl}/inspections`, { waitUntil: "networkidle" });
+      const mobileSearch = mobile.getByPlaceholder("搜索采购订单号、商品、SKU 或卖家昵称");
+      await mobileSearch.fill(fixture.mobileInspection.order.orderNo);
+      await sleep(350);
+      await mobile.getByLabel(`选择 ${fixture.mobileInspection.itemNames[0]}`).check();
+      await mobile.getByRole("button", { name: "批量验货通过" }).click();
+      const mobileInspectionDialog = mobile.getByRole("dialog", { name: "批量验货并入库" });
+      await mobileInspectionDialog.waitFor({ state: "visible", timeout: 15_000 });
+      const mobileCommon = mobileInspectionDialog.locator("section").filter({ hasText: "应用于全部选中商品" }).first();
+      const mobileMode = mobileCommon.locator("select").nth(1);
+      const mobileManualInput = mobileCommon.getByPlaceholder("例如 货架2-第3层");
+      const [modeBox, inputBox] = await Promise.all([mobileMode.boundingBox(), mobileManualInput.boundingBox()]);
+      assert(Boolean(modeBox && modeBox.height >= 40 && inputBox && inputBox.height >= 40), "390px batch-inspection location mode and manual input remain usable touch targets");
+      assert(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "390px batch-inspection dialog has no horizontal overflow");
+      await mobileInspectionDialog.getByRole("button", { name: "取消" }).click();
+      await mobile.goto(`${baseUrl}/inventory?query=${encodeURIComponent(`${runId}-PAGE`)}`, { waitUntil: "networkidle" });
+      assert(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "390px inventory list has no horizontal overflow");
+      await mobile.getByRole("button", { name: "全选当前页" }).click();
+      await mobile.getByRole("button", { name: "批量调整仓位" }).click();
+      const manualLocationInput = mobile.locator("#bulk-target-manual-location");
+      await manualLocationInput.waitFor({ state: "visible", timeout: 15_000 });
+      const box = await manualLocationInput.boundingBox();
+      assert(Boolean(box && box.height >= 40), "mobile manual-location input remains a usable touch target");
+      assert(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "390px manual-location dialog has no horizontal overflow");
+    } finally {
+      await mobileContext.close();
+    }
 
   } finally {
     await context.close();
@@ -283,7 +412,9 @@ try {
   for (let index = 1; index <= 21; index += 1) inventory.push(await createFixture(`PAGE-${String(index).padStart(2, "0")}`, sourceWarehouse.id, sourceLocation.id));
   const editable = await createFixture("LOCK-EDITABLE", targetWarehouse.id, targetLocation.id);
   const locked = await createFixture("LOCK-SOLD", targetWarehouse.id, targetLocation.id, "SOLD");
-  const fixture = { inventoryIds: inventory.map((item) => item.id), sourceWarehouse, sourceLocation, targetWarehouse, targetLocation, editable, locked };
+  const desktopInspection = await createBatchInspectionFixture("BATCH-DESKTOP", 2);
+  const mobileInspection = await createBatchInspectionFixture("BATCH-MOBILE", 1);
+  const fixture = { inventoryIds: inventory.map((item) => item.id), sourceWarehouse, sourceLocation, targetWarehouse, targetLocation, editable, locked, desktopInspection, mobileInspection };
 
   await startServer();
   const strictPreview = await jsonRequest("/api/inventory/bulk-sku", "POST", { inventoryItemIds: [inventory[0].id], skuText: "2C0", ownerId });

@@ -27,12 +27,18 @@ export const inspectionBatchPassSchema = z
   })
   .strict();
 
-const batchInspectionItemSchema = z
+const manualStorageLocation = z
+  .string()
+  .trim()
+  .min(1, "手动库位不能为空。")
+  .max(100, "手动库位最多 100 个字符。")
+  .refine((value) => !/[\u0000-\u001F\u007F]/.test(value), "手动库位不能包含控制字符。");
+
+const batchInspectionBaseSchema = z
   .object({
     inspectionId: z.string().cuid(),
     sku: z.string().max(200).nullable(),
     warehouseId: z.string().cuid(),
-    storageLocationId: z.string().cuid(),
     condition: z.string(),
     saleMode: z.string().nullable(),
     productionDate: z.string().nullable(),
@@ -40,8 +46,20 @@ const batchInspectionItemSchema = z
     expiryDate: z.string().nullable(),
     note: z.string().trim().max(2000).nullable(),
     shelfLifeChangeReason: z.string().trim().max(500).nullable(),
-  })
-  .strict();
+  });
+
+const batchInspectionItemSchema = z.discriminatedUnion("locationMode", [
+  batchInspectionBaseSchema.extend({
+    locationMode: z.literal("MANUAL"),
+    storageLocation: manualStorageLocation,
+    storageLocationId: z.null().optional(),
+  }).strict(),
+  batchInspectionBaseSchema.extend({
+    locationMode: z.literal("STANDARD"),
+    storageLocationId: z.string().cuid(),
+    storageLocation: z.null().optional(),
+  }).strict(),
+]);
 
 export const inspectionBatchPreparationSchema = z
   .object({ inspectionIds: z.array(z.string().cuid()) })

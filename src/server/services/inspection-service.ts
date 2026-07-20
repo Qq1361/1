@@ -13,7 +13,9 @@ type BatchInspectionInput = {
   inspectionId: string;
   sku: string | null;
   warehouseId: string;
-  storageLocationId: string;
+  locationMode: "MANUAL" | "STANDARD";
+  storageLocation?: string | null;
+  storageLocationId?: string | null;
   condition: string;
   saleMode: string | null;
   productionDate: string | null;
@@ -22,6 +24,15 @@ type BatchInspectionInput = {
   note: string | null;
   shelfLifeChangeReason: string | null;
 };
+
+function normalizeManualStorageLocation(value: string | null | undefined) {
+  const normalized = value?.trim() ?? "";
+  if (!normalized) throw new ServiceError("MANUAL_STORAGE_LOCATION_REQUIRED", "手动库位不能为空。", 400);
+  if (normalized.length > 100 || /[\u0000-\u001F\u007F]/.test(normalized)) {
+    throw new ServiceError("MANUAL_STORAGE_LOCATION_INVALID", "手动库位格式无效。", 400);
+  }
+  return normalized;
+}
 
 function formatSnapshotDate(value: Date | null | undefined) {
   return formatDateOnly(value) ?? "—";
@@ -401,7 +412,7 @@ export class InspectionService {
             },
           }),
           tx.warehouse.findMany({ where: { id: { in: [...new Set(items.map((item) => item.warehouseId))] } } }),
-          tx.warehouseLocation.findMany({ where: { id: { in: [...new Set(items.map((item) => item.storageLocationId))] } } }),
+          tx.warehouseLocation.findMany({ where: { id: { in: [...new Set(items.flatMap((item) => item.locationMode === "STANDARD" && item.storageLocationId ? [item.storageLocationId] : []))] } } }),
         ]);
         const inspectionById = new Map(inspections.map((inspection) => [inspection.id, inspection]));
         const warehouseById = new Map(warehouses.map((warehouse) => [warehouse.id, warehouse]));
@@ -422,12 +433,19 @@ export class InspectionService {
           if (!warehouse) throw new ServiceError("WAREHOUSE_NOT_FOUND", "仓库不存在。", 404);
           if (warehouse.ownerId !== ownerId) throw new ServiceError("WAREHOUSE_CROSS_OWNER", "不能使用其他用户的仓库。", 403);
           if (!warehouse.isActive) throw new ServiceError("WAREHOUSE_INACTIVE", "仓库已停用，不能用于入库。", 409);
-          const location = locationById.get(input.storageLocationId);
-          if (!location || location.ownerId !== ownerId)
-            throw new ServiceError("WAREHOUSE_LOCATION_NOT_FOUND", "库位不存在。", 404);
-          if (!location.isActive) throw new ServiceError("WAREHOUSE_LOCATION_INACTIVE", "库位已停用，不能用于入库。", 409);
-          if (location.warehouseId !== warehouse.id)
-            throw new ServiceError("WAREHOUSE_LOCATION_MISMATCH", "库位不属于所选仓库。", 400);
+          const location = input.locationMode === "STANDARD"
+            ? locationById.get(input.storageLocationId ?? "")
+            : null;
+          const manualStorageLocation = input.locationMode === "MANUAL"
+            ? normalizeManualStorageLocation(input.storageLocation)
+            : null;
+          if (input.locationMode === "STANDARD") {
+            if (!location || location.ownerId !== ownerId)
+              throw new ServiceError("WAREHOUSE_LOCATION_NOT_FOUND", "库位不存在。", 404);
+            if (!location.isActive) throw new ServiceError("WAREHOUSE_LOCATION_INACTIVE", "库位已停用，不能用于入库。", 409);
+            if (location.warehouseId !== warehouse.id)
+              throw new ServiceError("WAREHOUSE_LOCATION_MISMATCH", "库位不属于所选仓库。", 400);
+          }
           if (!INVENTORY_CONDITIONS.has(input.condition))
             throw new ServiceError("INVENTORY_CONDITION_INVALID", "请选择有效的库存成色。", 400);
           if (input.saleMode !== null && !SALE_MODES.has(input.saleMode))
@@ -449,13 +467,13 @@ export class InspectionService {
             formatDateOnly(source.expiryDate) !== formatDateOnly(expiryDate);
           if (shelfLifeChanged && !input.shelfLifeChangeReason?.trim())
             throw new ServiceError("SHELF_LIFE_CHANGE_REASON_REQUIRED", "保质期资料与采购录入不一致，请说明实物修正依据。", 400);
-          return { input, inspection, warehouse, location, productionDate, expiryDate, shelfLifeChanged };
+          return { input, inspection, warehouse, location, manualStorageLocation, productionDate, expiryDate, shelfLifeChanged };
         });
 
         const now = new Date();
         const completed: Array<{ inspectionId: string; inventoryId: string }> = [];
         for (const entry of resolved) {
-          const { input, inspection, location, productionDate, expiryDate, shelfLifeChanged } = entry;
+          const { input, inspection, location, manualStorageLocation, productionDate, expiryDate, shelfLifeChanged } = entry;
           const source = inspection.purchaseOrderItem;
           const costs = splitUnitCosts(source.allocatedTotalCost!.toFixed(2), source.quantity);
           const correction = shelfLifeChanged
@@ -488,8 +506,8 @@ export class InspectionService {
               shelfLifeMonths: input.shelfLifeMonths,
               expiryDate,
               warehouseId: entry.warehouse.id,
-              storageLocationId: location.id,
-              storageLocation: location.name,
+              storageLocationId: location?.id ?? null,
+              storageLocation: manualStorageLocation,
               condition: input.condition as never,
               saleMode: (input.saleMode ?? "NONE") as never,
               itemStatus: "STOCKED",

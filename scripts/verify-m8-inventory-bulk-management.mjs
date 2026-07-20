@@ -33,7 +33,7 @@ try {
   const selection = await inventory.selectAllMatching(ownerA, { page: 1, pageSize: 20, sort: "STOCKED_AT_DESC" });
   assert(selection.total === 2 && new Set(selection.inventoryItemIds).size === 2, "selection endpoint returns the complete owner-scoped ID set");
   assert(await rejects(() => bulk.preview(ownerA, { inventoryItemIds: Array.from({ length: 201 }, () => first.id), operation: "SET_SALE_MODE", payload: { saleMode: "NONE" }, confirmMixedProducts: false }), "INVENTORY_BULK_TOO_MANY"), "more than 200 selected IDs are rejected before any write");
-  const move = { inventoryItemIds: [first.id, second.id], operation: "MOVE_LOCATION", payload: { warehouseId: w2.id, storageLocationId: l2.id }, reason: "整理库位", confirmMixedProducts: false };
+  const move = { inventoryItemIds: [first.id, second.id], operation: "MOVE_LOCATION", payload: { locationMode: "STANDARD", warehouseId: w2.id, storageLocationId: l2.id, storageLocation: null }, reason: "整理库位", confirmMixedProducts: false };
   const movePreview = await bulk.preview(ownerA, move);
   assert(movePreview.selectedCount === 2 && movePreview.changedCount === 2, "preview returns selected items and changes");
   assert(movePreview.blockedCount === 0 && movePreview.changes.every((change) => (
@@ -58,10 +58,10 @@ try {
   assert(logs.every((log) => log.beforeData.warehouseId === w1.id && log.afterData.warehouseId === w2.id), "move audit snapshots include before and after locations");
   const inactiveWarehouse = await warehouseService.create(ownerA, `${runId}-INACTIVE-W`); const inactiveLocation = await warehouseService.createLocation(ownerA, inactiveWarehouse.id, "OFF-W"); warehouseIds.push(inactiveWarehouse.id);
   await db.warehouse.update({ where: { id: inactiveWarehouse.id }, data: { isActive: false } });
-  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { warehouseId: inactiveWarehouse.id, storageLocationId: inactiveLocation.id } }), "WAREHOUSE_INACTIVE"), "inactive target warehouse is rejected");
+  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { locationMode: "STANDARD", warehouseId: inactiveWarehouse.id, storageLocationId: inactiveLocation.id, storageLocation: null } }), "WAREHOUSE_INACTIVE"), "inactive target warehouse is rejected");
   const inactiveLocationOnly = await warehouseService.createLocation(ownerA, w2.id, "OFF-L");
   await db.warehouseLocation.update({ where: { id: inactiveLocationOnly.id }, data: { isActive: false } });
-  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { warehouseId: w2.id, storageLocationId: inactiveLocationOnly.id } }), "WAREHOUSE_LOCATION_INACTIVE"), "inactive target location is rejected");
+  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { locationMode: "STANDARD", warehouseId: w2.id, storageLocationId: inactiveLocationOnly.id, storageLocation: null } }), "WAREHOUSE_LOCATION_INACTIVE"), "inactive target location is rejected");
   const condition = { inventoryItemIds: [first.id, second.id], operation: "SET_CONDITION", payload: { condition: "NEW" }, confirmMixedProducts: true };
   const conditionWithoutConfirmation = { ...condition, confirmMixedProducts: false };
   const unconfirmedPreview = await bulk.preview(ownerA, conditionWithoutConfirmation);
@@ -108,8 +108,8 @@ try {
   const shelfCleared = await db.inventoryItem.findUniqueOrThrow({ where: { id: first.id } });
   assert(shelfCleared.productionDate === null && shelfCleared.shelfLifeMonths === null && shelfCleared.expiryDate === null, "shelf-life fields can be cleared explicitly");
   assert(await rejects(() => bulk.preview(ownerA, { ...shelf, payload: { ...shelf.payload, productionDate: { mode: "SET", value: "2026-01-31T00:00:00Z" } } }), "SHELF_LIFE_DATE_INVALID"), "ISO date-time input is rejected");
-  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { warehouseId: w1.id, storageLocationId: otherL.id } }), "WAREHOUSE_LOCATION_NOT_FOUND"), "cross-owner location is rejected");
-  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { warehouseId: w1.id, storageLocationId: l2.id } }), "WAREHOUSE_LOCATION_MISMATCH"), "mismatched warehouse location is rejected");
+  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { locationMode: "STANDARD", warehouseId: w1.id, storageLocationId: otherL.id, storageLocation: null } }), "WAREHOUSE_LOCATION_NOT_FOUND"), "cross-owner location is rejected");
+  assert(await rejects(() => bulk.preview(ownerA, { ...move, payload: { locationMode: "STANDARD", warehouseId: w1.id, storageLocationId: l2.id, storageLocation: null } }), "WAREHOUSE_LOCATION_MISMATCH"), "mismatched warehouse location is rejected");
   assert(await rejects(() => bulk.preview(ownerA, { ...move, inventoryItemIds: [first.id, first.id] }), "INVENTORY_BULK_DUPLICATE_ID"), "duplicate IDs are rejected");
   assert(await rejects(() => bulk.preview(ownerA, { ...move, inventoryItemIds: [other.id] }), "INVENTORY_BULK_CROSS_OWNER"), "cross-owner inventory is rejected");
   await db.inventoryItem.update({ where: { id: second.id }, data: { itemStatus: "SOLD" } });
