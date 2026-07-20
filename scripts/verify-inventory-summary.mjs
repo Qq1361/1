@@ -34,6 +34,24 @@ async function request(path) {
   return body;
 }
 
+async function bulkSkuPreview(input) {
+  const response = await fetch(`${baseUrl}/api/inventory/bulk-sku`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(accessCookie ? { Cookie: accessCookie } : {}) },
+    body: JSON.stringify(input),
+  });
+  return { response, body: await response.json() };
+}
+
+async function confirmBulkSku(input, selectionFingerprint) {
+  const response = await fetch(`${baseUrl}/api/inventory/bulk-sku`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...(accessCookie ? { Cookie: accessCookie } : {}) },
+    body: JSON.stringify({ ...input, selectionFingerprint }),
+  });
+  return { response, body: await response.json() };
+}
+
 async function createInventory(item, sequence, skuText, itemStatus, unitCost, name = productName) {
   const inspection = await db.inspection.create({
     data: {
@@ -165,15 +183,19 @@ try {
 
   const bulkEmpty = await createInventory(item, 16, null, "STOCKED", "55.00");
   const bulkExisting = await createInventory(item, 17, "1W1", "STOCKED", "56.00");
-  const bulkDefault = await fetch(`${baseUrl}/api/inventory/bulk-sku`, { method: "PATCH", headers: { "Content-Type": "application/json", ...(accessCookie ? { Cookie: accessCookie } : {}) }, body: JSON.stringify({ inventoryItemIds: [bulkEmpty.id, bulkExisting.id], skuText: " 3n1 " }) });
-  const bulkDefaultBody = await bulkDefault.json();
-  assert(bulkDefault.ok && bulkDefaultBody.updatedCount === 1 && bulkDefaultBody.skippedCount === 1, "bulk SKU defaults to empty values only");
-  const bulkOverwrite = await fetch(`${baseUrl}/api/inventory/bulk-sku`, { method: "PATCH", headers: { "Content-Type": "application/json", ...(accessCookie ? { Cookie: accessCookie } : {}) }, body: JSON.stringify({ inventoryItemIds: [bulkExisting.id], skuText: "3n1", overwriteExisting: true }) });
-  assert(bulkOverwrite.ok && (await bulkOverwrite.json()).updatedCount === 1, "bulk SKU overwrite requires explicit flag");
+  const bulkDefaultInput = { inventoryItemIds: [bulkEmpty.id, bulkExisting.id], skuText: " 3n1 " };
+  const bulkDefaultPreview = await bulkSkuPreview(bulkDefaultInput);
+  assert(bulkDefaultPreview.response.ok && bulkDefaultPreview.body.updateCount === 1 && bulkDefaultPreview.body.skippedCount === 1, "bulk SKU preview defaults to empty values only");
+  const bulkDefault = await confirmBulkSku(bulkDefaultInput, bulkDefaultPreview.body.selectionFingerprint);
+  assert(bulkDefault.response.ok && bulkDefault.body.updatedCount === 1 && bulkDefault.body.skippedCount === 1, "bulk SKU confirmation applies the preview plan");
+  const bulkOverwriteInput = { inventoryItemIds: [bulkExisting.id], skuText: "3n1", overwriteExisting: true };
+  const bulkOverwritePreview = await bulkSkuPreview(bulkOverwriteInput);
+  const bulkOverwrite = await confirmBulkSku(bulkOverwriteInput, bulkOverwritePreview.body.selectionFingerprint);
+  assert(bulkOverwrite.response.ok && bulkOverwrite.body.updatedCount === 1, "bulk SKU overwrite requires explicit flag");
 
   const otherProduct = await createInventory(item, 18, null, "STOCKED", "57.00", `${productName}-OTHER`);
-  const mixed = await fetch(`${baseUrl}/api/inventory/bulk-sku`, { method: "PATCH", headers: { "Content-Type": "application/json", ...(accessCookie ? { Cookie: accessCookie } : {}) }, body: JSON.stringify({ inventoryItemIds: [stocked2c0.id, otherProduct.id], skuText: "4w2" }) });
-  assert(mixed.status === 409, "mixed products are rejected without explicit confirmation");
+  const mixed = await bulkSkuPreview({ inventoryItemIds: [stocked2c0.id, otherProduct.id], skuText: "4w2" });
+  assert(mixed.response.status === 409, "mixed products are rejected without explicit confirmation");
 
   await db.purchaseOrder.update({ where: { id: orderId }, data: { allocationStatus: "CONFIRMED", allocationConfirmedAt: new Date() } });
   const pendingInspection = await db.inspection.create({
@@ -197,11 +219,14 @@ try {
   await salesService.confirm(ownerId, draftSale.id);
   const confirmedLine = await db.saleLine.findFirstOrThrow({ where: { saleOrderId: draftSale.id } });
   assert(confirmedLine.skuSnapshot === "DRAFT-NEW", "confirm refreshes draft sale SKU snapshot from inventory by item ID");
-  const skippedHistorical = await fetch(`${baseUrl}/api/inventory/bulk-sku`, { method: "PATCH", headers: { "Content-Type": "application/json", ...(accessCookie ? { Cookie: accessCookie } : {}) }, body: JSON.stringify({ inventoryItemIds: [draftInventory.id], skuText: "after-confirm", overwriteExisting: true }) });
-  const skippedHistoricalBody = await skippedHistorical.json();
-  assert(skippedHistorical.ok && skippedHistoricalBody.updatedCount === 0 && skippedHistoricalBody.skippedCount === 1, "historical inventory is excluded from bulk SKU correction by default");
-  const includedHistorical = await fetch(`${baseUrl}/api/inventory/bulk-sku`, { method: "PATCH", headers: { "Content-Type": "application/json", ...(accessCookie ? { Cookie: accessCookie } : {}) }, body: JSON.stringify({ inventoryItemIds: [draftInventory.id], skuText: "after-confirm", overwriteExisting: true, includeHistorical: true }) });
-  assert(includedHistorical.ok && (await includedHistorical.json()).updatedCount === 1, "historical inventory requires explicit inclusion for bulk SKU correction");
+  const skippedHistoricalInput = { inventoryItemIds: [draftInventory.id], skuText: "after-confirm", overwriteExisting: true };
+  const skippedHistoricalPreview = await bulkSkuPreview(skippedHistoricalInput);
+  const skippedHistorical = await confirmBulkSku(skippedHistoricalInput, skippedHistoricalPreview.body.selectionFingerprint);
+  assert(skippedHistorical.response.ok && skippedHistorical.body.updatedCount === 0 && skippedHistorical.body.skippedCount === 1, "historical inventory is excluded from bulk SKU correction by default");
+  const includedHistoricalInput = { inventoryItemIds: [draftInventory.id], skuText: "after-confirm", overwriteExisting: true, includeHistorical: true };
+  const includedHistoricalPreview = await bulkSkuPreview(includedHistoricalInput);
+  const includedHistorical = await confirmBulkSku(includedHistoricalInput, includedHistoricalPreview.body.selectionFingerprint);
+  assert(includedHistorical.response.ok && includedHistorical.body.updatedCount === 1, "historical inventory requires explicit inclusion for bulk SKU correction");
   const immutableLine = await db.saleLine.findFirstOrThrow({ where: { id: confirmedLine.id } });
   assert(immutableLine.skuSnapshot === "DRAFT-NEW", "confirmed sale SKU snapshot remains immutable after inventory correction");
 

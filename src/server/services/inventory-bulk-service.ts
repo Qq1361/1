@@ -18,6 +18,12 @@ const inventoryInclude = {
 type InventoryForBulk = Prisma.InventoryItemGetPayload<{ include: typeof inventoryInclude }>;
 type DatabaseClient = Prisma.TransactionClient | typeof db;
 type BulkChange = { before: Record<string, unknown>; after: Record<string, unknown>; update: Prisma.InventoryItemUpdateInput };
+type LocationTarget = {
+  warehouseId: string;
+  warehouseName: string;
+  storageLocationId: string;
+  storageLocationName: string;
+};
 
 const allowedStatuses = new Set<ItemStatus>(["STOCKED"]);
 
@@ -73,14 +79,20 @@ function lockReason(item: InventoryForBulk): string | null {
 
 async function assertLocationTarget(client: DatabaseClient, ownerId: string, warehouseId: string, storageLocationId: string) {
   const [warehouse, location] = await Promise.all([
-    client.warehouse.findFirst({ where: { id: warehouseId }, select: { id: true, ownerId: true, isActive: true } }),
-    client.warehouseLocation.findFirst({ where: { id: storageLocationId }, select: { id: true, ownerId: true, warehouseId: true, isActive: true } }),
+    client.warehouse.findFirst({ where: { id: warehouseId }, select: { id: true, name: true, ownerId: true, isActive: true } }),
+    client.warehouseLocation.findFirst({ where: { id: storageLocationId }, select: { id: true, name: true, ownerId: true, warehouseId: true, isActive: true } }),
   ]);
   if (!warehouse || warehouse.ownerId !== ownerId) throw new ServiceError("WAREHOUSE_NOT_FOUND", "目标仓库不存在或无权访问。", 404);
   if (!warehouse.isActive) throw new ServiceError("WAREHOUSE_INACTIVE", "目标仓库已停用。", 409);
   if (!location || location.ownerId !== ownerId) throw new ServiceError("WAREHOUSE_LOCATION_NOT_FOUND", "目标库位不存在或无权访问。", 404);
   if (!location.isActive) throw new ServiceError("WAREHOUSE_LOCATION_INACTIVE", "目标库位已停用。", 409);
   if (location.warehouseId !== warehouse.id) throw new ServiceError("WAREHOUSE_LOCATION_MISMATCH", "所选库位不属于目标仓库。", 409);
+  return {
+    warehouseId: warehouse.id,
+    warehouseName: warehouse.name,
+    storageLocationId: location.id,
+    storageLocationName: location.name,
+  } satisfies LocationTarget;
 }
 
 function dateForMode(current: Date | null, mode: { mode: "KEEP" | "CLEAR" | "SET"; value?: string }, label: string) {
@@ -95,10 +107,17 @@ function monthsForMode(current: number | null, mode: { mode: "KEEP" | "CLEAR" | 
   return mode.value!;
 }
 
-function calculateChange(item: InventoryForBulk, input: InventoryBulkOperationInput): BulkChange {
+function calculateChange(item: InventoryForBulk, input: InventoryBulkOperationInput, locationTarget: LocationTarget | null = null): BulkChange {
   const before = snapshot(item);
   if (input.operation === "MOVE_LOCATION") {
-    const after = { ...before, warehouseId: input.payload.warehouseId, storageLocationId: input.payload.storageLocationId };
+    if (!locationTarget) throw new Error("MOVE_LOCATION requires a resolved target location");
+    const after = {
+      ...before,
+      warehouseId: locationTarget.warehouseId,
+      warehouseName: locationTarget.warehouseName,
+      storageLocationId: locationTarget.storageLocationId,
+      storageLocationName: locationTarget.storageLocationName,
+    };
     return {
       before,
       after,
@@ -168,19 +187,20 @@ function blockedItems(items: InventoryForBulk[]) {
   });
 }
 
-async function validateOperation(client: DatabaseClient, ownerId: string, input: InventoryBulkOperationInput) {
+async function validateOperation(client: DatabaseClient, ownerId: string, input: InventoryBulkOperationInput): Promise<LocationTarget | null> {
   if (input.operation === "MOVE_LOCATION") {
-    await assertLocationTarget(client, ownerId, input.payload.warehouseId, input.payload.storageLocationId);
+    return assertLocationTarget(client, ownerId, input.payload.warehouseId, input.payload.storageLocationId);
   }
+  return null;
 }
 
 export class InventoryBulkService {
   async preview(ownerId: string, input: InventoryBulkOperationInput) {
     assertIds(input.inventoryItemIds);
-    await validateOperation(db, ownerId, input);
+    const locationTarget = await validateOperation(db, ownerId, input);
     const items = await loadSelection(db, ownerId, input.inventoryItemIds);
     const blocked = blockedItems(items);
-    const changes = items.map((item) => ({ item, change: calculateChange(item, input) }));
+    const changes = items.map((item) => ({ item, change: calculateChange(item, input, locationTarget) }));
     const changed = changes.filter(({ change }) => didChange(change));
     const products = new Set(items.map((item) => item.name));
     const warehouses = new Set(items.map((item) => item.warehouseId).filter(Boolean));
@@ -216,7 +236,7 @@ export class InventoryBulkService {
     }
     try {
       return await db.$transaction(async (tx) => {
-        await validateOperation(tx, ownerId, input);
+        const locationTarget = await validateOperation(tx, ownerId, input);
         const items = await loadSelection(tx, ownerId, input.inventoryItemIds);
         const currentFingerprint = fingerprint(items, input);
         if (currentFingerprint !== input.selectionFingerprint) {
@@ -228,7 +248,7 @@ export class InventoryBulkService {
         if ((input.operation === "SET_CONDITION" || input.operation === "SET_SHELF_LIFE") && productSkuCount > 1 && !input.confirmMixedProducts) {
           throw new ServiceError("INVENTORY_BULK_MIXED_PRODUCTS_CONFIRMATION_REQUIRED", "当前选择涉及多个商品或 SKU，请确认后再提交。", 422);
         }
-        const changes = items.map((item) => ({ item, change: calculateChange(item, input) })).filter(({ change }) => didChange(change));
+        const changes = items.map((item) => ({ item, change: calculateChange(item, input, locationTarget) })).filter(({ change }) => didChange(change));
         if (!changes.length) throw new ServiceError("INVENTORY_BULK_NO_CHANGES", "新值与当前库存资料完全相同，无需更新。", 409);
         const batchId = randomUUID();
         for (const { item, change } of changes) {

@@ -53,8 +53,31 @@ type InventoryRow = {
 type SelectedInventoryMeta = Pick<InventoryRow, "id" | "name" | "skuText" | "warehouseId" | "itemStatus">;
 type WarehouseOption = { id: string; name: string; locations: { id: string; name: string; isActive: boolean }[] };
 type BulkOperation = "MOVE_LOCATION" | "SET_CONDITION" | "SET_SALE_MODE" | "SET_SHELF_LIFE";
+type BulkSkuPreview = {
+  selectionFingerprint: string;
+  selectedCount: number;
+  updateCount: number;
+  skippedCount: number;
+  changes: {
+    inventoryItemId: string;
+    inventoryCode: string;
+    name: string;
+    oldSku: string | null;
+    newSku: string | null;
+    result: string;
+    willUpdate: boolean;
+  }[];
+};
 
 const inventoryStatusOptions = SUPPORTED_INVENTORY_ITEM_STATUSES;
+
+const bulkSkuResultLabels: Record<string, string> = {
+  WILL_UPDATE: "将更新",
+  SKU_ALREADY_EXISTS: "已有 SKU，默认保留",
+  HISTORICAL_ITEM_EXCLUDED: "已售档案，未选择包含",
+  LEGACY_STATUS_EXCLUDED: "旧状态档案，未处理",
+  NO_CHANGE: "与新 SKU 相同，无需修改",
+};
 
 function daysInStock(date: string) {
   return `${Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000))} 天`;
@@ -99,6 +122,8 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [allowMixedProducts, setAllowMixedProducts] = useState(false);
   const [includeHistorical, setIncludeHistorical] = useState(false);
+  const [bulkSkuPreview, setBulkSkuPreview] = useState<BulkSkuPreview | null>(null);
+  const [bulkSkuPreviewPending, setBulkSkuPreviewPending] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
   // A concrete operation owns its dialog.  There is no generic field-patch dialog.
   const [maintenanceDialog, setMaintenanceDialog] = useState<BulkOperation | null>(null);
@@ -241,13 +266,38 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
       setMaintenanceDialog(null); setPreview(null); clearSelection(); await load(); setError(`已更新 ${body.updatedCount} 件库存。`);
     } finally { setBulkPending(false); }
   }
+  function clearBulkSkuPreview() {
+    setBulkSkuPreview(null);
+  }
+
+  async function requestBulkSkuPreview() {
+    setBulkSkuPreviewPending(true);
+    setBulkSkuPreview(null);
+    try {
+      const response = await fetch("/api/inventory/bulk-sku", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inventoryItemIds: selectedIds, skuText: bulkSkuText, overwriteExisting, allowMixedProducts, includeHistorical }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) { setError(body?.message ?? "无法预览批量 SKU 变更。"); return; }
+      setBulkSkuPreview(body as BulkSkuPreview);
+      setError(null);
+    } catch {
+      setError("网络异常，无法预览批量 SKU 变更。");
+    } finally {
+      setBulkSkuPreviewPending(false);
+    }
+  }
+
   async function submitBulkSku() {
+    if (!bulkSkuPreview) return;
     setBulkPending(true);
     try {
-      const response = await fetch("/api/inventory/bulk-sku", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inventoryItemIds: selectedIds, skuText: bulkSkuText, overwriteExisting, allowMixedProducts, includeHistorical }) });
+      const response = await fetch("/api/inventory/bulk-sku", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inventoryItemIds: selectedIds, skuText: bulkSkuText, overwriteExisting, allowMixedProducts, includeHistorical, selectionFingerprint: bulkSkuPreview.selectionFingerprint }) });
       const body = await response.json().catch(() => null);
-      if (!response.ok) { setError(body?.message ?? "批量设置 SKU 失败。"); return; }
-      setBulkOpen(false); clearSelection(); await load();
+      if (!response.ok) { setError(body?.message ?? "批量设置 SKU 失败，请重新预览。"); return; }
+      setBulkOpen(false); setBulkSkuPreview(null); clearSelection(); await load();
     } catch { setError("网络异常，批量设置 SKU 失败。"); }
     finally { setBulkPending(false); }
   }
@@ -314,7 +364,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {selectedIds.length ? <div className="space-y-3 rounded-lg border bg-muted/30 p-3 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2"><span>已选择 {selectedIds.length} 件库存（商品 {selectionStats.products}，仓库 {selectionStats.warehouses}，状态 {selectionStats.statuses}）</span><button type="button" className={buttonVariants({ variant: "ghost", size: "sm" })} onClick={clearSelection}>取消选择</button></div>
-       <div className="flex gap-2 overflow-x-auto pb-1"><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={toggleCurrentPage}>{pageAllSelected ? "取消当前页" : "全选当前页"}</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => void selectAllMatching()}>全选当前筛选结果</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => setBulkOpen(true)}>批量设置 SKU / 色号</button>{([ ["MOVE_LOCATION", "批量调整仓位"], ["SET_CONDITION", "批量设置成色"], ["SET_SALE_MODE", "批量设置计划出售方式"], ["SET_SHELF_LIFE", "批量修正保质期"] ] as const).map(([nextOperation, label]) => <button key={nextOperation} type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setOperation(nextOperation); setPreview(null); setMaintenanceDialog(nextOperation); }}>{label}</button>)}</div>
+       <div className="flex gap-2 overflow-x-auto pb-1"><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={toggleCurrentPage}>{pageAllSelected ? "取消当前页" : "全选当前页"}</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => void selectAllMatching()}>全选当前筛选结果</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setBulkSkuPreview(null); setBulkOpen(true); }}>批量设置 SKU / 色号</button>{([ ["MOVE_LOCATION", "批量调整仓位"], ["SET_CONDITION", "批量设置成色"], ["SET_SALE_MODE", "批量设置计划出售方式"], ["SET_SHELF_LIFE", "批量修正保质期"] ] as const).map(([nextOperation, label]) => <button key={nextOperation} type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => { setOperation(nextOperation); setPreview(null); setMaintenanceDialog(nextOperation); }}>{label}</button>)}</div>
       </div> : result?.data.length ? <div className="flex flex-wrap gap-2"><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={toggleCurrentPage}>全选当前页</button><button type="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={() => void selectAllMatching()}>全选当前筛选结果</button></div> : null}
       {!result ? (
         <Skeleton className="h-48" />
@@ -404,29 +454,30 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
           <DialogHeader><DialogTitle>{operation === "MOVE_LOCATION" ? "批量调整仓位" : operation === "SET_CONDITION" ? "批量设置成色" : operation === "SET_SALE_MODE" ? "批量设置计划出售方式" : "批量修正保质期"}</DialogTitle></DialogHeader>
           <div className="space-y-4 text-sm">
             <p>将预览 {selectedIds.length} 件库存的变更；确认后整批原子提交。</p>
-            {operation === "MOVE_LOCATION" ? <><div className="space-y-2"><Label>目标仓库</Label><Select value={targetWarehouseId} onValueChange={(value) => { setTargetWarehouseId(value); setTargetLocationId(""); setPreview(null); }}><SelectTrigger><SelectValue placeholder="选择仓库" /></SelectTrigger><SelectContent>{warehouses.map((warehouse) => <SelectItem key={warehouse.id} value={warehouse.id}>{warehouse.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label>目标库位</Label><Select value={targetLocationId} onValueChange={(value) => { setTargetLocationId(value); setPreview(null); }} disabled={!targetWarehouseId}><SelectTrigger><SelectValue placeholder="选择库位" /></SelectTrigger><SelectContent>{targetLocations.map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}</SelectContent></Select></div></> : null}
-            {operation === "SET_CONDITION" ? <div className="space-y-2"><Label>目标成色</Label><Select value={targetCondition} onValueChange={(value) => { setTargetCondition(value); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NEW">全新</SelectItem><SelectItem value="LIKE_NEW">近全新</SelectItem><SelectItem value="LIGHTLY_USED">轻微使用</SelectItem><SelectItem value="USED">使用痕迹</SelectItem><SelectItem value="FLAWED">瑕疵</SelectItem></SelectContent></Select></div> : null}
-            {operation === "SET_SALE_MODE" ? <div className="space-y-2"><Label>计划出售方式</Label><Select value={targetSaleMode} onValueChange={(value) => { setTargetSaleMode(value); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NONE">未设置</SelectItem><SelectItem value="DEWU_LIGHTNING">得物闪购</SelectItem><SelectItem value="DEWU_STANDARD">得物普通</SelectItem><SelectItem value="NINETY_FIVE">95分</SelectItem><SelectItem value="XIANYU">闲鱼</SelectItem><SelectItem value="OTHER">其他</SelectItem></SelectContent></Select></div> : null}
-            {operation === "SET_SHELF_LIFE" ? <><p className="rounded-md bg-amber-50 p-2 text-amber-900">保质期修正必须填写原因；到期日可根据生产日期和保质期自动计算。</p><div className="grid gap-3 sm:grid-cols-3"><div className="space-y-2"><Label>生产日期</Label><Select value={productionDateMode} onValueChange={(value) => { setProductionDateMode((value ?? "KEEP") as "KEEP" | "SET" | "CLEAR"); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="KEEP">保持原值</SelectItem><SelectItem value="SET">设置日期</SelectItem><SelectItem value="CLEAR">清空</SelectItem></SelectContent></Select>{productionDateMode === "SET" ? <Input type="date" value={productionDate} onChange={(event) => { setProductionDate(event.target.value); setPreview(null); }} /> : null}</div><div className="space-y-2"><Label>保质期（月）</Label><Select value={shelfLifeMonthsMode} onValueChange={(value) => { setShelfLifeMonthsMode((value ?? "KEEP") as "KEEP" | "SET" | "CLEAR"); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="KEEP">保持原值</SelectItem><SelectItem value="SET">设置月数</SelectItem><SelectItem value="CLEAR">清空</SelectItem></SelectContent></Select>{shelfLifeMonthsMode === "SET" ? <Input type="number" min="1" max="600" value={shelfLifeMonths} onChange={(event) => { setShelfLifeMonths(event.target.value); setPreview(null); }} /> : null}</div><div className="space-y-2"><Label>到期日期</Label><Select value={expiryDateMode} onValueChange={(value) => { setExpiryDateMode((value ?? "KEEP") as "KEEP" | "SET" | "CLEAR" | "AUTO"); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="KEEP">保持原值</SelectItem><SelectItem value="SET">设置日期</SelectItem><SelectItem value="AUTO">自动计算</SelectItem><SelectItem value="CLEAR">清空</SelectItem></SelectContent></Select>{expiryDateMode === "SET" ? <Input type="date" value={expiryDate} onChange={(event) => { setExpiryDate(event.target.value); setPreview(null); }} /> : null}</div></div><div className="space-y-2"><Label>修改原因</Label><Input value={shelfReason} onChange={(event) => { setShelfReason(event.target.value); setPreview(null); }} placeholder="请填写根据实物包装修正保质期的原因" /></div></> : null}
+            {operation === "MOVE_LOCATION" ? <><div className="space-y-2"><Label htmlFor="bulk-target-warehouse">目标仓库</Label><Select value={targetWarehouseId} onValueChange={(value) => { setTargetWarehouseId(value); setTargetLocationId(""); setPreview(null); }}><SelectTrigger id="bulk-target-warehouse"><SelectValue placeholder="选择仓库" /></SelectTrigger><SelectContent>{warehouses.map((warehouse) => <SelectItem key={warehouse.id} value={warehouse.id}>{warehouse.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="bulk-target-location">目标库位</Label><Select value={targetLocationId} onValueChange={(value) => { setTargetLocationId(value); setPreview(null); }} disabled={!targetWarehouseId}><SelectTrigger id="bulk-target-location"><SelectValue placeholder="选择库位" /></SelectTrigger><SelectContent>{targetLocations.map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}</SelectContent></Select></div></> : null}
+            {operation === "SET_CONDITION" ? <div className="space-y-2"><Label htmlFor="bulk-target-condition">目标成色</Label><Select value={targetCondition} onValueChange={(value) => { setTargetCondition(value); setPreview(null); }}><SelectTrigger id="bulk-target-condition"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NEW">全新</SelectItem><SelectItem value="LIKE_NEW">近全新</SelectItem><SelectItem value="LIGHTLY_USED">轻微使用</SelectItem><SelectItem value="USED">使用痕迹</SelectItem><SelectItem value="FLAWED">瑕疵</SelectItem></SelectContent></Select></div> : null}
+            {operation === "SET_SALE_MODE" ? <div className="space-y-2"><Label htmlFor="bulk-target-sale-mode">计划出售方式</Label><Select value={targetSaleMode} onValueChange={(value) => { setTargetSaleMode(value); setPreview(null); }}><SelectTrigger id="bulk-target-sale-mode"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NONE">未设置</SelectItem><SelectItem value="DEWU_LIGHTNING">得物闪购</SelectItem><SelectItem value="DEWU_STANDARD">得物普通</SelectItem><SelectItem value="NINETY_FIVE">95分</SelectItem><SelectItem value="XIANYU">闲鱼</SelectItem><SelectItem value="OTHER">其他</SelectItem></SelectContent></Select></div> : null}
+            {operation === "SET_SHELF_LIFE" ? <><p className="rounded-md bg-amber-50 p-2 text-amber-900">保质期修正必须填写原因；到期日可根据生产日期和保质期自动计算。</p><div className="grid gap-3 sm:grid-cols-3"><div className="space-y-2"><Label htmlFor="bulk-production-date">生产日期</Label><Select value={productionDateMode} onValueChange={(value) => { setProductionDateMode((value ?? "KEEP") as "KEEP" | "SET" | "CLEAR"); setPreview(null); }}><SelectTrigger id="bulk-production-date-mode"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="KEEP">保持原值</SelectItem><SelectItem value="SET">设置日期</SelectItem><SelectItem value="CLEAR">清空</SelectItem></SelectContent></Select>{productionDateMode === "SET" ? <Input id="bulk-production-date" type="date" value={productionDate} onChange={(event) => { setProductionDate(event.target.value); setPreview(null); }} /> : null}</div><div className="space-y-2"><Label htmlFor="bulk-shelf-life-months">保质期（月）</Label><Select value={shelfLifeMonthsMode} onValueChange={(value) => { setShelfLifeMonthsMode((value ?? "KEEP") as "KEEP" | "SET" | "CLEAR"); setPreview(null); }}><SelectTrigger id="bulk-shelf-life-mode"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="KEEP">保持原值</SelectItem><SelectItem value="SET">设置月数</SelectItem><SelectItem value="CLEAR">清空</SelectItem></SelectContent></Select>{shelfLifeMonthsMode === "SET" ? <Input id="bulk-shelf-life-months" type="number" min="1" max="600" value={shelfLifeMonths} onChange={(event) => { setShelfLifeMonths(event.target.value); setPreview(null); }} /> : null}</div><div className="space-y-2"><Label htmlFor="bulk-expiry-date">到期日期</Label><Select value={expiryDateMode} onValueChange={(value) => { setExpiryDateMode((value ?? "KEEP") as "KEEP" | "SET" | "CLEAR" | "AUTO"); setPreview(null); }}><SelectTrigger id="bulk-expiry-date-mode"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="KEEP">保持原值</SelectItem><SelectItem value="SET">设置日期</SelectItem><SelectItem value="AUTO">自动计算</SelectItem><SelectItem value="CLEAR">清空</SelectItem></SelectContent></Select>{expiryDateMode === "SET" ? <Input id="bulk-expiry-date" type="date" value={expiryDate} onChange={(event) => { setExpiryDate(event.target.value); setPreview(null); }} /> : null}</div></div><div className="space-y-2"><Label htmlFor="bulk-shelf-reason">修改原因</Label><Input id="bulk-shelf-reason" value={shelfReason} onChange={(event) => { setShelfReason(event.target.value); setPreview(null); }} placeholder="请填写根据实物包装修正保质期的原因" /></div></> : null}
             {(operation === "SET_CONDITION" || operation === "SET_SHELF_LIFE") ? <label className="flex gap-2"><input type="checkbox" checked={confirmMixed} onChange={(event) => { setConfirmMixed(event.target.checked); setPreview(null); }} />我确认跨商品或 SKU 应用相同规则</label> : null}
             {preview ? <div className="space-y-2 rounded-md border p-3"><p>预览：将变更 {preview.changedCount} 件；涉及 {preview.productSkuCount} 个商品 / SKU、{preview.warehouseCount} 个仓库。</p>{preview.blockedItems.length ? <div className="rounded bg-destructive/10 p-2 text-destructive">{preview.blockedItems.map((item) => <p key={item.inventoryCode}>{item.inventoryCode}：{item.reason}</p>)}</div> : <><p className="text-emerald-700">未发现锁定库存，确认后将整批提交。</p><div className="max-h-48 space-y-2 overflow-y-auto">{preview.changes.filter((change) => change.changed).map((change) => <div key={change.inventoryCode} className="rounded-md bg-muted/50 p-2 text-xs"><p className="font-medium">{change.inventoryCode}</p><p>变更前：{Object.entries(change.before).map(([key, value]) => `${key}: ${String(value ?? "—")}`).join("；")}</p><p>变更后：{Object.entries(change.after).map(([key, value]) => `${key}: ${String(value ?? "—")}`).join("；")}</p></div>)}</div></>}</div> : null}
           </div>
           <DialogFooter><button type="button" className={buttonVariants({ variant: "outline" })} disabled={bulkPending || previewPending} onClick={() => setMaintenanceDialog(null)}>取消</button>{!preview ? <button type="button" className={buttonVariants()} disabled={previewPending || !selectedIds.length} onClick={() => void requestPreview()}>{previewPending ? "正在预览…" : "预览变更"}</button> : <button type="button" className={buttonVariants()} disabled={bulkPending || preview.blockedItems.length > 0} onClick={() => void submitMaintenance()}>{bulkPending ? "正在提交…" : "确认并批量更新"}</button>}</DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+      <Dialog open={bulkOpen} onOpenChange={(open) => { setBulkOpen(open); if (!open) setBulkSkuPreview(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>批量设置 SKU / 色号</DialogTitle></DialogHeader>
           <div className="space-y-3 text-sm">
             <p>已选择 {selectedIds.length} 件库存，涉及 {productCount} 个商品。</p>
             {productCount > 1 ? <p className="rounded-md bg-amber-50 p-2 text-amber-800">包含多个不同商品。默认拒绝提交，需明确确认。</p> : null}
             {historicalCount ? <p className="rounded-md bg-amber-50 p-2 text-amber-800">包含 {historicalCount} 件已售出库存档案。默认不会批量修改。</p> : null}
-            <div className="space-y-2"><Label htmlFor="bulkSkuText">新 SKU / 色号</Label><Input id="bulkSkuText" value={bulkSkuText} onChange={(event) => setBulkSkuText(event.target.value)} placeholder="例如 2C0、1W1" /></div>
-            <label className="flex gap-2"><input type="checkbox" checked={overwriteExisting} onChange={(event) => setOverwriteExisting(event.target.checked)} />覆盖已有 SKU（默认只补空 SKU）</label>
-            <label className="flex gap-2"><input type="checkbox" checked={allowMixedProducts} onChange={(event) => setAllowMixedProducts(event.target.checked)} />我确认允许跨商品批量设置</label>
-            <label className="flex gap-2"><input type="checkbox" checked={includeHistorical} onChange={(event) => setIncludeHistorical(event.target.checked)} />我确认包含已售出库存档案</label>
+            <div className="space-y-2"><Label htmlFor="bulkSkuText">新 SKU / 色号</Label><Input id="bulkSkuText" value={bulkSkuText} onChange={(event) => { setBulkSkuText(event.target.value); clearBulkSkuPreview(); }} placeholder="例如 2C0、1W1" /></div>
+            <label className="flex gap-2"><input type="checkbox" checked={overwriteExisting} onChange={(event) => { setOverwriteExisting(event.target.checked); clearBulkSkuPreview(); }} />覆盖已有 SKU（默认只补空 SKU）</label>
+            <label className="flex gap-2"><input type="checkbox" checked={allowMixedProducts} onChange={(event) => { setAllowMixedProducts(event.target.checked); clearBulkSkuPreview(); }} />我确认允许跨商品批量设置</label>
+            <label className="flex gap-2"><input type="checkbox" checked={includeHistorical} onChange={(event) => { setIncludeHistorical(event.target.checked); clearBulkSkuPreview(); }} />我确认包含已售出库存档案</label>
+            {bulkSkuPreview ? <div className="space-y-2 rounded-md border p-3"><p>预览：将更新 {bulkSkuPreview.updateCount} 件，保留 {bulkSkuPreview.skippedCount} 件。</p><div className="max-h-52 space-y-2 overflow-y-auto">{bulkSkuPreview.changes.map((change) => <div key={change.inventoryItemId} className="rounded-md bg-muted/50 p-2 text-xs"><p className="font-medium">{change.inventoryCode} · {change.name}</p><p>旧 SKU：{change.oldSku ?? "未填写"}；新 SKU：{change.newSku ?? "未填写"}</p><p className={change.willUpdate ? "text-emerald-700" : "text-amber-700"}>{bulkSkuResultLabels[change.result] ?? change.result}</p></div>)}</div></div> : null}
           </div>
-          <DialogFooter><button type="button" className={buttonVariants({ variant: "outline" })} disabled={bulkPending} onClick={() => setBulkOpen(false)}>取消</button><button type="button" className={buttonVariants()} disabled={bulkPending} onClick={submitBulkSku}>{bulkPending ? "保存中..." : "确认批量设置"}</button></DialogFooter>
+          <DialogFooter><button type="button" className={buttonVariants({ variant: "outline" })} disabled={bulkPending || bulkSkuPreviewPending} onClick={() => setBulkOpen(false)}>取消</button>{!bulkSkuPreview ? <button type="button" className={buttonVariants()} disabled={bulkSkuPreviewPending || !selectedIds.length} onClick={() => void requestBulkSkuPreview()}>{bulkSkuPreviewPending ? "正在预览…" : "预览变更"}</button> : <button type="button" className={buttonVariants()} disabled={bulkPending || bulkSkuPreview.updateCount === 0} onClick={() => void submitBulkSku()}>{bulkPending ? "保存中..." : "确认并批量更新"}</button>}</DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

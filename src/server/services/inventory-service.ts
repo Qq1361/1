@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 import { ServiceError } from "@/server/errors";
@@ -27,6 +28,76 @@ function withDisplayStorageLocation<T extends {
     ? `${item.warehouse.name} / ${item.warehouseLocation.name}`
     : item.warehouse?.name ?? item.warehouseLocation?.name;
   return { ...item, displayStorageLocation: structuredLocation ?? item.storageLocation ?? "未设置" };
+}
+
+type BulkSkuInput = {
+  inventoryItemIds: string[];
+  skuText?: string | null | undefined;
+  overwriteExisting?: boolean;
+  allowMixedProducts?: boolean;
+  includeHistorical?: boolean;
+  selectionFingerprint?: string;
+};
+
+type BulkSkuItem = Pick<Prisma.InventoryItemGetPayload<Record<string, never>>, "id" | "inventoryCode" | "name" | "skuText" | "itemStatus" | "updatedAt" | "saleMode" | "storageLocation" | "expiryDate">;
+
+function assertBulkSkuIds(ids: string[]) {
+  if (!ids.length || ids.length > 500) {
+    throw new ServiceError("INVALID_INVENTORY_SELECTION", "Please select between 1 and 500 inventory items.", 422);
+  }
+  if (new Set(ids).size !== ids.length) {
+    throw new ServiceError("INVENTORY_BULK_DUPLICATE_ID", "Duplicate inventory items are not allowed for a bulk SKU change.", 422);
+  }
+}
+
+function normalizeBulkSkuInput(input: BulkSkuInput) {
+  return {
+    inventoryItemIds: input.inventoryItemIds,
+    skuText: normalizeSku(input.skuText),
+    overwriteExisting: input.overwriteExisting ?? false,
+    allowMixedProducts: input.allowMixedProducts ?? false,
+    includeHistorical: input.includeHistorical ?? false,
+  };
+}
+
+function bulkSkuFingerprint(items: BulkSkuItem[], input: ReturnType<typeof normalizeBulkSkuInput>) {
+  const source = items
+    .map((item) => ({
+      id: item.id,
+      skuText: normalizeSku(item.skuText),
+      itemStatus: item.itemStatus,
+      name: item.name,
+      updatedAt: item.updatedAt.toISOString(),
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  return createHash("sha256")
+    .update(JSON.stringify({ input, source }))
+    .digest("hex");
+}
+
+function getBulkSkuChanges(items: BulkSkuItem[], input: ReturnType<typeof normalizeBulkSkuInput>) {
+  return items
+    .slice()
+    .sort((left, right) => left.inventoryCode.localeCompare(right.inventoryCode))
+    .map((item) => {
+      const oldSku = normalizeSku(item.skuText);
+      let result = "WILL_UPDATE";
+      if (isLegacyInventoryItemStatus(item.itemStatus)) result = "LEGACY_STATUS_EXCLUDED";
+      else if (item.itemStatus === "SOLD" && !input.includeHistorical) result = "HISTORICAL_ITEM_EXCLUDED";
+      else if (oldSku !== null && !input.overwriteExisting) result = "SKU_ALREADY_EXISTS";
+      else if (oldSku === input.skuText) result = "NO_CHANGE";
+      return {
+        inventoryItemId: item.id,
+        inventoryCode: item.inventoryCode,
+        name: item.name,
+        itemStatus: item.itemStatus,
+        oldSku,
+        newSku: input.skuText,
+        result,
+        willUpdate: result === "WILL_UPDATE",
+        updatedAt: item.updatedAt,
+      };
+    });
 }
 
 export class InventoryService {
@@ -407,68 +478,92 @@ export class InventoryService {
     });
   }
 
-  async bulkUpdateSku(
-    ownerId: string,
-    input: {
-      inventoryItemIds: string[];
-      skuText?: string | null | undefined;
-      overwriteExisting?: boolean;
-      allowMixedProducts?: boolean;
-      includeHistorical?: boolean;
-    },
-  ) {
-    const ids = [...new Set(input.inventoryItemIds)];
-    if (!ids.length || ids.length > 500) {
-      throw new ServiceError("INVALID_INVENTORY_SELECTION", "请选择 1 至 500 件库存。", 422);
+  async previewBulkSku(ownerId: string, input: BulkSkuInput) {
+    assertBulkSkuIds(input.inventoryItemIds);
+    const normalizedInput = normalizeBulkSkuInput(input);
+    const items = await db.inventoryItem.findMany({ where: { id: { in: normalizedInput.inventoryItemIds }, ownerId } });
+    if (items.length !== normalizedInput.inventoryItemIds.length) {
+      throw new ServiceError("INVENTORY_NOT_FOUND", "部分库存不存在或无权访问。", 404);
     }
-    const nextSku = normalizeSku(input.skuText);
+    const productNames = new Set(items.map((item) => item.name));
+    if (productNames.size > 1 && !normalizedInput.allowMixedProducts) {
+      throw new ServiceError("MIXED_PRODUCTS", "已选择多个不同商品，请明确确认后再批量设置 SKU。", 409);
+    }
+    const changes = getBulkSkuChanges(items, normalizedInput);
+    return {
+      selectedCount: items.length,
+      updateCount: changes.filter((change) => change.willUpdate).length,
+      skippedCount: changes.filter((change) => !change.willUpdate).length,
+      selectionFingerprint: bulkSkuFingerprint(items, normalizedInput),
+      changes: changes.map((change) => {
+        const { updatedAt, ...dto } = change;
+        void updatedAt;
+        return dto;
+      }),
+    };
+  }
+
+  async bulkUpdateSku(ownerId: string, input: BulkSkuInput) {
+    assertBulkSkuIds(input.inventoryItemIds);
+    if (!input.selectionFingerprint) {
+      throw new ServiceError("INVENTORY_BULK_SELECTION_CHANGED", "请先重新预览 SKU 变更后再确认。", 409);
+    }
+    const normalizedInput = normalizeBulkSkuInput(input);
     return db.$transaction(async (tx) => {
-      const items = await tx.inventoryItem.findMany({ where: { id: { in: ids }, ownerId } });
-      if (items.length !== ids.length) {
+      const items = await tx.inventoryItem.findMany({ where: { id: { in: normalizedInput.inventoryItemIds }, ownerId } });
+      if (items.length !== normalizedInput.inventoryItemIds.length) {
         throw new ServiceError("INVENTORY_NOT_FOUND", "部分库存不存在或无权访问。", 404);
       }
       const productNames = new Set(items.map((item) => item.name));
-      if (productNames.size > 1 && !input.allowMixedProducts) {
+      if (productNames.size > 1 && !normalizedInput.allowMixedProducts) {
         throw new ServiceError("MIXED_PRODUCTS", "已选择多个不同商品，请明确确认后再批量设置 SKU。", 409);
       }
-      const skipped: { inventoryItemId: string; reason: string }[] = [];
-      const updates = items.filter((item) => {
-        if (isLegacyInventoryItemStatus(item.itemStatus)) {
-          skipped.push({ inventoryItemId: item.id, reason: "LEGACY_STATUS_EXCLUDED" });
-          return false;
+      const currentFingerprint = bulkSkuFingerprint(items, normalizedInput);
+      if (currentFingerprint !== input.selectionFingerprint) {
+        throw new ServiceError("INVENTORY_BULK_SELECTION_CHANGED", "库存资料已在预览后发生变化，请重新预览。", 409);
+      }
+      const changes = getBulkSkuChanges(items, normalizedInput);
+      const updates = changes.filter((change) => change.willUpdate);
+      for (const change of updates) {
+        const result = await tx.inventoryItem.updateMany({
+          where: { id: change.inventoryItemId, ownerId, updatedAt: change.updatedAt },
+          data: { skuText: change.newSku },
+        });
+        if (result.count !== 1) {
+          throw new ServiceError("INVENTORY_BULK_SELECTION_CHANGED", "确认期间库存资料发生变化，整批 SKU 修改未保存。", 409);
         }
-        if (item.itemStatus === "SOLD" && !input.includeHistorical) {
-          skipped.push({ inventoryItemId: item.id, reason: "HISTORICAL_ITEM_EXCLUDED" });
-          return false;
-        }
-        if (normalizeSku(item.skuText) !== null && !input.overwriteExisting) {
-          skipped.push({ inventoryItemId: item.id, reason: "SKU_ALREADY_EXISTS" });
-          return false;
-        }
-        return true;
-      });
-      for (const item of updates) {
-        await tx.inventoryItem.update({ where: { id: item.id }, data: { skuText: nextSku } });
       }
       if (updates.length) {
         await tx.inventoryActionLog.createMany({
-          data: updates.map((item) => ({
-            ownerId,
-            inventoryItemId: item.id,
-            actionType: "BULK_UPDATED_SKU",
-            note: `来源：库存批量补录；旧 SKU：${normalizeSku(item.skuText) ?? "未填写"}；新 SKU：${nextSku ?? "未填写"}`,
-            oldSaleMode: item.saleMode,
-            newSaleMode: item.saleMode,
-            oldItemStatus: item.itemStatus,
-            newItemStatus: item.itemStatus,
-            oldStorageLocation: item.storageLocation,
-            newStorageLocation: item.storageLocation,
-            oldExpiryDate: item.expiryDate,
-            newExpiryDate: item.expiryDate,
-          })),
+          data: updates.map((change) => {
+            const item = items.find((candidate) => candidate.id === change.inventoryItemId)!;
+            return {
+              ownerId,
+              inventoryItemId: item.id,
+              actionType: "BULK_UPDATED_SKU",
+              note: `来源：库存批量 SKU 纠错；旧 SKU：${change.oldSku ?? "未填写"}；新 SKU：${change.newSku ?? "未填写"}`,
+              oldSaleMode: item.saleMode,
+              newSaleMode: item.saleMode,
+              oldItemStatus: item.itemStatus,
+              newItemStatus: item.itemStatus,
+              oldStorageLocation: item.storageLocation,
+              newStorageLocation: item.storageLocation,
+              oldExpiryDate: item.expiryDate,
+              newExpiryDate: item.expiryDate,
+            };
+          }),
         });
       }
-      return { updatedCount: updates.length, skippedCount: skipped.length, skipped };
+      return {
+        updatedCount: updates.length,
+        skippedCount: changes.length - updates.length,
+        selectionFingerprint: currentFingerprint,
+        changes: changes.map((change) => {
+          const { updatedAt, ...dto } = change;
+          void updatedAt;
+          return dto;
+        }),
+      };
     });
   }
 

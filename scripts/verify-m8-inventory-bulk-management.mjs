@@ -36,7 +36,16 @@ try {
   const move = { inventoryItemIds: [first.id, second.id], operation: "MOVE_LOCATION", payload: { warehouseId: w2.id, storageLocationId: l2.id }, reason: "整理库位", confirmMixedProducts: false };
   const movePreview = await bulk.preview(ownerA, move);
   assert(movePreview.selectedCount === 2 && movePreview.changedCount === 2, "preview returns selected items and changes");
-  assert(movePreview.blockedCount === 0 && movePreview.changes.every((change) => change.before.warehouseId === w1.id && change.after.warehouseId === w2.id), "move preview exposes the old and target locations without blocking editable inventory");
+  assert(movePreview.blockedCount === 0 && movePreview.changes.every((change) => (
+    change.before.warehouseId === w1.id
+    && change.before.warehouseName === `${runId}-W1`
+    && change.before.storageLocationId === l1.id
+    && change.before.storageLocationName === "A-01"
+    && change.after.warehouseId === w2.id
+    && change.after.warehouseName === `${runId}-W2`
+    && change.after.storageLocationId === l2.id
+    && change.after.storageLocationName === "B-01"
+  )), "move preview exposes old and target warehouse and location names without blocking editable inventory");
   const moved = await bulk.update(ownerA, { ...move, selectionFingerprint: movePreview.selectionFingerprint });
   assert(moved.updatedCount === 2, "batch move updates all items");
   assert(Boolean(moved.batchId), "successful batch update returns its audit batch ID");
@@ -67,6 +76,28 @@ try {
   const beforePreviewLogs = await db.inventoryItemActionLog.count({ where: { inventoryItemId: first.id } });
   const readOnlyPreview = await bulk.preview(ownerA, { ...saleMode, payload: { saleMode: "NONE" } });
   assert((await db.inventoryItemActionLog.count({ where: { inventoryItemId: first.id } })) === beforePreviewLogs && readOnlyPreview.changedCount === 1, "preview is read-only and returns per-item changes");
+  const skuFirst = await fixture(ownerA, "SKU-EMPTY", w2.id, l2.id, { name: `${runId}-SKU` });
+  const skuExisting = await fixture(ownerA, "SKU-EXISTING", w2.id, l2.id, { name: `${runId}-SKU`, skuText: "1W1" });
+  const skuSold = await fixture(ownerA, "SKU-SOLD", w2.id, l2.id, { name: `${runId}-SKU`, itemStatus: "SOLD" });
+  const skuInput = { inventoryItemIds: [skuFirst.id, skuExisting.id, skuSold.id], skuText: " 2c0 ", overwriteExisting: false, allowMixedProducts: false, includeHistorical: false };
+  const skuActionCount = await db.inventoryActionLog.count({ where: { inventoryItemId: { in: skuInput.inventoryItemIds } } });
+  const skuPreview = await inventory.previewBulkSku(ownerA, skuInput);
+  assert(skuPreview.updateCount === 1 && skuPreview.skippedCount === 2, "SKU preview only plans empty SKU updates by default");
+  assert(skuPreview.changes.some((change) => change.inventoryItemId === skuFirst.id && change.oldSku === null && change.newSku === "2C0" && change.willUpdate), "SKU preview normalizes and shows an empty SKU update");
+  assert(skuPreview.changes.some((change) => change.inventoryItemId === skuExisting.id && change.result === "SKU_ALREADY_EXISTS"), "SKU preview retains existing SKU unless overwrite is confirmed");
+  assert(skuPreview.changes.some((change) => change.inventoryItemId === skuSold.id && change.result === "HISTORICAL_ITEM_EXCLUDED"), "SKU preview excludes SOLD history unless explicitly included");
+  assert((await db.inventoryActionLog.count({ where: { inventoryItemId: { in: skuInput.inventoryItemIds } } })) === skuActionCount, "SKU preview does not write audit logs or inventory data");
+  const skuUpdated = await inventory.bulkUpdateSku(ownerA, { ...skuInput, selectionFingerprint: skuPreview.selectionFingerprint });
+  assert(skuUpdated.updatedCount === 1 && skuUpdated.skippedCount === 2, "SKU confirmation only updates preview-planned inventory");
+  const skuAfterFirstUpdate = await db.inventoryItem.findMany({ where: { id: { in: skuInput.inventoryItemIds } } });
+  assert(skuAfterFirstUpdate.find((item) => item.id === skuFirst.id)?.skuText === "2C0" && skuAfterFirstUpdate.find((item) => item.id === skuExisting.id)?.skuText === "1W1" && skuAfterFirstUpdate.find((item) => item.id === skuSold.id)?.skuText === null, "SKU confirmation preserves existing and excluded historical records");
+  const skuConcurrentPreview = await inventory.previewBulkSku(ownerA, { inventoryItemIds: [skuFirst.id, skuExisting.id], skuText: "3n1", overwriteExisting: true, allowMixedProducts: false, includeHistorical: false });
+  await db.inventoryItem.update({ where: { id: skuExisting.id }, data: { skuText: "CONCURRENT" } });
+  assert(await rejects(() => inventory.bulkUpdateSku(ownerA, { inventoryItemIds: [skuFirst.id, skuExisting.id], skuText: "3n1", overwriteExisting: true, allowMixedProducts: false, includeHistorical: false, selectionFingerprint: skuConcurrentPreview.selectionFingerprint }), "INVENTORY_BULK_SELECTION_CHANGED"), "stale SKU preview rejects the complete confirmation without partial writes");
+  assert((await db.inventoryItem.findUniqueOrThrow({ where: { id: skuFirst.id } })).skuText === "2C0", "stale SKU confirmation leaves previously previewed items unchanged");
+  const historicalSkuPreview = await inventory.previewBulkSku(ownerA, { inventoryItemIds: [skuSold.id], skuText: "4n1", overwriteExisting: false, allowMixedProducts: false, includeHistorical: true });
+  await inventory.bulkUpdateSku(ownerA, { inventoryItemIds: [skuSold.id], skuText: "4n1", overwriteExisting: false, allowMixedProducts: false, includeHistorical: true, selectionFingerprint: historicalSkuPreview.selectionFingerprint });
+  assert((await db.inventoryItem.findUniqueOrThrow({ where: { id: skuSold.id } })).skuText === "4N1", "including SOLD history changes only its inventory archive SKU");
   const shelf = { inventoryItemIds: [first.id], operation: "SET_SHELF_LIFE", payload: { productionDate: { mode: "SET", value: "2026-01-31" }, shelfLifeMonths: { mode: "SET", value: 1 }, expiryDate: { mode: "AUTO" } }, reason: "核对实物包装", confirmMixedProducts: false };
   const shelfPreview = await bulk.preview(ownerA, shelf); await bulk.update(ownerA, { ...shelf, selectionFingerprint: shelfPreview.selectionFingerprint });
   assert(shelfPreview.requiresReason && shelfPreview.requiresMixedProductConfirmation === false, "single-product shelf-life preview declares its required reason without a mixed-product prompt");
