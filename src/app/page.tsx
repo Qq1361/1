@@ -97,6 +97,17 @@ type PlatformReturnSummary = {
   };
 };
 
+type InventoryExpiryRiskResponse = {
+  businessDate: string;
+  risks: {
+    risk: "EXPIRED" | "WITHIN_30_DAYS" | "WITHIN_90_DAYS" | "WITHIN_180_DAYS";
+    label: string;
+    count: number;
+    nearestExpiryDate: string | null;
+    locations: { name: string; count: number }[];
+  }[];
+};
+
 const EMPTY_TODO_COUNTS: TodosResponse["counts"] = {
   missingTracking: 0,
   trackingNotReceivedOverdue: 0,
@@ -135,32 +146,43 @@ function isPlatformReturnSummary(value: unknown): value is PlatformReturnSummary
   return Boolean(candidate.counts) && typeof candidate.counts === "object";
 }
 
+function isInventoryExpiryRiskResponse(value: unknown): value is InventoryExpiryRiskResponse {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<InventoryExpiryRiskResponse>;
+  return typeof candidate.businessDate === "string" && Array.isArray(candidate.risks)
+    && candidate.risks.every((risk) => risk && typeof risk.count === "number" && typeof risk.label === "string");
+}
+
 export default function Home() {
   const [orders, setOrders] = useState<ListResponse | null>(null);
   const [todos, setTodos] = useState<TodosResponse | null>(null);
   const [platformReturnSummary, setPlatformReturnSummary] = useState<PlatformReturnSummary | null>(null);
+  const [expiryRiskSummary, setExpiryRiskSummary] = useState<InventoryExpiryRiskResponse | null>(null);
   const [loadError, setLoadError] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setLoadError(false);
     try {
-      const [ordersResponse, todosResponse, returnsResponse] = await Promise.all([
+      const [ordersResponse, todosResponse, returnsResponse, expiryResponse] = await Promise.all([
         fetch("/api/purchase-orders?pageSize=5"),
         fetch("/api/todos"),
         fetch("/api/platform-returns/summary"),
+        fetch("/api/inventory/expiry-risk"),
       ]);
-      if (!ordersResponse.ok || !todosResponse.ok) throw new Error("Failed to load dashboard");
-      const [orderData, todoData, returnSummary] = await Promise.all([
+      if (!ordersResponse.ok || !todosResponse.ok || !expiryResponse.ok) throw new Error("Failed to load dashboard");
+      const [orderData, todoData, returnSummary, expirySummary] = await Promise.all([
         ordersResponse.json(),
         todosResponse.json(),
         returnsResponse.ok ? returnsResponse.json() : null,
+        expiryResponse.json(),
       ]);
-      if (!isListResponse(orderData) || !isTodosResponse(todoData)) {
+      if (!isListResponse(orderData) || !isTodosResponse(todoData) || !isInventoryExpiryRiskResponse(expirySummary)) {
         throw new Error("Invalid dashboard response");
       }
       setOrders(orderData);
       setTodos(todoData);
       setPlatformReturnSummary(isPlatformReturnSummary(returnSummary) ? returnSummary : null);
+      setExpiryRiskSummary(expirySummary);
     } catch {
       setLoadError(true);
     }
@@ -196,6 +218,7 @@ export default function Home() {
     (total, card) => total + (Number(card.value ?? 0) > 0 ? 1 : 0),
     0,
   );
+  const expiryRiskCards = expiryRiskSummary?.risks ?? [];
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
@@ -245,6 +268,32 @@ export default function Home() {
               <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="size-5" />
               </span>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-xl shadow-none">
+        <CardHeader className="border-b">
+          <CardTitle>库存效期风险</CardTitle>
+          <CardDescription>按北京时间 {expiryRiskSummary?.businessDate ?? ""} 的到期日实时判断；提醒仅供处理，不会自动改变库存状态。</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-2 p-2 sm:grid-cols-2 xl:grid-cols-4">
+          {expiryRiskCards.map((risk) => (
+            <Link
+              key={risk.risk}
+              href={`/inventory?expiryRisk=${risk.risk}`}
+              className="group flex min-h-24 flex-col justify-between rounded-md border p-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-sm font-medium">{risk.label}</span>
+                <AlertTriangle className={risk.count ? "size-4 text-amber-600" : "size-4 text-muted-foreground"} />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold tabular-nums">{risk.count} 件</p>
+                <p className="mt-1 break-words text-xs text-muted-foreground">{risk.nearestExpiryDate ? `最近到期：${risk.nearestExpiryDate}` : "暂无库存"}</p>
+                {risk.locations.length ? <p className="mt-1 break-words text-xs text-muted-foreground">{risk.locations.map((location) => `${location.name} ${location.count}件`).join("；")}</p> : null}
+              </div>
             </Link>
           ))}
         </CardContent>

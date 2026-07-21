@@ -27,6 +27,12 @@ export type DailyBusinessReportFeishuMessage = {
 export function formatDailyBusinessReportForFeishu(report: DailyBusinessReportDto): DailyBusinessReportFeishuMessage {
   const todos = priorityItems(report.todos.items, "priority", IMPORTANT_TODO_LIMIT);
   const risks = priorityItems(report.risks.items, "severity", IMPORTANT_RISK_LIMIT);
+  const expiryCounts = report.inventoryExpiry?.counts ?? {
+    EXPIRED: 0,
+    WITHIN_30_DAYS: 0,
+    WITHIN_90_DAYS: 0,
+    WITHIN_180_DAYS: 0,
+  };
   const todoLines = todos.shown.map((item) => `- ${dailyTodoLabels[item.code]?.title ?? "其他待办"}：${item.count} 项`);
   const riskLines = risks.shown.map((item) => `- ${dailyRiskLabels[item.code]?.title ?? "其他风险"}：${item.count} 项`);
   const warnings: string[] = [];
@@ -51,6 +57,11 @@ export function formatDailyBusinessReportForFeishu(report: DailyBusinessReportDt
     `- 已退回待处理：${report.inventory.platformReturnedPendingCount} 件`,
     `- 问题件：${report.inventory.problemCount} 件`,
     `- 总未售资产成本：${formatMoney(report.inventory.totalUnsoldAssetCost)}`,
+    "- 库存效期风险：",
+    `  - 已过期：${expiryCounts.EXPIRED} 件`,
+    `  - 30天内到期：${expiryCounts.WITHIN_30_DAYS} 件`,
+    `  - 90天内到期：${expiryCounts.WITHIN_90_DAYS} 件`,
+    `  - 180天内到期：${expiryCounts.WITHIN_180_DAYS} 件`,
     "",
     "三、今日优先待办",
     ...(todoLines.length ? todoLines : ["- 暂无 P0/P1 优先待办"]),

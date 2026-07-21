@@ -284,7 +284,7 @@ try {
   assert(Number.isInteger(empty.body.todos.totalCount) && Number.isInteger(empty.body.risks.totalCount), "todo and risk counts are integers");
   assert(empty.body.todos.priorityCounts && empty.body.risks.severityCounts, "todo and risk priority summaries are present");
   assert(empty.body.market && Number.isInteger(empty.body.market.activeMarketItemCount), "market section exposes active item count");
-  for (const key of ["reportDate", "timezone", "periodStart", "periodEnd", "generatedAt", "sales", "purchases", "inventory", "todos", "risks", "market"]) {
+  for (const key of ["reportDate", "timezone", "periodStart", "periodEnd", "generatedAt", "sales", "purchases", "inventory", "inventoryExpiry", "todos", "risks", "market"]) {
     assert(Object.prototype.hasOwnProperty.call(empty.body, key), `DTO includes top-level field ${key}`);
   }
   for (const key of ["confirmedOrderCount", "confirmedItemCount", "grossSalesAmount", "expectedIncomeAmount", "actualReceivedAmount", "actualRefundAmount", "netReceivedAmount", "originalProfitAmount", "afterSaleNetProfitAmount"]) {
@@ -299,6 +299,12 @@ try {
   for (const key of ["activeMarketItemCount", "withCurrentExpectedIncomeCount", "withoutCurrentExpectedIncomeCount", "quotesCreatedInPeriodCount", "quotesConfirmedInPeriodCount", "expiringQuoteCount", "expiredQuoteCount"]) {
     assert(Object.prototype.hasOwnProperty.call(empty.body.market, key), `market DTO includes ${key}`);
   }
+  for (const key of ["EXPIRED", "WITHIN_30_DAYS", "WITHIN_90_DAYS", "WITHIN_180_DAYS"]) {
+    assert(Number.isInteger(empty.body.inventoryExpiry.counts[key]) && empty.body.inventoryExpiry.counts[key] >= 0, `inventory expiry DTO includes non-negative ${key} count`);
+  }
+  assert(typeof empty.body.inventoryExpiry.businessDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(empty.body.inventoryExpiry.businessDate), "inventory expiry DTO exposes the Shanghai business date");
+  assert(Array.isArray(empty.body.inventoryExpiry.samples) && empty.body.inventoryExpiry.samples.length <= 5, "inventory expiry DTO returns at most five samples");
+  assert(empty.body.inventoryExpiry.samples.every((sample) => typeof sample.id === "string" && typeof sample.name === "string" && typeof sample.displayStorageLocation === "string" && typeof sample.expiryDate === "string"), "inventory expiry samples are JSON-safe and include locations");
   for (const section of ["sales", "purchases", "inventory"]) {
     assert(Object.values(empty.body[section]).every((value) => typeof value === "string" || Number.isInteger(value)), `${section} DTO values are JSON-safe strings or integers`);
   }

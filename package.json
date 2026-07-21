@@ -32,6 +32,8 @@
     "verify:m6-logistics-provider": "tsx scripts/verify-m6-logistics-provider.mjs",
     "verify:m6-purchase-logistics-reminders": "tsx scripts/verify-m6-purchase-logistics-reminders.mjs",
     "verify:m7-shelf-life": "tsx scripts/verify-m7-shelf-life.mjs",
+    "verify:m7-expiry-reminders": "tsx scripts/verify-m7-expiry-reminders.mjs",
+    "verify:m7-expiry-reminders-browser": "tsx scripts/verify-m7-expiry-reminders-browser.mjs",
     "verify:m7-purchase-create-batch": "tsx scripts/verify-m7-purchase-create-batch.mjs",
     "verify:m8-warehouse-foundation": "tsx scripts/verify-m8-warehouse-foundation.mjs",
     "verify:m8-warehouse-foundation-ui": "tsx scripts/verify-m8-warehouse-foundation-ui.mjs",

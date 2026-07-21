@@ -23,6 +23,7 @@ export function isEmptyDailyBusinessReport(report: Awaited<ReturnType<typeof get
     report.purchases.purchaseRefundAmount,
     report.todos.totalCount,
     report.risks.totalCount,
+    ...Object.values(report.inventoryExpiry?.counts ?? {}),
     report.market.quotesCreatedInPeriodCount,
     report.market.quotesConfirmedInPeriodCount,
   ];

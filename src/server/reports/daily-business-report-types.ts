@@ -17,6 +17,19 @@ export type DailyReportRisk = {
   samples: { id: string; label: string; at: string | null }[];
 };
 
+export type DailyInventoryExpiryRisk = {
+  businessDate: string;
+  counts: Record<"EXPIRED" | "WITHIN_30_DAYS" | "WITHIN_90_DAYS" | "WITHIN_180_DAYS", number>;
+  samples: {
+    id: string;
+    name: string;
+    skuText: string | null;
+    displayStorageLocation: string;
+    expiryDate: string | null;
+    risk: "EXPIRED" | "WITHIN_30_DAYS" | "WITHIN_90_DAYS" | "WITHIN_180_DAYS";
+  }[];
+};
+
 export type DailyBusinessReportDto = {
   reportDate: string;
   timezone: "Asia/Shanghai";
@@ -26,6 +39,7 @@ export type DailyBusinessReportDto = {
   sales: Record<string, string | number>;
   purchases: Record<string, string | number>;
   inventory: Record<string, string | number>;
+  inventoryExpiry: DailyInventoryExpiryRisk;
   todos: { items: DailyReportTodo[]; totalCount: number; priorityCounts: Record<DailyReportPriority, number> };
   risks: { items: DailyReportRisk[]; totalCount: number; severityCounts: Record<DailyReportPriority, number> };
   market: Record<string, string | number>;

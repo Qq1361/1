@@ -13,6 +13,11 @@ function reportFixture(): DailyBusinessReportDto {
     sales: { confirmedOrderCount: 2, confirmedItemCount: 3, grossSalesAmount: "500.00", expectedIncomeAmount: "460.00", actualReceivedAmount: "450.00", actualRefundAmount: "-20.00", netReceivedAmount: "430.00", originalProfitAmount: "110.00", afterSaleNetProfitAmount: "90.00" },
     purchases: { createdOrderCount: 1, arrivedOrderCount: 1, inspectedItemCount: 2, createdInventoryItemCount: 2, purchaseRefundAmount: "0.00" },
     inventory: { stockedCount: 4, stockedAssetCost: "300.00", platformProcessingCount: 2, platformReturningCount: 1, platformReturnedPendingCount: 1, pendingDecisionCount: 0, problemCount: 1, problemAssetCost: "30.00", totalUnsoldAssetCount: 8, totalUnsoldAssetCost: "630.00" },
+    inventoryExpiry: {
+      businessDate: "2026-07-16",
+      counts: { EXPIRED: 1, WITHIN_30_DAYS: 2, WITHIN_90_DAYS: 0, WITHIN_180_DAYS: 0 },
+      samples: [{ id: "expiry-item", name: "fixture item", skuText: null, displayStorageLocation: "A warehouse / A-01", expiryDate: "2026-07-20", risk: "WITHIN_30_DAYS" }],
+    },
     todos: {
       items: [
         { code: "salesAwaitingSettlement", priority: "P1", count: 2, href: "/sales/settlements", samples: [{ id: "private-id", label: "private order", at: null }] },

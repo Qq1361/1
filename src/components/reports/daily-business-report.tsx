@@ -70,6 +70,11 @@ type DailyBusinessReport = {
     totalUnsoldAssetCount: number;
     totalUnsoldAssetCost: string;
   };
+  inventoryExpiry: {
+    businessDate: string;
+    counts: Record<"EXPIRED" | "WITHIN_30_DAYS" | "WITHIN_90_DAYS" | "WITHIN_180_DAYS", number>;
+    samples: { id: string; name: string; skuText: string | null; displayStorageLocation: string; expiryDate: string | null; risk: "EXPIRED" | "WITHIN_30_DAYS" | "WITHIN_90_DAYS" | "WITHIN_180_DAYS" }[];
+  };
   todos: { items: ReportItem[]; totalCount: number; priorityCounts: Record<string, number> };
   risks: { items: ReportItem[]; totalCount: number; severityCounts: Record<string, number> };
   market: {
@@ -128,6 +133,13 @@ const inventoryMetrics: { label: string; hint?: string; href: string; key: keyof
   { label: "总未售资产件数", href: "/inventory", key: "totalUnsoldAssetCount", kind: "count" },
   { label: "总未售资产成本", href: "/inventory", key: "totalUnsoldAssetCost", kind: "money" },
 ];
+
+const inventoryExpiryLabels: Record<keyof DailyBusinessReport["inventoryExpiry"]["counts"], string> = {
+  EXPIRED: "已过期",
+  WITHIN_30_DAYS: "30天内到期",
+  WITHIN_90_DAYS: "90天内到期",
+  WITHIN_180_DAYS: "180天内到期",
+};
 
 function formatMoney(value: string) {
   const source = String(value ?? "0.00").trim();
@@ -401,6 +413,23 @@ export function DailyBusinessReportPage() {
           <section className="space-y-4">
             <SectionHeading title="当前库存与资产" description="以下为报告生成时间的当前快照，不代表所选历史日期当天的库存状态。" />
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{inventoryMetrics.map((metric) => <MetricCard key={metric.key} label={metric.label} hint={metric.hint} href={metric.href} value={metric.kind === "money" ? formatMoney(String(report.inventory[metric.key])) : String(report.inventory[metric.key])} />)}</div>
+          </section>
+
+          <section className="space-y-4">
+            <SectionHeading title="库存效期风险" description={`按北京时间 ${report.inventoryExpiry.businessDate} 的到期日实时判断，仅提醒，不会自动下架、报废或改变库存状态。`} />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Object.entries(report.inventoryExpiry.counts).map(([risk, count]) => (
+                <MetricCard key={risk} label={inventoryExpiryLabels[risk as keyof DailyBusinessReport["inventoryExpiry"]["counts"]]} href={`/inventory?expiryRisk=${risk}`} value={`${count} 件`} />
+              ))}
+            </div>
+            {report.inventoryExpiry.samples.length ? (
+              <Card>
+                <CardHeader><CardTitle className="text-base">最近到期库存</CardTitle><CardDescription>最多展示 5 件；仓库、标准库位、手动库位和历史自由文本均使用统一位置文案。</CardDescription></CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {report.inventoryExpiry.samples.map((item) => <div key={item.id} className="grid gap-1 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_auto]"><div className="min-w-0"><p className="break-words font-medium">{item.name}{item.skuText ? ` / ${item.skuText}` : ""}</p><p className="break-words text-xs text-muted-foreground">{item.displayStorageLocation}</p></div><p className="text-sm text-muted-foreground">{item.expiryDate ?? "未填写"} · {inventoryExpiryLabels[item.risk]}</p></div>)}
+                </CardContent>
+              </Card>
+            ) : <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">暂无效期风险库存</CardContent></Card>}
           </section>
 
           <section className="space-y-4">

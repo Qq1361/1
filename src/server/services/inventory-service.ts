@@ -5,6 +5,17 @@ import { ServiceError } from "@/server/errors";
 import { getReminderType } from "@/server/services/todo-service";
 import { normalizeSku } from "@/lib/normalize-sku";
 import {
+  buildInventoryExpiryWhere,
+  classifyInventoryExpiryRisk,
+  getInventoryExpiryDayOffset,
+  getShanghaiBusinessDate,
+  INVENTORY_EXPIRY_RISKS,
+  inventoryExpiryRiskLabels,
+  isInventoryAssetSubjectToExpiryRisk,
+  summarizeInventoryExpiryRisk,
+  type InventoryExpiryRisk,
+} from "@/lib/inventory-expiry-risk";
+import {
   isLegacyInventoryItemStatus,
   isSupportedInventoryItemStatus,
   LEGACY_INVENTORY_STATUS_MESSAGE,
@@ -34,6 +45,24 @@ function withDisplayStorageLocation<T extends {
           ? `${item.warehouse.name} / 未填写库位`
           : "未设置";
   return { ...item, displayStorageLocation };
+}
+
+function withExpiryRisk<T extends {
+  expiryDate: Date | null;
+  itemStatus: string;
+  ownershipStatus: string;
+  storageLocation: string | null;
+  warehouse?: { name: string } | null;
+  warehouseLocation?: { name: string } | null;
+}>(item: T, asOf: Date) {
+  const risk = isInventoryAssetSubjectToExpiryRisk(item)
+    ? classifyInventoryExpiryRisk(item.expiryDate, asOf)
+    : null;
+  return {
+    ...withDisplayStorageLocation(item),
+    expiryRisk: risk,
+    expiryDayOffset: item.expiryDate ? getInventoryExpiryDayOffset(item.expiryDate, asOf) : null,
+  };
 }
 
 type BulkSkuInput = {
@@ -151,6 +180,7 @@ export class InventoryService {
       warehouseId?: string;
       condition?: Prisma.EnumInventoryConditionNullableFilter["equals"];
       shelfLife?: "HAS_EXPIRY" | "NO_EXPIRY" | "EXPIRED";
+      expiryRisk?: InventoryExpiryRisk | "NO_EXPIRY_DATE";
       sort?: "STOCKED_AT_DESC" | "STOCKED_AT_ASC" | "EXPIRY_DATE_ASC";
       locationStatus?: Prisma.EnumLocationStatusFilter["equals"];
       reminder?: string;
@@ -188,6 +218,12 @@ export class InventoryService {
     if (query.shelfLife === "HAS_EXPIRY") where.expiryDate = { not: null };
     if (query.shelfLife === "NO_EXPIRY") where.expiryDate = null;
     if (query.shelfLife === "EXPIRED") where.expiryDate = { lte: now };
+    if (query.expiryRisk === "NO_EXPIRY_DATE") where.expiryDate = null;
+    if (query.expiryRisk && query.expiryRisk !== "NO_EXPIRY_DATE") {
+      where.expiryDate = buildInventoryExpiryWhere(query.expiryRisk, now);
+      where.ownershipStatus = "OWNED";
+      where.itemStatus = query.itemStatus ?? { not: "SOLD" };
+    }
     const orderBy: Prisma.InventoryItemOrderByWithRelationInput[] = query.sort === "STOCKED_AT_ASC"
       ? [{ stockedAt: "asc" }, { id: "asc" }]
       : query.sort === "EXPIRY_DATE_ASC"
@@ -207,7 +243,7 @@ export class InventoryService {
       const total = data.length;
       const start = (query.page - 1) * query.pageSize;
       return {
-        data: data.slice(start, start + query.pageSize).map(withDisplayStorageLocation),
+        data: data.slice(start, start + query.pageSize).map((item) => withExpiryRisk(item, now)),
         total,
         page: query.page,
         totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
@@ -275,7 +311,7 @@ export class InventoryService {
         return true;
       });
       const total = filtered.length;
-      const data = filtered.slice((query.page - 1) * query.pageSize, query.page * query.pageSize).map(withDisplayStorageLocation);
+      const data = filtered.slice((query.page - 1) * query.pageSize, query.page * query.pageSize).map((item) => withExpiryRisk(item, now));
       return { data, total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
     }
 
@@ -289,7 +325,50 @@ export class InventoryService {
       }),
       db.inventoryItem.count({ where }),
     ]);
-    return { data: data.map(withDisplayStorageLocation), total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+    return { data: data.map((item) => withExpiryRisk(item, now)), total, page: query.page, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+  }
+
+  async expiryRiskSummary(ownerId: string, asOf = new Date()) {
+    const items = await db.inventoryItem.findMany({
+      where: {
+        ownerId,
+        ownershipStatus: "OWNED",
+        itemStatus: { not: "SOLD" },
+        expiryDate: { not: null },
+      },
+      include: locationInclude,
+    });
+    const groups = summarizeInventoryExpiryRisk(items, asOf);
+    return {
+      businessDate: getShanghaiBusinessDate(asOf).toISOString().slice(0, 10),
+      risks: INVENTORY_EXPIRY_RISKS.map((risk) => {
+        const group = groups[risk];
+        const nearest = group[0] ?? null;
+        const locations = new Map<string, number>();
+        for (const item of group) {
+          const location = withDisplayStorageLocation(item).displayStorageLocation;
+          locations.set(location, (locations.get(location) ?? 0) + 1);
+        }
+        return {
+          risk,
+          label: inventoryExpiryRiskLabels[risk],
+          count: group.length,
+          nearestExpiryDate: nearest?.expiryDate ? nearest.expiryDate.toISOString().slice(0, 10) : null,
+          locations: [...locations.entries()]
+            .sort(([leftName, leftCount], [rightName, rightCount]) => rightCount - leftCount || leftName.localeCompare(rightName))
+            .slice(0, 3)
+            .map(([name, count]) => ({ name, count })),
+          samples: group.slice(0, 5).map((item) => ({
+            id: item.id,
+            name: item.name,
+            skuText: item.skuText,
+            displayStorageLocation: withDisplayStorageLocation(item).displayStorageLocation,
+            expiryDate: item.expiryDate?.toISOString().slice(0, 10) ?? null,
+            risk,
+          })),
+        };
+      }),
+    };
   }
 
   async skuSummary(

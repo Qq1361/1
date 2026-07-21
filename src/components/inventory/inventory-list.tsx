@@ -38,6 +38,8 @@ type InventoryRow = {
   productionDate: string | null;
   shelfLifeMonths: number | null;
   expiryDate: string | null;
+  expiryRisk: "EXPIRED" | "WITHIN_30_DAYS" | "WITHIN_90_DAYS" | "WITHIN_180_DAYS" | null;
+  expiryDayOffset: number | null;
   stockedAt: string;
   itemStatus: string;
   locationStatus: string;
@@ -93,10 +95,26 @@ const reminderLabels: Record<string, string> = {
   STOCKED_OVER_3_DAYS: "入库满3天",
 };
 
+const expiryRiskLabels: Record<NonNullable<InventoryRow["expiryRisk"]>, string> = {
+  EXPIRED: "已过期",
+  WITHIN_30_DAYS: "30天内到期",
+  WITHIN_90_DAYS: "90天内到期",
+  WITHIN_180_DAYS: "180天内到期",
+};
+
+function expiryDescription(item: InventoryRow) {
+  if (!item.expiryDate) return "到期日期：未填写";
+  const offset = item.expiryDayOffset;
+  const timing = offset === null ? "" : offset < 0 ? `已过期${Math.abs(offset)}天` : `剩余${offset}天`;
+  const label = item.expiryRisk ? expiryRiskLabels[item.expiryRisk] : "暂无效期风险";
+  return `到期日期：${item.expiryDate}（${timing}，${label}）`;
+}
+
 export function InventoryList(_props: { showHeader?: boolean } = {}) {
   void _props;
   const searchParams = useSearchParams();
   const reminderParam = searchParams.get("reminder") ?? "";
+  const expiryRiskParam = searchParams.get("expiryRisk") ?? "";
   const queryParam = searchParams.get("query") ?? "";
   const productNameExact = searchParams.get("productNameExact") ?? "";
   const skuExact = searchParams.get("skuExact") ?? "";
@@ -108,6 +126,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
   const [condition, setCondition] = useState("ALL");
   const [saleMode, setSaleMode] = useState("ALL");
   const [shelfLife, setShelfLife] = useState("ALL");
+  const [expiryRisk, setExpiryRisk] = useState(expiryRiskParam || "ALL");
   const [sort, setSort] = useState("STOCKED_AT_DESC");
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<{ data: InventoryRow[]; total: number; page: number; totalPages: number } | null>(
@@ -158,6 +177,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
     if (condition !== "ALL") params.set("condition", condition);
     if (saleMode !== "ALL") params.set("saleMode", saleMode);
     if (shelfLife !== "ALL") params.set("shelfLife", shelfLife);
+    if (expiryRisk !== "ALL") params.set("expiryRisk", expiryRisk);
     params.set("sort", sort);
     params.set("page", String(page));
     if (reminderParam) params.set("reminder", reminderParam);
@@ -183,7 +203,15 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
         })
         .catch(() => undefined);
     }
-  }, [query, status, warehouseId, condition, saleMode, shelfLife, sort, page, reminderParam, productNameExact, skuExact, skuEmpty]);
+  }, [query, status, warehouseId, condition, saleMode, shelfLife, expiryRisk, sort, page, reminderParam, productNameExact, skuExact, skuEmpty]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (expiryRisk === "ALL") params.delete("expiryRisk");
+    else params.set("expiryRisk", expiryRisk);
+    const suffix = params.toString();
+    window.history.replaceState(null, "", suffix ? `/inventory?${suffix}` : "/inventory");
+  }, [expiryRisk]);
 
   useEffect(() => { selectedIdsRef.current = selectedIds; }, [selectedIds]);
 
@@ -201,7 +229,11 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
 
   useEffect(() => { void fetch("/api/inventory/warehouses?activeOnly=true").then((response) => response.ok ? response.json() : []).then(setWarehouses).catch(() => setWarehouses([])); }, []);
 
-  const title = reminderLabels[reminderParam] ? `库存 · ${reminderLabels[reminderParam]}` : "库存";
+  const title = reminderLabels[reminderParam]
+    ? `库存 · ${reminderLabels[reminderParam]}`
+    : expiryRisk !== "ALL"
+      ? `库存 · ${expiryRisk === "NO_EXPIRY_DATE" ? "未填写到期日" : expiryRiskLabels[expiryRisk as NonNullable<InventoryRow["expiryRisk"]>]}`
+      : "库存";
 
   const selectedItems = useMemo(() => Object.values(selectedMetadata), [selectedMetadata]);
   const productCount = new Set(selectedItems.map((item) => item.name)).size;
@@ -225,7 +257,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
   const pageAllSelected = Boolean(result?.data.length) && result?.data.every((item) => selectedIds.includes(item.id));
   const targetLocations = warehouses.find((warehouse) => warehouse.id === targetWarehouseId)?.locations.filter((location) => location.isActive) ?? [];
   const selectionStats = useMemo(() => ({ products: new Set(selectedItems.map((item) => `${item.name}\u0000${item.skuText ?? ""}`)).size, warehouses: new Set(selectedItems.map((item) => item.warehouseId).filter(Boolean)).size, statuses: new Set(selectedItems.map((item) => item.itemStatus)).size }), [selectedItems]);
-  const selectionQuery = () => ({ query: query || undefined, itemStatus: status === "ALL" ? undefined : status, warehouseId: warehouseId === "ALL" ? undefined : warehouseId, condition: condition === "ALL" ? undefined : condition, saleMode: saleMode === "ALL" ? undefined : saleMode, shelfLife: shelfLife === "ALL" ? undefined : shelfLife, sort, reminder: reminderParam || undefined, productNameExact: productNameExact || undefined, skuExact: skuExact || undefined, skuEmpty: skuEmpty || undefined });
+  const selectionQuery = () => ({ query: query || undefined, itemStatus: status === "ALL" ? undefined : status, warehouseId: warehouseId === "ALL" ? undefined : warehouseId, condition: condition === "ALL" ? undefined : condition, saleMode: saleMode === "ALL" ? undefined : saleMode, shelfLife: shelfLife === "ALL" ? undefined : shelfLife, expiryRisk: expiryRisk === "ALL" ? undefined : expiryRisk, sort, reminder: reminderParam || undefined, productNameExact: productNameExact || undefined, skuExact: skuExact || undefined, skuEmpty: skuEmpty || undefined });
   const toggleCurrentPage = () => {
     const pageItems = result?.data ?? [];
     if (!pageAllSelected) { addSelectedItems(pageItems.map(toSelectedMeta)); return; }
@@ -313,7 +345,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
       <div>
         <p className="text-sm text-muted-foreground">单件库存</p>
         <h1 className="text-2xl font-semibold">{title}</h1>
-        {reminderParam ? (
+        {reminderParam || expiryRisk !== "ALL" ? (
           <Link
             href="/inventory"
             className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -361,6 +393,17 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
           <SelectTrigger><SelectValue placeholder="保质期" /></SelectTrigger>
           <SelectContent><SelectItem value="ALL">全部保质期</SelectItem><SelectItem value="HAS_EXPIRY">已填写到期日</SelectItem><SelectItem value="NO_EXPIRY">未填写到期日</SelectItem><SelectItem value="EXPIRED">已过期</SelectItem></SelectContent>
         </Select>
+        <Select value={expiryRisk} onValueChange={(value) => { setExpiryRisk(value ?? "ALL"); clearSelection(); setPage(1); }}>
+          <SelectTrigger aria-label="效期状态"><SelectValue placeholder="效期状态" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">全部效期状态</SelectItem>
+            <SelectItem value="EXPIRED">已过期</SelectItem>
+            <SelectItem value="WITHIN_30_DAYS">30天内到期</SelectItem>
+            <SelectItem value="WITHIN_90_DAYS">90天内到期</SelectItem>
+            <SelectItem value="WITHIN_180_DAYS">180天内到期</SelectItem>
+            <SelectItem value="NO_EXPIRY_DATE">未填写到期日</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={sort} onValueChange={(value) => { setSort(value ?? "STOCKED_AT_DESC"); clearSelection(); setPage(1); }}>
           <SelectTrigger><SelectValue placeholder="排序" /></SelectTrigger>
           <SelectContent><SelectItem value="STOCKED_AT_DESC">最近入库</SelectItem><SelectItem value="STOCKED_AT_ASC">最早入库</SelectItem><SelectItem value="EXPIRY_DATE_ASC">到期日优先</SelectItem></SelectContent>
@@ -395,7 +438,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                     <span>库位 {item.displayStorageLocation}</span>
                     <span>{formatSaleMode(item.saleMode)}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">到期日期：{item.expiryDate ?? "—"}{item.expiryDate && item.expiryDate < new Date().toISOString().slice(0, 10) ? "（已过期）" : ""}</p>
+                  <p className="text-xs text-muted-foreground">{expiryDescription(item)}</p>
                   <p className="text-xs text-muted-foreground">{formatInventoryOwnershipStatus(item.ownershipStatus)}</p>
                   <Link href={`/inventory/${item.id}`} className={buttonVariants({ variant: "outline", className: "w-full" })}>
                     查看详情
@@ -432,7 +475,7 @@ export function InventoryList(_props: { showHeader?: boolean } = {}) {
                     <TableCell className="text-xs">{item.displayStorageLocation}</TableCell>
                     <TableCell className="text-xs">{formatSaleMode(item.saleMode)}</TableCell>
                     <TableCell>¥{item.unitCost}</TableCell>
-                    <TableCell className="text-xs">{item.expiryDate ?? "—"}{item.expiryDate && item.expiryDate < new Date().toISOString().slice(0, 10) ? <span className="ml-1 text-amber-700">已过期</span> : null}</TableCell>
+                    <TableCell className="text-xs">{expiryDescription(item)}</TableCell>
                     <TableCell>{daysInStock(item.stockedAt)}</TableCell>
                     <TableCell>
                       <Badge variant={item.itemStatus === "PROBLEM" ? "destructive" : "secondary"}>

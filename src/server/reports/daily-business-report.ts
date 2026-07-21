@@ -8,6 +8,8 @@ import type { DailyBusinessReportDto, DailyReportPriority, DailyReportRisk, Dail
 import { getSalesAfterSaleFinancials } from "./sales-after-sales-financials";
 import { selectCurrentQuote } from "@/server/market/market-rules";
 import { purchaseLogisticsRiskService } from "@/server/services/purchase-logistics-risk-service";
+import { inventoryService } from "@/server/services/inventory-service";
+import { INVENTORY_EXPIRY_RISKS } from "@/lib/inventory-expiry-risk";
 
 const ZERO = new Prisma.Decimal(0);
 const money = (value: Prisma.Decimal | null | undefined) => (value ?? ZERO).toDecimalPlaces(2).toFixed(2);
@@ -45,11 +47,12 @@ export async function getDailyBusinessReport(input: {
     getSalesSummary(ownerId, period),
     getPurchaseSummary(ownerId, period),
     getInventorySnapshot(ownerId),
+    getInventoryExpirySnapshot(ownerId, period.generatedAt),
     getDailyTodos(ownerId, period),
     getRiskSummary(ownerId, period.generatedAt),
     getMarketSummary(ownerId, period),
   ]);
-  const [sales, purchases, inventory, todos, risks, market] = report;
+  const [sales, purchases, inventory, inventoryExpiry, todos, risks, market] = report;
   return {
     reportDate: period.reportDate,
     timezone: period.timezone,
@@ -59,10 +62,21 @@ export async function getDailyBusinessReport(input: {
     sales,
     purchases,
     inventory,
+    inventoryExpiry,
     todos,
     risks,
     market,
   };
+}
+
+async function getInventoryExpirySnapshot(ownerId: string, generatedAt: Date) {
+  const summary = await inventoryService.expiryRiskSummary(ownerId, generatedAt);
+  const counts = Object.fromEntries(summary.risks.map((risk) => [risk.risk, risk.count])) as Record<(typeof INVENTORY_EXPIRY_RISKS)[number], number>;
+  const samples = summary.risks
+    .flatMap((risk) => risk.samples)
+    .sort((left, right) => (left.expiryDate ?? "9999-12-31").localeCompare(right.expiryDate ?? "9999-12-31"))
+    .slice(0, 5);
+  return { businessDate: summary.businessDate, counts, samples };
 }
 
 async function getSalesSummary(ownerId: string, period: DailyReportPeriod) {

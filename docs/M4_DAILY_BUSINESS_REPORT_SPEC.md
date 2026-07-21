@@ -154,6 +154,11 @@ M4-B3：Webhook 请求格式和脱敏、签名、超时、4xx/5xx、手动测试
 
 M4-B4：每日幂等、失败重试、发送记录、准确退出码和基础设施异常处理，已由 `verify:m4-daily-report` 真实 HTTP/mock 验证覆盖。
 
+## M7-A2 inventory expiry snapshot
+
+- The daily report now includes a current `inventoryExpiry` snapshot using the same `Asia/Shanghai` date-only rule as the inventory dashboard and list. It has four mutually exclusive counts (`EXPIRED`, `WITHIN_30_DAYS`, `WITHIN_90_DAYS`, `WITHIN_180_DAYS`) and at most five location-aware samples.
+- This is an observational inventory risk section only. It does not change the historical sales, purchase, refund, profit, inventory asset, todo, or after-sales formulas; the Feishu formatter consumes the same DTO and does not send a separate calculation.
+
 ## 13. 风险与结论
 
 本次审计未发现需要在 M4-B0 修复的 P0/P1 业务写入缺陷。统一时区、发送记录和空报告保护已在 M4-B1/B4 落地；不可变日末快照以及首页待办未覆盖全部售后/销售结算仍是后续边界，不改变现有 M1 至 M3 写入规则。

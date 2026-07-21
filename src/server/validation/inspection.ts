@@ -101,6 +101,7 @@ export const inventoryListSchema = z.object({
   warehouseId: z.string().cuid().optional(),
   condition: z.enum(["NEW", "LIKE_NEW", "LIGHTLY_USED", "USED", "FLAWED"]).optional(),
   shelfLife: z.enum(["HAS_EXPIRY", "NO_EXPIRY", "EXPIRED"]).optional(),
+  expiryRisk: z.enum(["EXPIRED", "WITHIN_30_DAYS", "WITHIN_90_DAYS", "WITHIN_180_DAYS", "NO_EXPIRY_DATE"]).optional(),
   sort: z.enum(["STOCKED_AT_DESC", "STOCKED_AT_ASC", "EXPIRY_DATE_ASC"]).default("STOCKED_AT_DESC"),
   locationStatus: z
     .enum(["LOCAL", "DEWU_WAREHOUSE", "RETURNING", "SOLD"])
