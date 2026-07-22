@@ -43,6 +43,13 @@
 - 页面显示待分摊总金额、商品行数、实际商品总件数、平均单件成本、当前分摊合计和差额。平均结果仅填入页面草稿；有非空未确认输入时需先确认覆盖，用户仍须手动保存草稿或确认分摊。已确认状态不显示该按钮。
 - 新增 `POST /api/purchase-orders/[id]/allocation/equal-preview` 和 `pnpm verify:m1-equal-cost-allocation`；验证覆盖按件数、分级余数稳定性、预览不落库、版本冲突、确认后拒绝重算和 owner 隔离。
 
+## 放弃未应用成本分摊草稿（已完成）
+
+- 当前系统不使用独立成本分摊草稿表；活动草稿由 `PurchaseOrder.allocationStatus = DRAFT` 与 `PurchaseOrderItem.allocatedTotalCost` 的临时值共同表达。
+- 采购详情可查看草稿或放弃草稿。放弃命令使用当前 `allocationVersion` 并在 Serializable 事务内将状态还原为 `UNALLOCATED`、清空临时分摊值、写入 `PurchaseOrderActionLog`。
+- 放弃只适用于未正式应用的 `DRAFT`；`CONFIRMED` 成本分摊继续不可撤销。该操作不会删除采购商品，不会修改订单实付、库存成本、验货、库存、销售或售后事实；商品维护仍须通过既有下游锁定守卫。
+- `pnpm verify:m1-cost-allocation-draft-discard` 覆盖草稿放弃、旧版本冲突、跨 owner、已确认拒绝、商品维护恢复、审计日志、HTTP 与 1440px/390px 浏览器流程。
+
 ## M5-A2 采购订单商品批量添加（已完成）
 
 - 采购订单详情页已增加独立的“批量添加商品”入口；每批最多 50 行，每行固定创建一条数量为 1 的采购商品明细，相同商品和 SKU 不自动合并。

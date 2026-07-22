@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "verify:m1": "node scripts/verify-m1.mjs",
     "verify:m1-equal-cost-allocation": "tsx scripts/verify-m1-equal-cost-allocation.mjs",
+    "verify:m1-cost-allocation-draft-discard": "tsx scripts/verify-m1-cost-allocation-draft-discard.mjs",
     "verify:m2a": "tsx scripts/verify-m2a.mjs",
     "verify:m2b": "tsx scripts/verify-m2b.mjs",
     "verify:m2b-batch-inspection": "tsx scripts/verify-m2b-batch-inspection.mjs",

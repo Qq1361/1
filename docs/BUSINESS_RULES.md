@@ -65,6 +65,8 @@
 - 参考成交总额仅作明细参考，不参与 `PurchaseOrder.totalAmount`、`shippingAmount`、成本分摊、库存成本、采购退款和经营日报；数量变化不自动修改它。
 - 明细服务端写入统一使用严格 Decimal 字符串校验，拒绝未知字段、科学计数法、NaN、Infinity、负数和超过两位小数的值。
 - 已付款不自动锁定明细；成本分摊锁定订单商品结构，目标商品已有库存、验货、采购售后或采购退款事实时服务端拒绝删除。运单、承运商和物流提醒时间不构成商品删除锁定，页面不得绕过服务端守卫。
+- 活动成本分摊草稿仅在 `PurchaseOrder.allocationStatus = DRAFT` 时可放弃。放弃必须携带当前 `allocationVersion`，在同一事务中清空临时 `PurchaseOrderItem.allocatedTotalCost`、将订单还原为 `UNALLOCATED` 并写采购操作日志；放弃后仍由原有库存、验货、采购售后、采购退款和最后一件商品等规则决定是否可以维护。
+- 已确认的成本分摊不可通过草稿放弃入口撤销。放弃草稿不会改动 `totalAmount`、`shippingAmount`、付款、正式库存成本、库存状态、验货、销售或售后，也不会自动生成新的分摊草稿。
 
 ## M4-A 行情与采购决策参考（M4-A3 API 已完成）
 

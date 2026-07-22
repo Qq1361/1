@@ -19,6 +19,41 @@ export type EqualAllocation = {
   allocatedTotalCost: string;
 };
 
+type AllocationOrderSnapshot = {
+  id: string;
+  ownerId: string;
+  orderNo: string;
+  totalAmount: Prisma.Decimal;
+  shippingAmount: Prisma.Decimal;
+  allocationStatus: "UNALLOCATED" | "DRAFT" | "CONFIRMED";
+  allocationConfirmedAt: Date | null;
+  updatedAt: Date;
+  items: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    allocatedTotalCost: Prisma.Decimal | null;
+    updatedAt: Date;
+  }>;
+};
+
+function allocationVersionFor(order: AllocationOrderSnapshot) {
+  return JSON.stringify({
+    order: {
+      id: order.id,
+      allocationStatus: order.allocationStatus,
+      updatedAt: order.updatedAt.toISOString(),
+      totalAmount: order.totalAmount.toFixed(2),
+      shippingAmount: order.shippingAmount.toFixed(2),
+    },
+    items: order.items.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      updatedAt: item.updatedAt.toISOString(),
+    })),
+  });
+}
+
 function centsToMoney(cents: bigint) {
   const sign = cents < 0n ? "-" : "";
   const absolute = cents < 0n ? -cents : cents;
@@ -124,20 +159,7 @@ export class CostAllocationService {
             order.items.reduce((sum, item) => sum + item.quantity, 0),
           ).toFixed(2)
         : null,
-      allocationVersion: JSON.stringify({
-        order: {
-          id: order.id,
-          allocationStatus: order.allocationStatus,
-          updatedAt: order.updatedAt.toISOString(),
-          totalAmount: order.totalAmount.toFixed(2),
-          shippingAmount: order.shippingAmount.toFixed(2),
-        },
-        items: order.items.map((item) => ({
-          id: item.id,
-          quantity: item.quantity,
-          updatedAt: item.updatedAt.toISOString(),
-        })),
-      }),
+      allocationVersion: allocationVersionFor(order),
       ...calculateAllocationSummary(
         order.totalAmount.toFixed(2),
         order.shippingAmount.toFixed(2),
@@ -246,6 +268,113 @@ export class CostAllocationService {
       data: { allocationStatus: "DRAFT", allocationConfirmedAt: null },
     });
     return this.getSummary(ownerId, orderId);
+  }
+
+  /**
+   * The current schema represents an allocation draft directly on the purchase
+   * order. There is no separate draft row to delete, so the order ID is the
+   * stable draft identifier returned to clients.
+   */
+  async discardDraft(
+    ownerId: string,
+    orderId: string,
+    expectedAllocationVersion: string,
+  ) {
+    if (!expectedAllocationVersion.trim()) {
+      throw new ServiceError(
+        "ALLOCATION_DRAFT_VERSION_REQUIRED",
+        "请刷新成本分摊草稿后再放弃。",
+        400,
+      );
+    }
+
+    return db.$transaction(async (tx) => {
+      const orders = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
+        SELECT "id" FROM "purchase_orders"
+        WHERE "id" = ${orderId} AND "ownerId" = ${ownerId}
+        FOR UPDATE
+      `);
+      if (!orders.length) {
+        throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
+      }
+
+      const order = await tx.purchaseOrder.findFirst({
+        where: { id: orderId, ownerId },
+        include: { items: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } },
+      });
+      if (!order) {
+        throw new ServiceError("ORDER_NOT_FOUND", "采购订单不存在。", 404);
+      }
+
+      const currentVersion = allocationVersionFor(order);
+      if (currentVersion !== expectedAllocationVersion) {
+        throw new ServiceError(
+          "ALLOCATION_DRAFT_CONFLICT",
+          "当前成本分摊草稿已发生变化，请刷新后重试。",
+          409,
+        );
+      }
+      if (order.allocationStatus === "CONFIRMED") {
+        throw new ServiceError(
+          "ALLOCATION_ALREADY_CONFIRMED",
+          "该成本分摊已经正式应用，不能作为草稿放弃。",
+          409,
+        );
+      }
+      if (order.allocationStatus !== "DRAFT") {
+        throw new ServiceError(
+          "ALLOCATION_DRAFT_NOT_FOUND",
+          "当前采购单没有可放弃的成本分摊草稿。",
+          409,
+        );
+      }
+
+      const allocatedTotal = order.items.reduce(
+        (sum, item) => sum.plus(item.allocatedTotalCost ?? 0),
+        new Prisma.Decimal(0),
+      );
+      const itemCount = order.items.length;
+      const updated = await tx.purchaseOrder.updateMany({
+        where: {
+          id: orderId,
+          ownerId,
+          allocationStatus: "DRAFT",
+          updatedAt: order.updatedAt,
+        },
+        data: { allocationStatus: "UNALLOCATED", allocationConfirmedAt: null },
+      });
+      if (updated.count !== 1) {
+        throw new ServiceError(
+          "ALLOCATION_DRAFT_CONFLICT",
+          "当前成本分摊草稿已发生变化，请刷新后重试。",
+          409,
+        );
+      }
+
+      await tx.purchaseOrderItem.updateMany({
+        where: { purchaseOrderId: orderId, id: { in: order.items.map((item) => item.id) } },
+        data: { allocatedTotalCost: null },
+      });
+      await tx.purchaseOrderActionLog.create({
+        data: {
+          ownerId,
+          purchaseOrderId: orderId,
+          actionType: "COST_ALLOCATION_DRAFT_DISCARDED",
+          reasonCode: "USER_DISCARDED_COST_ALLOCATION_DRAFT",
+          note: `用户放弃成本分摊草稿以继续维护商品明细；原状态 DRAFT，分摊总额 ${allocatedTotal.toFixed(2)}，商品行数 ${itemCount}。`,
+          beforeItemCount: itemCount,
+          afterItemCount: itemCount,
+        },
+      });
+
+      return {
+        success: true,
+        purchaseOrderId: orderId,
+        // The active draft has no standalone model in the current schema.
+        discardedDraftId: orderId,
+        canEditItems: true,
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 }
 

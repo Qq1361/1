@@ -36,6 +36,11 @@ type ItemDraft = {
 
 type BatchItemDraft = Omit<ItemDraft, "quantity">;
 
+type AllocationDraftSummary = {
+  allocationStatus: "UNALLOCATED" | "DRAFT" | "CONFIRMED";
+  allocationVersion: string;
+};
+
 function emptyItemDraft(): ItemDraft {
   return { name: "", skuText: "", quantity: "1", referenceAmount: "", productionDate: "", shelfLifeMonths: "", expiryDate: "", notes: "" };
 }
@@ -69,6 +74,9 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const [entryErrorReason, setEntryErrorReason] = useState("");
   const [entryErrorNote, setEntryErrorNote] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [discardDraft, setDiscardDraft] = useState<AllocationDraftSummary | null>(null);
+  const [discardingDraft, setDiscardingDraft] = useState(false);
+  const [discardDraftError, setDiscardDraftError] = useState<string | null>(null);
 
   const loadOrder = useCallback(() => {
     return fetch(`/api/purchase-orders/${orderId}`)
@@ -310,6 +318,54 @@ export function OrderDetail({ orderId }: { orderId: string }) {
     }
   }
 
+  async function openDiscardDraft() {
+    if (!order) return;
+    setDiscardDraftError(null);
+    try {
+      const response = await fetch(`/api/purchase-orders/${order.id}/allocation`);
+      const payload = await response.json() as AllocationDraftSummary | ApiError;
+      if (!response.ok || !("allocationStatus" in payload)) {
+        toast.error((payload as ApiError).message || "无法加载成本分摊草稿，请稍后重试。");
+        return;
+      }
+      if (payload.allocationStatus !== "DRAFT") {
+        toast.error("当前采购单没有可放弃的成本分摊草稿，请刷新后重试。");
+        await loadOrder();
+        return;
+      }
+      setDiscardDraft(payload);
+    } catch {
+      toast.error("无法加载成本分摊草稿，请检查网络后重试。");
+    }
+  }
+
+  async function discardCostAllocationDraft() {
+    if (!order || !discardDraft) return;
+    setDiscardingDraft(true);
+    setDiscardDraftError(null);
+    try {
+      const response = await fetch(`/api/purchase-orders/${order.id}/allocation/discard`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expectedAllocationVersion: discardDraft.allocationVersion }),
+      });
+      const payload = await response.json() as { success?: boolean } | ApiError;
+      if (!response.ok || !("success" in payload) || !payload.success) {
+        const message = (payload as ApiError).message || "放弃成本分摊草稿失败，请稍后重试。";
+        setDiscardDraftError(message);
+        if (response.status === 409) await loadOrder();
+        return;
+      }
+      setDiscardDraft(null);
+      await loadOrder();
+      toast.success("成本分摊草稿已放弃，可以继续维护商品。");
+    } catch {
+      setDiscardDraftError("放弃成本分摊草稿失败，请检查网络后重试。");
+    } finally {
+      setDiscardingDraft(false);
+    }
+  }
+
   if (loadError) {
     return (
       <Card className="rounded-lg shadow-none" data-testid="purchase-order-load-error">
@@ -418,6 +474,36 @@ export function OrderDetail({ orderId }: { orderId: string }) {
               </p>
               {purchaseItemsEditability.reason ? (
                 <p className="text-sm text-amber-700">{purchaseItemsEditability.reason}</p>
+              ) : null}
+              {order.allocationStatus === "DRAFT" ? (
+                <div
+                  className="flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between"
+                  data-testid="cost-allocation-draft-lock"
+                >
+                  <div className="space-y-1">
+                    <p className="font-medium">当前订单已有成本分摊草稿。</p>
+                    <p>分摊草稿生成期间，商品明细暂时锁定。</p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Link
+                      href={`/purchases/${order.id}/allocate`}
+                      className={buttonVariants({ variant: "outline", size: "sm", className: "min-h-11" })}
+                    >
+                      查看分摊草稿
+                    </Link>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="min-h-11"
+                      onClick={() => void openDiscardDraft()}
+                      disabled={discardingDraft}
+                      data-testid="discard-cost-allocation-draft"
+                    >
+                      放弃草稿并编辑商品
+                    </Button>
+                  </div>
+                </div>
               ) : null}
             </CardHeader>
           </Card>
@@ -652,6 +738,39 @@ export function OrderDetail({ orderId }: { orderId: string }) {
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
                 <AlertDialogAction onClick={removeItem} disabled={deleting || (removingAsEntryError && !entryErrorReason)}>{deleting ? "处理中..." : removingAsEntryError ? "确认移除" : "确认删除"}</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={discardDraft !== null} onOpenChange={(open) => {
+            if (!discardingDraft && !open) {
+              setDiscardDraft(null);
+              setDiscardDraftError(null);
+            }
+          }}>
+            <AlertDialogContent data-testid="discard-cost-allocation-draft-dialog">
+              <AlertDialogHeader>
+                <AlertDialogTitle>放弃成本分摊草稿？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  放弃后，当前尚未应用的分摊草稿将被清除，您可以继续添加、编辑或删除商品。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>本操作不会删除采购商品、修改采购实付金额、修改已经保存的库存成本，或修改验货、库存、销售和售后记录。</p>
+                <p>之后如仍需分摊成本，需要根据最新商品明细重新生成草稿。</p>
+              </div>
+              {discardDraftError ? <p className="text-sm text-destructive" role="alert">{discardDraftError}</p> : null}
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={discardingDraft}>取消</AlertDialogCancel>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => void discardCostAllocationDraft()}
+                  disabled={discardingDraft}
+                >
+                  {discardingDraft ? <Loader2 className="animate-spin" /> : null}
+                  {discardingDraft ? "处理中..." : "确认放弃"}
+                </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
